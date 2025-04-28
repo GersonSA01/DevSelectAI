@@ -8,7 +8,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex items-center justify-center text-white px-6">
       <div className="text-center max-w-xl">
-        <h1 className="text-5xl font-extrabold mb-6">DevSelectAI</h1>
+        <h1 className="text-5xl font-extrabold mb-6">DevSelectAI-PRUEBA</h1>
         <h2 className="text-3xl font-bold mb-4">Revoluciona tu camino profesional</h2>
         <p className="text-lg text-gray-300 mb-8">
           Postúlate a prácticas preprofesionales en UNEMI mediante evaluaciones técnicas automatizadas.
