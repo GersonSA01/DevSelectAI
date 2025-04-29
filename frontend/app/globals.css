@@ -72,6 +72,10 @@
   }
 }
 
+.dialog-custom {
+  @apply bg-pageBackground text-white p-8 rounded-2xl border-none shadow-none;
+}
+
 @layer base {
   * {
     @apply border-border;
