@@ -1,8 +1,26 @@
 "use client";
 
+import Swal from "sweetalert2";
+
 export default function Home() {
   const onStart = () => {
-    alert("Próximamente: iniciar evaluación");
+    Swal.fire({
+      title: "Iniciar Evaluación",
+      text: "¿Estás listo para comenzar tu evaluación técnica?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "¡Sí, comenzar!",
+      cancelButtonText: "Cancelar",
+      customClass: {
+        popup: "rounded-xl",
+        confirmButton: "bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition",
+        cancelButton: "bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 transition",
+      },
+    }).then((result) => {
+      if (result.isConfirmed) {
+        Swal.fire("¡Comenzando!", "La evaluación técnica está por iniciar.", "success");
+      }
+    });
   };
 
   return (

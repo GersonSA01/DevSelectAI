@@ -1,0 +1,20 @@
+'use client';
+
+import Link from 'next/link';
+import Image from 'next/image';
+
+export default function NavbarSimple() {
+  return (
+    <div className="fixed top-0 left-0 w-full p-4 bg-[#0A0D1C] flex items-center">
+      <Link href="/" className="flex items-center gap-2">
+        <Image
+          src="/logo.png" // Ruta del logo (debes tenerlo en /public/logo.png)
+          alt="Logo DevSelectAI"
+          width={40} // Ajusta el tamaño del logo según necesites
+          height={40}
+        />
+        <span className="text-white font-bold text-2xl">DevSelectAI</span>
+      </Link>
+    </div>
+  );
+}
