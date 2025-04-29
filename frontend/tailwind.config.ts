@@ -33,6 +33,11 @@ const config: Config = {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
         },
+        primaryButton: {
+          DEFAULT: '#00C2FF',         // Azul celeste
+          hover: '#009AC9',            // Azul más oscuro al pasar mouse
+        },
+  
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
           foreground: 'hsl(var(--secondary-foreground))',
