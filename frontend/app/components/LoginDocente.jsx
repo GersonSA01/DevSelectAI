@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import RegistroDialog from "@/components/RegistroDialog";
-import SeleccionarPerfilDialog from "@/components/SeleccionarPerfilDialog";
+import RegistroDialog from "../components/RegistroDialog";
+import SeleccionarPerfilDialog from "../components/SeleccionarPerfilDialog";
 export default function LoginDocente() {
   const [openRegistro, setOpenRegistro] = useState(false);
   const [openPerfil, setOpenPerfil] = useState(false);

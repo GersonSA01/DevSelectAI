@@ -1,4 +1,4 @@
-import LoginEstudiante from "@/components/LoginEstudiante";
+import LoginEstudiante from "../../components/LoginEstudiante";
 
 export default function LoginEstudiantePage() {
   return <LoginEstudiante />;
