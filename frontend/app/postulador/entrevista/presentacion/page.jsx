@@ -102,7 +102,7 @@ export default function PresentacionEntrevista() {
         formData,
         {
           headers: {
-            'Authorization': `Bearer api`,
+            'Authorization': `Bearer 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`,
             'Content-Type': 'multipart/form-data',
           },
         }
@@ -136,7 +136,7 @@ export default function PresentacionEntrevista() {
         },
         {
           headers: {
-            'Authorization': `Bearer api`,
+            'Authorization': `Bearer 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`,
             'Content-Type': 'application/json',
           },
         }
@@ -159,7 +159,7 @@ export default function PresentacionEntrevista() {
         },
         {
           headers: {
-            'xi-api-key': 'api',
+            'xi-api-key': 'sk_39a5a2ca5968221e63e39f8e7760edd18311aec642869a70',
             'Content-Type': 'application/json',
           },
           responseType: 'blob',
