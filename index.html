@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Generador TTS con Reproducción</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+      background: #0a0a23;
+      color: white;
+      max-width: 600px;
+      margin: auto;
+    }
+
+    textarea, input, button {
+      width: 100%;
+      margin-top: 1rem;
+      padding: 0.75rem;
+      font-size: 1rem;
+      border-radius: 4px;
+    }
+
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #2563eb;
+    }
+
+    audio {
+      margin-top: 1rem;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎙️ Texto a Voz (OpenAI TTS)</h1>
+  <textarea id="texto" rows="4" placeholder="Escribe tu texto..."></textarea>
+  <input id="apiKey" type="password" placeholder="🔐 Tu API Key de OpenAI">
+  <button onclick="generarAudio()">🔊 Generar y reproducir</button>
+  <audio id="player" controls hidden></audio>
+
+  <script>
+    async function generarAudio() {
+      const texto = document.getElementById('texto').value.trim();
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const player = document.getElementById('player');
+
+      if (!texto || !apiKey) {
+        alert("Escribe un texto y coloca tu API key.");
+        return;
+      }
+
+      try {
+        const res = await fetch("https://api.openai.com/v1/audio/speech", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "tts-1",
+            input: texto,
+            voice: "alloy"
+          })
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error("Error al generar audio: " + errText);
+        }
+
+        const audioBlob = await res.blob();
+        const audioURL = URL.createObjectURL(audioBlob);
+
+        // Reproducir
+        player.src = audioURL;
+        player.hidden = false;
+        player.play();
+
+        // Descargar
+        const a = document.createElement('a');
+        a.href = audioURL;
+        a.download = 'voz-generada.mp3';
+        a.textContent = '⬇️ Descargar MP3';
+        a.style.display = 'inline-block';
+        a.style.marginTop = '1rem';
+
+        // Si ya existe un link anterior, lo quito
+        const oldLink = document.getElementById('descargarLink');
+        if (oldLink) oldLink.remove();
+
+        a.id = 'descargarLink';
+        document.body.appendChild(a);
+
+      } catch (err) {
+        console.error(err);
+        alert("Ocurrió un error al generar el audio.");
+      }
+    }
+  </script>
+
+</body>
+</html>
