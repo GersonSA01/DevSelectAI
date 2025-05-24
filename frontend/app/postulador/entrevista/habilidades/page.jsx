@@ -4,79 +4,80 @@ import { useState } from 'react';
 import { Alert } from "../../../components/alerts/alerts";
 import { useRouter } from 'next/navigation';
 
-export default function Datos() {
+export default function SeleccionHabilidades() {
   const router = useRouter();
-  const [vacantesSeleccionadas, setVacantesSeleccionadas] = useState([]);
+  const [habilidadesSeleccionadas, setHabilidadesSeleccionadas] = useState([]);
 
-  const vacantes = [
-    "Analista de Datos",
-    "Administrador de Base de Datos SQL",
-    "Desarrollador de IA",
-    "Desarrollador Backend"
+  const habilidades = [
+    "React",
+    "SQL",
+    "Express",
+    "MongoDB",
+    "Node.js",
+    "Python",
   ];
 
-  const toggleVacante = (vacante) => {
-    if (vacantesSeleccionadas.includes(vacante)) {
-      setVacantesSeleccionadas(vacantesSeleccionadas.filter((v) => v !== vacante));
+  const toggleHabilidad = (habilidad) => {
+    if (habilidadesSeleccionadas.includes(habilidad)) {
+      setHabilidadesSeleccionadas(habilidadesSeleccionadas.filter((h) => h !== habilidad));
     } else {
-      setVacantesSeleccionadas([...vacantesSeleccionadas, vacante]);
+      setHabilidadesSeleccionadas([...habilidadesSeleccionadas, habilidad]);
     }
   };
 
   const handleContinuar = async () => {
-    if (vacantesSeleccionadas.length === 0) {
+    if (habilidadesSeleccionadas.length === 0) {
       await Alert({
         title: 'Error',
-        text: 'Por favor selecciona al menos una vacante.',
+        text: 'Por favor selecciona al menos una habilidad.',
         icon: 'error',
         showCancelButton: false,
         confirmButtonText: 'Aceptar'
       });
       return;
     }
-  
+
     const result = await Alert({
       title: '¿Estás seguro que quieres continuar?',
-      text: 'Esta acción seleccionará tus vacantes y procederá al siguiente paso.',
+      text: 'Esta acción seleccionará tus habilidades y procederá al siguiente paso.',
       icon: 'warning',
     });
-  
+
     if (result.isConfirmed) {
-      console.log('Vacantes seleccionadas:', vacantesSeleccionadas);
-  
+      console.log('Habilidades seleccionadas:', habilidadesSeleccionadas);
+
       const confirmacion = await Alert({
-        title: 'Mensaje de aceptación de Vacante y realización de entrevista',
-        text: 'Por favor revisar tu correo institucional',
+        title: 'Habilidades seleccionadas correctamente',
+        text: 'Por favor revisa tu correo institucional.',
         icon: 'success',
         showCancelButton: false,
         confirmButtonText: 'Continuar',
       });
-  
+
       if (confirmacion.isConfirmed) {
         router.push('/');
       }
     }
   };
-  
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-pageBackground p-8">
       <h2 className="text-3xl font-bold text-white mb-8 text-center">
-        Seleccione una o varias vacantes
+        Seleccione una o varias habilidades a evaluar
       </h2>
 
       <div className="flex flex-col gap-4 w-full max-w-md">
-        {vacantes.map((vacante) => (
+        {habilidades.map((habilidad) => (
           <button
-            key={vacante}
-            onClick={() => toggleVacante(vacante)}
+            key={habilidad}
+            onClick={() => toggleHabilidad(habilidad)}
             className={`py-2 rounded font-semibold transition ${
-              vacantesSeleccionadas.includes(vacante)
+              habilidadesSeleccionadas.includes(habilidad)
                 ? 'bg-primaryButton text-white'
                 : 'bg-white text-black'
             }`}
           >
-            {vacante}
+            {habilidad}
           </button>
         ))}
       </div>

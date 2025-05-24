@@ -7,6 +7,7 @@ import { StreamContext } from '../../../../context/StreamContext';
 const preguntas = [
   {
     id: 1,
+    habilidad: 'Bases de Datos',
     texto: '¿Qué es un dato según el documento?',
     opciones: [
       'Un número aleatorio sin interpretación.',
@@ -18,6 +19,7 @@ const preguntas = [
   },
   {
     id: 2,
+    habilidad: 'SQL',
     texto: '¿Cuál es el objetivo principal de un DBMS?',
     opciones: [
       'Reducir el tamaño de la base de datos.',
@@ -29,6 +31,7 @@ const preguntas = [
   },
   {
     id: 3,
+    habilidad: 'SQL',
     texto: '¿Qué es un campo en un archivo computacional?',
     opciones: [
       'Una tabla completa.',
@@ -40,17 +43,14 @@ const preguntas = [
   },
   {
     id: 4,
+    habilidad: 'SQL',
     texto: '¿Cuál de los siguientes es un lenguaje de manipulación de datos?',
-    opciones: [
-      'HTML',
-      'CSS',
-      'SQL',
-      'XML',
-    ],
+    opciones: ['HTML', 'CSS', 'SQL', 'XML'],
     correcta: 2,
   },
   {
     id: 5,
+    habilidad: 'SQL',
     texto: '¿Qué representa una clave primaria en una tabla?',
     opciones: [
       'Un atributo duplicado.',
@@ -61,6 +61,7 @@ const preguntas = [
     correcta: 2,
   },
 ];
+
 
 export default function TeoricaPage() {
   const router = useRouter();
@@ -92,27 +93,33 @@ export default function TeoricaPage() {
       <h2 className="text-2xl font-bold mb-8 text-center">Entrevista Teórica</h2>
 
       <div className="max-w-4xl mx-auto space-y-8">
-        {preguntas.map((pregunta, index) => (
-          <div key={pregunta.id} className="bg-[#1D1E33] p-6 rounded-lg shadow">
-            <h3 className="mb-4 text-base font-semibold">{index + 1}. {pregunta.texto}</h3>
-            <div className="grid grid-cols-1 gap-3">
-              {pregunta.opciones.map((opcion, i) => (
-                <button
-                  key={i}
-                  onClick={() => manejarSeleccion(pregunta.id, i)}
-                  className={`text-left px-4 py-2 rounded-lg border transition-all duration-150
-                    ${
-                      respuestas[pregunta.id] === i
-                        ? 'bg-[#3BDCF6] text-black border-[#3BDCF6]'
-                        : 'bg-[#2B2C3F] border-[#444] hover:bg-[#374151]'
-                    }`}
-                >
-                  {opcion}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
+{preguntas.map((pregunta, index) => (
+  <div key={pregunta.id} className="bg-[#1D1E33] p-6 rounded-lg shadow">
+    <p className="text-sm text-[#3BDCF6] font-medium mb-1">
+      Habilidad evaluada: {pregunta.habilidad}
+    </p>
+    <h3 className="mb-4 text-base font-semibold">
+      {index + 1}. {pregunta.texto}
+    </h3>
+    <div className="grid grid-cols-1 gap-3">
+      {pregunta.opciones.map((opcion, i) => (
+        <button
+          key={i}
+          onClick={() => manejarSeleccion(pregunta.id, i)}
+          className={`text-left px-4 py-2 rounded-lg border transition-all duration-150
+            ${
+              respuestas[pregunta.id] === i
+                ? 'bg-[#3BDCF6] text-black border-[#3BDCF6]'
+                : 'bg-[#2B2C3F] border-[#444] hover:bg-[#374151]'
+            }`}
+        >
+          {opcion}
+        </button>
+      ))}
+    </div>
+  </div>
+))}
+
       </div>
 
       {/* Botón continuar */}
