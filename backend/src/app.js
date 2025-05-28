@@ -1,31 +1,56 @@
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
-const fileUpload = require("express-fileupload"); // Necesario si manejas audio
-
+const fileUpload = require("express-fileupload");
 const app = express();
 
-// Middlewares
+// === 🔗 SEQUELIZE CONFIGURACIÓN ===
+const db = require("./models");
+
+db.sequelize.sync({ force: false })
+  .then(() => {
+    console.log("📦 Base de datos sincronizada con Sequelize (SQLite)");
+  })
+  .catch((err) => {
+    console.error("❌ Error al sincronizar la base de datos:", err);
+  });
+
+// === 🔐 MIDDLEWARES ===
 app.use(cors({
-  origin: 'http://localhost:3000', // Asegúrate de que coincida con tu frontend
+  origin: 'http://localhost:3000',
   exposedHeaders: ['X-Respuesta-GPT']
 }));
-app.use(express.json()); // Para JSON
-app.use(express.urlencoded({ extended: true })); // Para formularios
-app.use(fileUpload()); // Para subir archivos tipo audio
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(fileUpload());
 
-// Importar las rutas de entrevista
+// ✅ IMPORTACIÓN DE RUTAS
 const entrevistaRoutes = require("./routes/entrevista");
+const postulanteRoutes = require("./routes/postulante");
+const excelRoutes = require("./routes/excel"); // ← ✅ Nueva ruta para lectura directa de Excel
+const configuracionRoutes = require('./routes/configuracion');
+const registroRoutes = require("./routes/registro");
+const loginRoutes = require("./routes/login");
+const itinerarioRoutes = require('./routes/itinerario');
+const vacanteRoutes = require('./routes/vacante');
 
-// Ruta principal
+
+// ✅ USO DE RUTAS
+app.use('/api/itinerarios', itinerarioRoutes);
+app.use("/api/entrevista", entrevistaRoutes);
+app.use("/api/postulantes", postulanteRoutes);
+app.use("/api/excel", excelRoutes); // ← ✅ Activación de ruta nueva
+app.use('/api/configuracion', configuracionRoutes);
+app.use("/api/registro", registroRoutes);
+app.use('/api', loginRoutes);
+app.use('/api/vacantes', vacanteRoutes);
+
+// ✅ RUTA PRINCIPAL
 app.get("/", (req, res) => {
   res.send("🚀 Bienvenido a DevSelectAI - Backend en funcionamiento");
 });
 
-// Rutas de API
-app.use("/api/entrevista", entrevistaRoutes); // Aquí usas la ruta para procesar audio
-
-// Ruta no encontrada
+// ✅ RUTA NO ENCONTRADA
 app.use((req, res) => {
   res.status(404).json({ error: "Ruta no encontrada" });
 });

@@ -5,8 +5,8 @@ import Image from 'next/image';
 
 export default function NavbarSimple() {
   return (
-    <div className="fixed top-0 left-0 w-full p-4 bg-[#0A0D1C] flex items-center">
-      <Link href="/" className="flex items-center gap-2">
+ <div className="fixed top-0 left-0 w-full h-16 z-50 px-4 bg-[#0A0D1C] flex items-center">      
+ <Link href="/" className="flex items-center gap-2">
         <Image
           src="/logo.png" // Ruta del logo (debes tenerlo en /public/logo.png)
           alt="Logo DevSelectAI"

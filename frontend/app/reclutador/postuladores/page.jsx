@@ -1,9 +1,11 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation'; // ✅ Importar router
 import { FiEye, FiCheck, FiX } from 'react-icons/fi';
 import Swal from 'sweetalert2';
 
 export default function PostulacionesPage() {
+  const router = useRouter(); // ✅ Inicializar router
   const [filtroNombre, setFiltroNombre] = useState('');
   const [itinerario, setItinerario] = useState('1');
 
@@ -91,6 +93,9 @@ export default function PostulacionesPage() {
       }
     });
   };
+    const irAEvaluacion = () => {
+    router.push(`/reclutador/evaluaciones/`);
+  };
 
   return (
     <div className="min-h-screen bg-[#0b1120] text-white p-8">
@@ -146,14 +151,19 @@ export default function PostulacionesPage() {
                   {p.calificacion ? (
                     p.calificacion
                   ) : (
-                    <button className="bg-green-100 text-black px-2 py-1 rounded text-sm">
-                      Comprobar calificación
-                    </button>
+                                    <button
+                  className="bg-green-100 text-black px-2 py-1 rounded text-sm"
+                  onClick={() => irAEvaluacion(p.nombre)} // ✅ Click para redirigir
+                >
+                  Comprobar calificación
+                </button>
                   )}
                 </td>
                 <td className="p-2 flex justify-center gap-3">
-                  <FiEye className="text-yellow-400 cursor-pointer" />
-                  <FiCheck
+  <FiEye
+    className="text-yellow-400 cursor-pointer"
+    onClick={() => router.push('/reclutador/informes')} // ✅ Redirección a Informes
+  />                  <FiCheck
                     className="text-green-400 cursor-pointer"
                     onClick={mostrarModalAsignacion}
                   />
