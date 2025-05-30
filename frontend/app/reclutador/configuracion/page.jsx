@@ -3,7 +3,6 @@ import { useState } from 'react';
 import ConfiguracionCard from '../../components/ConfiguracionCard';
 
 const modelos = [
-  { titulo: 'Área', entidad: 'area', campos: ['descripcion'] },
   { titulo: 'Empresa', entidad: 'empresa', campos: ['Descripcion'] },
   { titulo: 'Habilidad', entidad: 'habilidad', campos: ['Descripcion'] },
   { titulo: 'Itinerario', entidad: 'itinerario', campos: ['descripcion'] },

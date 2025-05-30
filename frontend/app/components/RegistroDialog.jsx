@@ -9,11 +9,13 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
 
   const [cedula, setCedula] = useState("");
   const [nombres, setNombres] = useState("");
+  const [apellidos, setApellidos] = useState("");
   const [correo, setCorreo] = useState("");
   const [telefono, setTelefono] = useState("");
   const [rol, setRol] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [confirmarContrasena, setConfirmarContrasena] = useState("");
+  const [carrera, setCarrera] = useState("");
 
   const handleBuscar = async () => {
     if (!cedula) return;
@@ -26,9 +28,17 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
       }
 
       const data = await res.json();
-      setNombres(`${data.Nombre} ${data.Apellido}`);
+
+      if (!data.Carrera || !data.Carrera.toLowerCase().includes("software")) {
+        alert("Solo se permiten registros para carreras de Software.");
+        return;
+      }
+
+      setNombres(data.Nombre);
+      setApellidos(data.Apellido);
       setCorreo(data.Correo);
       setRol(data.Rol);
+      setCarrera(data.Carrera);
       setTelefono(""); // campo editable
     } catch (error) {
       console.error("Error buscando postulante:", error);
@@ -42,7 +52,7 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
 
   const handleIrALogin = () => {
     setOpen(false);
-    setOpenPerfil(true); // o redirigir con router.push("/login-estudiante") o "/login-docente"
+    setOpenPerfil(true);
   };
 
   const handleSubmit = async (e) => {
@@ -53,26 +63,45 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
       return;
     }
 
-    const body = {
-      cedula,
-      nombres,
-      correo,
-      telefono,
-      contrasena,
-    };
+    if (!carrera.toLowerCase().includes("software")) {
+      alert("No se puede registrar porque la carrera no es de Software.");
+      return;
+    }
+
+    let body = {};
+    let endpoint = "";
+
+    if (rol.toLowerCase() === "estudiante") {
+      endpoint = "http://localhost:5000/api/postulante";
+      body = {
+        Cedula: cedula,
+        Nombre: nombres,
+        Apellido: apellidos,
+        Correo: correo,
+        Telefono: telefono,
+        Contrasena: contrasena,
+        ayuda: false,
+        cant_alert: 0,
+        FechPostulacion: new Date(),
+        id_ciudad: null,
+        id_EstadoPostulacion: 1
+      };
+    } else if (rol.toLowerCase() === "docente") {
+      endpoint = "http://localhost:5000/api/reclutador";
+      body = {
+        Cedula: cedula,
+        Nombres: nombres,
+        Apellidos: apellidos,
+        Correo: correo,
+        Telefono: telefono,
+        Contrasena: contrasena
+      };
+    } else {
+      alert("Rol no reconocido.");
+      return;
+    }
 
     try {
-      let endpoint = "";
-
-      if (rol.toLowerCase() === "estudiante") {
-        endpoint = "http://localhost:5000/api/postulante";
-      } else if (rol.toLowerCase() === "docente") {
-        endpoint = "http://localhost:5000/api/reclutador";
-      } else {
-        alert("Rol no reconocido.");
-        return;
-      }
-
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -88,7 +117,6 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
       handleIrALogin();
     } catch (error) {
       console.error("Error en registro:", error);
-      alert("Error de conexión");
     }
   };
 
@@ -129,8 +157,16 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
 
           <input
             type="text"
-            placeholder="Nombres Completos"
+            placeholder="Nombres"
             value={nombres}
+            readOnly
+            className="p-2 rounded-md bg-gray-800 text-white border border-gray-600 opacity-70 cursor-not-allowed"
+          />
+
+          <input
+            type="text"
+            placeholder="Apellidos"
+            value={apellidos}
             readOnly
             className="p-2 rounded-md bg-gray-800 text-white border border-gray-600 opacity-70 cursor-not-allowed"
           />

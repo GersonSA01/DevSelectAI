@@ -7,29 +7,44 @@ export default function VacantesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const idItinerario = searchParams.get('id');
+  const descripcionItinerario = searchParams.get('descripcion');
 
   const [vacantes, setVacantes] = useState([]);
 
-  useEffect(() => {
-    const fetchVacantes = async () => {
-      if (!idItinerario) return;
-      try {
-        const res = await fetch(`http://localhost:5000/api/configuracion/vacantes/${idItinerario}`);
-        const data = await res.json();
+useEffect(() => {
+  if (!idItinerario) return; // Evita ejecutar si no hay ID
+
+  const fetchVacantes = async () => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/configuracion/vacantes/${idItinerario}`);
+      const data = await res.json();
+
+      if (Array.isArray(data)) {
         setVacantes(data);
-      } catch (err) {
-        console.error('Error al obtener vacantes:', err);
+      } else {
+        console.error('Respuesta inesperada:', data);
+        setVacantes([]);
       }
-    };
-    fetchVacantes();
-  }, [idItinerario]);
+    } catch (err) {
+      console.error('Error al obtener vacantes:', err);
+      setVacantes([]);
+    }
+  };
+
+  fetchVacantes();
+}, [idItinerario]);
+
 
   return (
     <div className="min-h-screen bg-[#0b1120] text-white p-6">
-      <h1 className="text-3xl font-bold text-center mb-2">Vacantes por Itinerario</h1>
+      <h1 className="text-3xl font-bold text-center mb-2">Vacantes de {descripcionItinerario}</h1>
 
       <button
-        onClick={() => router.push('/reclutador/vacantes/registrar')}
+        onClick={() =>
+          router.push(
+            `/reclutador/vacantes/registrar?id=${idItinerario}&descripcion=${encodeURIComponent(descripcionItinerario)}`
+          )
+        }
         className="bg-green-500 text-white px-4 py-2 rounded mb-4 hover:bg-green-600"
       >
         + Añadir vacante
@@ -46,39 +61,26 @@ export default function VacantesPage() {
             </tr>
           </thead>
           <tbody>
-            {vacantes.map((v, i) => (
-              <tr key={i}>
-                <td className="p-3 border border-gray-700">{v.Empresa?.descripcion || 'Sin empresa'}</td>
-                <td className="p-3 border border-gray-700">{v.Descripcion}</td>
-                <td className="p-3 border border-gray-700">{v.Cantidad}</td>
-                <td className="p-3 border border-gray-700 flex gap-2">
-                  <FiEdit className="text-yellow-400 cursor-pointer" />
-                  <FiTrash2 className="text-red-500 cursor-pointer" />
-                  <FiCheck className="text-green-400 cursor-pointer" />
+            {Array.isArray(vacantes) && vacantes.length > 0 ? (
+              vacantes.map((v, i) => (
+                <tr key={i}>
+                  <td className="p-3 border border-gray-700">{v.Empresa?.descripcion || 'Sin empresa'}</td>
+                  <td className="p-3 border border-gray-700">{v.Descripcion}</td>
+                  <td className="p-3 border border-gray-700">{v.Cantidad}</td>
+                  <td className="p-3 border border-gray-700 flex gap-2">
+                    <FiEdit className="text-yellow-400 cursor-pointer" />
+                    <FiTrash2 className="text-red-500 cursor-pointer" />
+                    <FiCheck className="text-green-400 cursor-pointer" />
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" className="text-center text-gray-400 py-4">
+                  No hay vacantes registradas para este itinerario.
                 </td>
               </tr>
-            ))}
-{Array.isArray(vacantes) && vacantes.length > 0 ? (
-  vacantes.map((v, i) => (
-    <tr key={i}>
-      <td className="p-3 border border-gray-700">{v.Empresa?.descripcion || 'Sin empresa'}</td>
-      <td className="p-3 border border-gray-700">{v.Descripcion}</td>
-      <td className="p-3 border border-gray-700">{v.Cantidad}</td>
-      <td className="p-3 border border-gray-700 flex gap-2">
-        <FiEdit className="text-yellow-400 cursor-pointer" />
-        <FiTrash2 className="text-red-500 cursor-pointer" />
-        <FiCheck className="text-green-400 cursor-pointer" />
-      </td>
-    </tr>
-  ))
-) : (
-  <tr>
-    <td colSpan="4" className="text-center text-gray-400 py-4">
-      No hay vacantes registradas
-    </td>
-  </tr>
-)}
-
+            )}
           </tbody>
         </table>
       </div>

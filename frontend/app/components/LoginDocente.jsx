@@ -6,10 +6,8 @@ import SeleccionarPerfilDialog from "../components/SeleccionarPerfilDialog";
 
 export default function LoginDocente() {
   const router = useRouter();
-
   const [openRegistro, setOpenRegistro] = useState(false);
   const [openPerfil, setOpenPerfil] = useState(false);
-
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
 
@@ -31,9 +29,19 @@ export default function LoginDocente() {
       const data = await res.json();
       console.log("Inicio de sesión exitoso:", data);
 
-      alert(`Bienvenido/a ${data.nombres}`);
-      
-      // ✅ Redirigir al dashboard o ruta de reclutador
+      // ✅ Guardar el reclutador en localStorage con nombres en minúscula
+      // separar el nombre completo si es necesario
+      const [nombres, ...resto] = (data.nombres || "").split(" ");
+      const apellidos = resto.join(" ") || "";
+
+      localStorage.setItem("reclutador", JSON.stringify({
+        nombres,
+        apellidos,
+        correo: data.correo
+      }));
+
+      alert(`Bienvenido/a ${nombres} ${apellidos}`);
+
       router.push("/reclutador");
     } catch (error) {
       console.error("Error al iniciar sesión:", error);

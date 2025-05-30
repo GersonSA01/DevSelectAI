@@ -26,24 +26,33 @@ app.use(fileUpload());
 
 // ✅ IMPORTACIÓN DE RUTAS
 const entrevistaRoutes = require("./routes/entrevista");
-const postulanteRoutes = require("./routes/postulante");
-const excelRoutes = require("./routes/excel"); // ← ✅ Nueva ruta para lectura directa de Excel
+const postulanteRoutes = require("./routes/postulante"); // corregido singular
+const reclutadorRoutes = require("./routes/reclutador"); // nuevo
+const excelRoutes = require("./routes/excel");
 const configuracionRoutes = require('./routes/configuracion');
 const registroRoutes = require("./routes/registro");
 const loginRoutes = require("./routes/login");
 const itinerarioRoutes = require('./routes/itinerario');
 const vacanteRoutes = require('./routes/vacante');
+const empresaRouter = require('./routes/empresa');
+const nivelRouter = require('./routes/nivel');
+const habilidadRouter = require('./routes/habilidad');
+
 
 
 // ✅ USO DE RUTAS
 app.use('/api/itinerarios', itinerarioRoutes);
 app.use("/api/entrevista", entrevistaRoutes);
-app.use("/api/postulantes", postulanteRoutes);
-app.use("/api/excel", excelRoutes); // ← ✅ Activación de ruta nueva
+app.use("/api/postulante", postulanteRoutes);   // ✅ endpoint corregido
+app.use("/api/reclutador", reclutadorRoutes);   // ✅ endpoint nuevo
+app.use("/api/excel", excelRoutes);
 app.use('/api/configuracion', configuracionRoutes);
 app.use("/api/registro", registroRoutes);
 app.use('/api', loginRoutes);
 app.use('/api/vacantes', vacanteRoutes);
+app.use('/api/empresas', empresaRouter);
+app.use('/api/niveles', nivelRouter);
+app.use('/api/habilidades', habilidadRouter);
 
 // ✅ RUTA PRINCIPAL
 app.get("/", (req, res) => {

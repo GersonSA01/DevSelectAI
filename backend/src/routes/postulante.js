@@ -1,8 +1,7 @@
-// src/routes/postulante.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const postulanteController = require('../controllers/postulanteController');
+const { crearPostulante } = require("../controllers/postulanteController");
 
-router.post('/', postulanteController.crearPostulante);
+router.post("/", crearPostulante);
 
 module.exports = router;
