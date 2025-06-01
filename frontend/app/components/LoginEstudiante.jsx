@@ -32,8 +32,11 @@ export default function LoginEstudiante() {
       const data = await res.json();
       console.log("Inicio de sesión exitoso:", data);
 
+      // ✅ Guarda el ID en localStorage
+      localStorage.setItem("id_postulante", data.id);
+
       alert(`Bienvenido/a ${data.nombres}`);
-      router.push("/postulador"); // ✅ Redirección
+      router.push("/postulador");
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
       alert("Ocurrió un error al intentar iniciar sesión");
@@ -92,10 +95,7 @@ export default function LoginEstudiante() {
         setOpen={setOpenRegistro}
         setOpenPerfil={setOpenPerfil}
       />
-      <SeleccionarPerfilDialog
-        open={openPerfil}
-        setOpen={setOpenPerfil}
-      />
+      <SeleccionarPerfilDialog open={openPerfil} setOpen={setOpenPerfil} />
     </div>
   );
 }

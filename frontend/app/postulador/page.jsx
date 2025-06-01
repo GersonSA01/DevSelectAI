@@ -1,24 +1,50 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert } from "../components/alerts/alerts";
 
 export default function Entrevistas() {
-  const [itinerarioSeleccionado, setItinerarioSeleccionado] = useState('');
+  const [itinerarios, setItinerarios] = useState([]);
   const router = useRouter();
 
+  useEffect(() => {
+    const fetchItinerarios = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/itinerarios');
+        const data = await res.json();
+        setItinerarios(data);
+      } catch (err) {
+        console.error('Error al cargar itinerarios:', err);
+        Alert({
+          title: 'Error',
+          text: 'No se pudieron cargar los itinerarios.',
+          icon: 'error'
+        });
+      }
+    };
+
+    fetchItinerarios();
+  }, []);
+
   const handleContinuar = async () => {
+    const inputOptions = {};
+    itinerarios.forEach(it => {
+      inputOptions[it.id_Itinerario] = it.descripcion;
+    });
+
     const result = await Alert({
       title: 'Solicitud de Prácticas Pre-Profesionales',
       text: 'Por favor elige tu itinerario para continuar',
       icon: 'info',
       input: 'select',
-      inputOptions: {
-        itinerario1: 'Itinerario 1: Análisis de entorno para agropecuaria, turismo e industria',
-        itinerario2: 'Itinerario 2: Diseño y desarrollo de aplicaciones',
-      },
+      inputOptions,
       inputPlaceholder: '-- Selecciona un itinerario --',
+      customClass: {
+        popup: 'bg-slate-900 text-white', // fondo oscuro del modal
+        input: 'text-black',               // input select con texto negro
+        confirmButton: 'bg-blue-600 text-white hover:bg-blue-700',
+      },
       preConfirm: (value) => {
         if (!value) {
           Swal.showValidationMessage('Por favor selecciona un itinerario.');
@@ -28,8 +54,8 @@ export default function Entrevistas() {
     });
 
     if (result.isConfirmed && result.value) {
-      setItinerarioSeleccionado(result.value);
-      router.push('/postulador/entrevista/vacantes');
+      localStorage.setItem('id_itinerario', result.value); // Guardar selección
+      router.push('/postulador/entrevista/habilidades');
     }
   };
 

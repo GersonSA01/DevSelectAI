@@ -1,30 +1,44 @@
-const { Postulante } = require("../models");
+const db = require('../models');
 
-exports.crearPostulante = async (req, res) => {
+const crearPostulante = async (req, res) => {
+  const datos = req.body;
+
   try {
-    const { Cedula, Nombre, Apellido, Correo, Telefono, Contrasena } = req.body;
+    const nuevoPostulante = await db.Postulante.create(datos);
+    res.status(201).json(nuevoPostulante);
+  } catch (error) {
+    console.error('Error al crear postulante:', error);
+    res.status(500).json({ error: 'Error al crear postulante' });
+  }
+};
 
-    if (!Cedula || !Nombre || !Apellido || !Correo || !Telefono || !Contrasena) {
-      return res.status(400).json({ error: "Faltan campos requeridos" });
+const guardarHabilidades = async (req, res) => {
+  const { idPostulante, habilidades } = req.body;
+
+  if (!idPostulante || !Array.isArray(habilidades) || habilidades.length > 3) {
+    return res.status(400).json({ error: 'Debes seleccionar de 1 a 3 habilidades' });
+  }
+
+  try {
+    // (Opcional) Elimina habilidades anteriores si existe alguna
+    await db.DetalleHabilidad.destroy({ where: { Id_Postulante: idPostulante } });
+
+    // Guarda habilidades usando ID directamente
+    for (const idHabilidad of habilidades) {
+      await db.DetalleHabilidad.create({
+        Id_Postulante: idPostulante,
+        Id_Habilidad: idHabilidad
+      });
     }
 
-    const nuevo = await Postulante.create({
-      Cedula,
-      Nombre,
-      Apellido,
-      Correo,
-      Telefono,
-      Contrasena,
-      ayuda: false,               // valores por defecto
-      cant_alert: 0,
-      FechPostulacion: new Date(),
-      id_ciudad: null,
-      id_EstadoPostulacion: 1     // o el valor por defecto que tengas
-    });
-
-    res.status(201).json(nuevo);
+    res.json({ mensaje: 'Habilidades guardadas correctamente' });
   } catch (error) {
-    console.error("❌ Error al crear postulante:", error);
-    res.status(500).json({ error: "Error interno del servidor" });
+    console.error('Error al guardar habilidades:', error);
+    res.status(500).json({ error: 'Error interno al guardar habilidades' });
   }
+};
+
+module.exports = {
+  crearPostulante,
+  guardarHabilidades
 };

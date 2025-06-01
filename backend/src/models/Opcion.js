@@ -1,24 +1,21 @@
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('Pregunta', {
-    Id_Pregunta: {
+  return sequelize.define('Opcion', {
+    Id_Opcion: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
     },
-    FechCreacion: {
-      type: DataTypes.DATE
+    Opcion: {
+      type: DataTypes.STRING(300)
     },
-    Pregunta: {
-      type: DataTypes.STRING(500)
-    },
-    EsIA: {
+    Correcta: {
       type: DataTypes.BOOLEAN
     },
-    Id_vacante: {
+    Id_Pregunta: {
       type: DataTypes.INTEGER
     }
   }, {
-    tableName: 'DAI_M_Pregunta',
+    tableName: 'DAI_P_Opcion',
     timestamps: false
   });
 };

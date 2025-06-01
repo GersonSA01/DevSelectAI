@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
   return sequelize.define('DetalleHabilidad', {
-    Id_DetalleHabilidad: { type: DataTypes.INTEGER, primaryKey: true },
+    Id_DetalleHabilidad: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     Id_Postulante: DataTypes.INTEGER,
     Id_Habilidad: DataTypes.INTEGER
   }, {

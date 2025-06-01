@@ -26,23 +26,25 @@ export default function LoginDocente() {
         return;
       }
 
-      const data = await res.json();
-      console.log("Inicio de sesión exitoso:", data);
+const data = await res.json();
+console.log("Inicio de sesión exitoso:", data);
 
-      // ✅ Guardar el reclutador en localStorage con nombres en minúscula
-      // separar el nombre completo si es necesario
-      const [nombres, ...resto] = (data.nombres || "").split(" ");
-      const apellidos = resto.join(" ") || "";
+// Separar nombre completo si es necesario
+const [nombres, ...resto] = (data.nombres || "").split(" ");
+const apellidos = resto.join(" ") || "";
 
-      localStorage.setItem("reclutador", JSON.stringify({
-        nombres,
-        apellidos,
-        correo: data.correo
-      }));
+// ✅ Guardar ID, nombres y correo en localStorage
+localStorage.setItem("reclutador", JSON.stringify({
+  Id_Reclutador: data.id || data.Id_Reclutador,
+  nombres,
+  apellidos,
+  correo: data.correo
+}));
 
-      alert(`Bienvenido/a ${nombres} ${apellidos}`);
+alert(`Bienvenido/a ${nombres} ${apellidos}`);
+router.push("/reclutador");
 
-      router.push("/reclutador");
+
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
       alert("Ocurrió un error al intentar iniciar sesión");

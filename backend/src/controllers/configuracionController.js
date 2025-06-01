@@ -1,8 +1,7 @@
-const { Area, Empresa, Habilidad, Itinerario } = require('../models');
+const {  Empresa, Habilidad, Itinerario } = require('../models');
 
 // Mapeo de entidades a modelos
 const modelos = {
-  area: Area,
   empresa: Empresa,
   habilidad: Habilidad,
   itinerario: Itinerario,

@@ -1,27 +1,49 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Alert } from "../../../components/alerts/alerts";
 import { useRouter } from 'next/navigation';
 
 export default function SeleccionHabilidades() {
   const router = useRouter();
+  const [habilidades, setHabilidades] = useState([]);
   const [habilidadesSeleccionadas, setHabilidadesSeleccionadas] = useState([]);
 
-  const habilidades = [
-    "React",
-    "SQL",
-    "Express",
-    "MongoDB",
-    "Node.js",
-    "Python",
-  ];
+  useEffect(() => {
+    const obtenerHabilidades = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/configuracion/habilidad');
+        const data = await res.json();
+
+        if (Array.isArray(data)) {
+          setHabilidades(data);
+        } else {
+          throw new Error('La respuesta no es un array');
+        }
+      } catch (error) {
+        console.error('Error al cargar habilidades:', error);
+        await Alert({
+          title: 'Error',
+          text: 'No se pudieron cargar las habilidades.',
+          icon: 'error'
+        });
+      }
+    };
+
+    obtenerHabilidades();
+  }, []);
 
   const toggleHabilidad = (habilidad) => {
     if (habilidadesSeleccionadas.includes(habilidad)) {
       setHabilidadesSeleccionadas(habilidadesSeleccionadas.filter((h) => h !== habilidad));
-    } else {
+    } else if (habilidadesSeleccionadas.length < 3) {
       setHabilidadesSeleccionadas([...habilidadesSeleccionadas, habilidad]);
+    } else {
+      Alert({
+        title: 'Máximo alcanzado',
+        text: 'Solo puedes seleccionar hasta 3 habilidades.',
+        icon: 'warning'
+      });
     }
   };
 
@@ -31,7 +53,6 @@ export default function SeleccionHabilidades() {
         title: 'Error',
         text: 'Por favor selecciona al menos una habilidad.',
         icon: 'error',
-        showCancelButton: false,
         confirmButtonText: 'Aceptar'
       });
       return;
@@ -39,37 +60,72 @@ export default function SeleccionHabilidades() {
 
     const result = await Alert({
       title: '¿Estás seguro que quieres continuar?',
-      text: 'Esta acción seleccionará tus habilidades y procederá al siguiente paso.',
+      text: `Has seleccionado: ${habilidadesSeleccionadas.map(h => h.Descripcion).join(', ')}`,
       icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, continuar'
     });
 
-    if (result.isConfirmed) {
-      console.log('Habilidades seleccionadas:', habilidadesSeleccionadas);
+    if (!result.isConfirmed) return;
 
-      const confirmacion = await Alert({
-        title: 'Habilidades seleccionadas correctamente',
-        text: 'Por favor revisa tu correo institucional.',
-        icon: 'success',
-        showCancelButton: false,
-        confirmButtonText: 'Continuar',
+    const idPostulante = parseInt(localStorage.getItem('id_postulante'));
+
+    if (!idPostulante || isNaN(idPostulante)) {
+      await Alert({
+        title: 'Error',
+        text: 'No se encontró el ID del postulante. Asegúrate de haber iniciado sesión.',
+        icon: 'error'
+      });
+      return;
+    }
+
+    try {
+      const res = await fetch('http://localhost:5000/api/postulante/habilidades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idPostulante,
+          habilidades: habilidadesSeleccionadas.map(h => h.Id_Habilidad)
+        })
       });
 
-      if (confirmacion.isConfirmed) {
+      const data = await res.json();
+
+      if (res.ok) {
+        await Alert({
+          title: 'Habilidades guardadas',
+          text: data.mensaje,
+          icon: 'success',
+          confirmButtonText: 'Continuar'
+        });
         router.push('/');
+      } else {
+        await Alert({
+          title: 'Error',
+          text: data.error || 'Hubo un problema al guardar las habilidades.',
+          icon: 'error'
+        });
       }
+    } catch (error) {
+      console.error('Error al enviar habilidades:', error);
+      await Alert({
+        title: 'Error',
+        text: 'No se pudo conectar con el servidor.',
+        icon: 'error'
+      });
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-pageBackground p-8">
       <h2 className="text-3xl font-bold text-white mb-8 text-center">
-        Seleccione una o varias habilidades a evaluar
+        Seleccione hasta 3 habilidades a evaluar
       </h2>
 
       <div className="flex flex-col gap-4 w-full max-w-md">
         {habilidades.map((habilidad) => (
           <button
-            key={habilidad}
+            key={habilidad.Id_Habilidad}
             onClick={() => toggleHabilidad(habilidad)}
             className={`py-2 rounded font-semibold transition ${
               habilidadesSeleccionadas.includes(habilidad)
@@ -77,7 +133,7 @@ export default function SeleccionHabilidades() {
                 : 'bg-white text-black'
             }`}
           >
-            {habilidad}
+            {habilidad.Descripcion}
           </button>
         ))}
       </div>

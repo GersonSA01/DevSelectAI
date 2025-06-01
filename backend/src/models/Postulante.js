@@ -6,12 +6,13 @@ module.exports = (sequelize, DataTypes) => {
     Apellido: DataTypes.STRING,
     Correo: DataTypes.STRING,
     Telefono: DataTypes.STRING(13),
-    Contrasena: DataTypes.STRING, // 🔐 Campo nuevo para contraseña
+    Contrasena: DataTypes.STRING, // 🔐 Campo para contraseña
     ayuda: DataTypes.BOOLEAN,
     cant_alert: DataTypes.INTEGER,
     FechPostulacion: DataTypes.DATE,
     id_ciudad: DataTypes.INTEGER,
-    id_EstadoPostulacion: DataTypes.INTEGER
+    id_EstadoPostulacion: DataTypes.INTEGER,
+    Itinerario: DataTypes.STRING(300)
   }, {
     tableName: 'DAI_M_Postulante',
     timestamps: false

@@ -1,24 +1,24 @@
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('Pregunta', {
-    Id_Pregunta: {
+  return sequelize.define('PreguntaTecnica', {
+    Id_PreguntaTecnica: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
     },
-    FechCreacion: {
-      type: DataTypes.DATE
-    },
     Pregunta: {
       type: DataTypes.STRING(500)
     },
-    EsIA: {
+    Respuesta: {
+      type: DataTypes.TEXT // Para código, se recomienda usar TEXT
+    },
+    UsoIA: {
       type: DataTypes.BOOLEAN
     },
-    Id_vacante: {
+    Id_Pregunta: {
       type: DataTypes.INTEGER
     }
   }, {
-    tableName: 'DAI_M_Pregunta',
+    tableName: 'DAI_P_PreguntaTecnica',
     timestamps: false
   });
 };

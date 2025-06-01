@@ -37,6 +37,7 @@ const vacanteRoutes = require('./routes/vacante');
 const empresaRouter = require('./routes/empresa');
 const nivelRouter = require('./routes/nivel');
 const habilidadRouter = require('./routes/habilidad');
+const preguntasRoutes = require('./routes/preguntas');
 
 
 
@@ -53,6 +54,8 @@ app.use('/api/vacantes', vacanteRoutes);
 app.use('/api/empresas', empresaRouter);
 app.use('/api/niveles', nivelRouter);
 app.use('/api/habilidades', habilidadRouter);
+app.use('/api/preguntas', preguntasRoutes);
+app.use('/api/opciones', require('./routes/opciones'));
 
 // ✅ RUTA PRINCIPAL
 app.get("/", (req, res) => {

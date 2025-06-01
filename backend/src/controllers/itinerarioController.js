@@ -1,11 +1,13 @@
-const { Itinerario } = require('../models');
+const db = require('../models');
 
-exports.getAll = async (req, res) => {
+const getItinerarios = async (req, res) => {
   try {
-    const itinerarios = await Itinerario.findAll();
+    const itinerarios = await db.Itinerario.findAll();
     res.json(itinerarios);
   } catch (error) {
     console.error('Error al obtener itinerarios:', error);
     res.status(500).json({ error: 'Error al obtener itinerarios' });
   }
 };
+
+module.exports = { getItinerarios };

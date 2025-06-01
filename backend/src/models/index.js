@@ -10,7 +10,6 @@ db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
 // Registrar modelos
-db.Area = require('./Area')(sequelize, Sequelize);
 db.Ciudad = require('./Ciudad')(sequelize, Sequelize);
 db.DetalleHabilidad = require('./DetalleHabilidad')(sequelize, Sequelize);
 db.Empresa = require('./Empresa')(sequelize, Sequelize);
@@ -26,11 +25,10 @@ db.Pregunta = require('./Pregunta')(sequelize, Sequelize);
 db.PreguntaOral = require('./PreguntaOral')(sequelize, Sequelize);
 db.Provincia = require('./Provincia')(sequelize, Sequelize);
 db.Reclutador = require('./Reclutador')(sequelize, Sequelize);
-db.TipoPregunta = require('./TipoPregunta')(sequelize, Sequelize);
 db.Vacante = require('./Vacante')(sequelize, Sequelize);
 db.VacanteHabilidad = require('./VacanteHabilidad')(sequelize, Sequelize);
-
-// Relaciones explícitas
+db.Opcion = require('./Opcion')(sequelize, Sequelize);
+db.PreguntaTecnica = require('./PreguntaTecnica')(sequelize, Sequelize);
 
 // Postulante - Ciudad - EstadoPostulacion
 db.Postulante.belongsTo(db.Ciudad, {
@@ -126,23 +124,14 @@ db.Habilidad.hasMany(db.DetalleHabilidad, {
   as: 'detalles'
 });
 
-// Pregunta - Vacante - TipoPregunta
-db.Pregunta.belongsTo(db.Vacante, {
-  foreignKey: 'Id_vacante',
-  as: 'vacante'
-});
+// Vacante - Pregunta (una vacante puede tener muchas preguntas)
 db.Vacante.hasMany(db.Pregunta, {
   foreignKey: 'Id_vacante',
   as: 'preguntas'
 });
-
-db.Pregunta.belongsTo(db.TipoPregunta, {
-  foreignKey: 'Id_TipoPregunta',
-  as: 'tipoPregunta'
-});
-db.TipoPregunta.hasMany(db.Pregunta, {
-  foreignKey: 'Id_TipoPregunta',
-  as: 'preguntas'
+db.Pregunta.belongsTo(db.Vacante, {
+  foreignKey: 'Id_vacante',
+  as: 'vacante'
 });
 
 // Evaluacion - Pregunta - Postulante
@@ -203,15 +192,26 @@ db.Pais.hasMany(db.Provincia, {
   as: 'provincias'
 });
 
-// Reclutador - Area
-db.Reclutador.belongsTo(db.Area, {
-  foreignKey: 'Id_Area',
-  as: 'area'
+// Relación uno a muchos entre Pregunta y Opcion
+db.Pregunta.hasMany(db.Opcion, {
+  foreignKey: 'Id_Pregunta',
+  as: 'opciones'
 });
-db.Area.hasMany(db.Reclutador, {
-  foreignKey: 'Id_Area',
-  as: 'reclutadores'
+db.Opcion.belongsTo(db.Pregunta, {
+  foreignKey: 'Id_Pregunta',
+  as: 'pregunta'
 });
+
+// Relación uno a uno entre Pregunta y PreguntaTecnica
+db.Pregunta.hasOne(db.PreguntaTecnica, {
+  foreignKey: 'Id_Pregunta',
+  as: 'preguntaTecnica'
+});
+db.PreguntaTecnica.belongsTo(db.Pregunta, {
+  foreignKey: 'Id_Pregunta',
+  as: 'pregunta'
+});
+
 
 // Asociaciones adicionales si existen
 Object.keys(db).forEach(modelName => {
@@ -219,5 +219,8 @@ Object.keys(db).forEach(modelName => {
     db[modelName].associate(db);
   }
 });
+
+
+
 
 module.exports = db;

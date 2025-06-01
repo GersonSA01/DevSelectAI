@@ -8,7 +8,6 @@ module.exports = (sequelize, DataTypes) => {
     Correo: DataTypes.STRING,
     Telefono: DataTypes.STRING(13),
     Contrasena: DataTypes.STRING,
-    Id_Area: DataTypes.INTEGER
   }, {
     tableName: "DAI_M_Reclutador",
     timestamps: false

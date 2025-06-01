@@ -20,23 +20,25 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   const router = useRouter();
   const { itinerarios } = useItinerarios();
 
-  useEffect(() => {
-    const reclutadorGuardado = localStorage.getItem('reclutador');
-    if (reclutadorGuardado) {
-      try {
-        const datos = JSON.parse(reclutadorGuardado);
+useEffect(() => {
+  const reclutadorGuardado = localStorage.getItem('reclutador');
+  if (reclutadorGuardado) {
+    try {
+      const datos = JSON.parse(reclutadorGuardado);
 
-        const nombres = datos.nombres || datos.Nombres || '';
-        const apellidos = datos.apellidos || datos.Apellidos || '';
+      const nombres = datos.nombres || datos.Nombres || '';
+      const apellidos = datos.apellidos || datos.Apellidos || '';
+      const id = datos.id || datos.Id_Reclutador || datos.Id_reclutador;
 
-        setDocente({ nombres, apellidos });
+      setDocente({ nombres, apellidos, id });
 
-        console.log("🧾 Docente cargado:", { nombres, apellidos });
-      } catch (error) {
-        console.error("⚠️ Error al leer reclutador desde localStorage:", error);
-      }
+      console.log("🧾 Docente cargado:", { nombres, apellidos, id });
+    } catch (error) {
+      console.error("⚠️ Error al leer reclutador desde localStorage:", error);
     }
-  }, []);
+  }
+}, []);
+
 
   const toggleSection = (section) => {
     setOpenSection(openSection === section ? null : section);

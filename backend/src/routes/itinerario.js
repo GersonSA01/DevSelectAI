@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const itinerarioController = require('../controllers/itinerarioController');
+const { getItinerarios } = require('../controllers/itinerarioController');
 
-// Ruta para obtener todos los itinerarios
-router.get('/', itinerarioController.getAll);
+router.get('/', getItinerarios);
 
 module.exports = router;

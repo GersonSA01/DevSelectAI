@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { User2, CheckCircle2, PlusCircle, Settings, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useItinerarios } from '../../context/ItinerarioContext'; // ajusta la ruta según ubicación real
+import { useItinerarios } from '../../context/ItinerarioContext';
 
 export default function ReclutadorDashboard() {
   const [nombreDocente, setNombreDocente] = useState('Docente');
@@ -11,7 +11,17 @@ export default function ReclutadorDashboard() {
   const { itinerarios, cargarItinerarios } = useItinerarios();
 
   useEffect(() => {
-    setNombreDocente('Ing. Erick García');
+    const reclutadorGuardado = localStorage.getItem('reclutador');
+    if (reclutadorGuardado) {
+      try {
+        const datos = JSON.parse(reclutadorGuardado);
+        const nombres = datos.nombres || datos.Nombres || '';
+        const apellidos = datos.apellidos || datos.Apellidos || '';
+        setNombreDocente(`${nombres} ${apellidos}`);
+      } catch (error) {
+        console.error('⚠️ Error al obtener nombre del reclutador:', error);
+      }
+    }
   }, []);
 
   const toggleItinerarios = () => {
@@ -27,7 +37,6 @@ export default function ReclutadorDashboard() {
       <p className="text-gray-400 mb-8">Panel de administración de prácticas preprofesionales</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-
         {/* Postulantes */}
         <Link href="/reclutador/postuladores" className="bg-slate-800 p-6 rounded shadow hover:bg-slate-700 transition">
           <div className="flex items-center gap-4">
@@ -39,7 +48,7 @@ export default function ReclutadorDashboard() {
           </div>
         </Link>
 
-        {/* Vacantes con itinerarios desplegables */}
+        {/* Vacantes */}
         <div
           onClick={toggleItinerarios}
           className="bg-slate-800 p-6 rounded shadow hover:bg-slate-700 transition cursor-pointer"
@@ -67,13 +76,15 @@ export default function ReclutadorDashboard() {
                 {Array.isArray(itinerarios) && itinerarios.length === 0 ? (
                   <li className="px-3 py-2 text-center text-gray-400 italic">No hay itinerarios disponibles</li>
                 ) : (
-                  itinerarios.map((item) => (
-                    <li key={item.Id_Itinerario}>
-                      <Link
-                        href={`/reclutador/vacantes?id=${item.Id_Itinerario}&descripcion=${encodeURIComponent(item.descripcion)}`}
+itinerarios.map((itinerario) => (
+                    <li key={itinerario.id_Itinerario}>
+                       <Link
+    
+    href={`/reclutador/vacantes?id=${itinerario.id_Itinerario}&descripcion=${itinerario.descripcion}`}
                         className="block px-3 py-2 bg-slate-700 rounded hover:bg-slate-600 transition"
                       >
-                        {item.descripcion}
+                        {itinerario.descripcion}
+
                       </Link>
                     </li>
                   ))
