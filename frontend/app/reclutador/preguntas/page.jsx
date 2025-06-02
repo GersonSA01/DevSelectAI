@@ -1,28 +1,23 @@
 'use client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { Alert } from '../../components/alerts/Alerts';
+import Swal from 'sweetalert2';
 
 export default function PreguntasVacante() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const idVacante = searchParams.get('idVacante') || 1;
-  
+
   const [preguntas, setPreguntas] = useState([]);
   const [vacante, setVacante] = useState(null);
   const [habilidades, setHabilidades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [nivelDificultad, setNivelDificultad] = useState('Medio');
 
-  // Función para obtener información de la vacante
   const fetchVacante = async () => {
     try {
       const response = await fetch(`http://localhost:5000/api/vacantes/${idVacante}`);
-      
-      if (!response.ok) {
-        throw new Error('Error al cargar la información de la vacante');
-      }
-      
       const data = await response.json();
       setVacante(data);
     } catch (err) {
@@ -30,15 +25,9 @@ export default function PreguntasVacante() {
     }
   };
 
-  // Función para obtener las habilidades de la vacante
   const fetchHabilidades = async () => {
     try {
       const response = await fetch(`http://localhost:5000/api/vacantes/${idVacante}/habilidades`);
-      
-      if (!response.ok) {
-        throw new Error('Error al cargar las habilidades');
-      }
-      
       const data = await response.json();
       setHabilidades(data);
     } catch (err) {
@@ -46,16 +35,10 @@ export default function PreguntasVacante() {
     }
   };
 
-  // Función para obtener preguntas de la API
   const fetchPreguntas = async () => {
     try {
       setLoading(true);
       const response = await fetch(`http://localhost:5000/api/preguntas/vacante/${idVacante}`);
-      
-      if (!response.ok) {
-        throw new Error('Error al cargar las preguntas');
-      }
-      
       const data = await response.json();
       setPreguntas(data);
     } catch (err) {
@@ -66,48 +49,20 @@ export default function PreguntasVacante() {
     }
   };
 
-  // Función para eliminar pregunta
   const handleEliminarPregunta = async (idPregunta) => {
-    if (!confirm('¿Estás seguro de que deseas eliminar esta pregunta?')) {
-      return;
-    }
-
+    if (!confirm('¿Estás seguro de que deseas eliminar esta pregunta?')) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/preguntas/${idPregunta}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al eliminar la pregunta');
-      }
-
-      // Recargar las preguntas después de eliminar
+      await fetch(`http://localhost:5000/api/preguntas/${idPregunta}`, { method: 'DELETE' });
       await fetchPreguntas();
     } catch (err) {
       alert('Error al eliminar la pregunta: ' + err.message);
     }
   };
 
-  // Función para obtener el tipo de pregunta
-  const getTipoPregunta = (idTipo) => {
-    const tipos = {
-      1: 'Texto',
-      2: 'Código',
-      3: 'Opción múltiple'
-    };
-    return tipos[idTipo] || 'Texto';
-  };
-
-  // Cargar todos los datos al montar el componente
   useEffect(() => {
     const loadData = async () => {
-      await Promise.all([
-        fetchVacante(),
-        fetchHabilidades(),
-        fetchPreguntas()
-      ]);
+      await Promise.all([fetchVacante(), fetchHabilidades(), fetchPreguntas()]);
     };
-    
     loadData();
   }, [idVacante]);
 
@@ -132,7 +87,7 @@ export default function PreguntasVacante() {
       <div className="max-w-4xl mx-auto p-6">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           Error: {error}
-          <button 
+          <button
             onClick={() => {
               fetchVacante();
               fetchHabilidades();
@@ -148,37 +103,20 @@ export default function PreguntasVacante() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        {/* Información de la vacante */}
+    <div className="min-h-screen bg-[#0b1120] text-white px-4 py-8">
+      <div className="rounded-lg shadow-lg p-12">
+        {/* Encabezado */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            Preguntas del Vacante {idVacante}
-          </h1>
-          
+          <h1 className="text-3xl font-bold mb-2">Preguntas del Vacante</h1>
+
           {vacante && (
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold text-gray-700 mb-2">
-                {vacante.Descripcion}
-              </h2>
-              
-              {vacante.Contexto && (
-                <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                  <h3 className="font-medium text-gray-700 mb-2">Contexto:</h3>
-                  <p className="text-gray-600 text-sm">{vacante.Contexto}</p>
-                </div>
-              )}
-              
-              <div className="flex items-center space-x-4 text-sm text-gray-600">
-                <span>Cantidad: {vacante.Cantidad}</span>
-                {vacante.CantidadUsoIA && (
-                  <span>Uso IA: {vacante.CantidadUsoIA}</span>
-                )}
-              </div>
-            </div>
+            <>
+              <h2 className="text-lg font-semibold text-gray-700 mb-1">{vacante.Descripcion}</h2>
+              <div className="text-sm mb-3">{preguntas.length} preguntas registradas</div>
+
+            </>
           )}
 
-          {/* Habilidades requeridas */}
           {habilidades.length > 0 && (
             <div className="mb-4">
               <h3 className="font-medium text-gray-700 mb-2">Habilidades requeridas:</h3>
@@ -195,78 +133,156 @@ export default function PreguntasVacante() {
             </div>
           )}
         </div>
-        
-        <div className="flex justify-between items-center mb-6 p-4 bg-gray-50 rounded-lg">
-          <div className="flex items-center space-x-4">
-            <span className="text-sm font-medium text-gray-700">
-              {preguntas.length} preguntas
-            </span>
-            <span className="text-sm text-gray-500">
-              ({preguntas.length * 10} puntos)
-            </span>
-            <span className="text-sm text-orange-600">
-              IA {Math.floor(preguntas.length / 2)}/{Math.ceil(preguntas.length / 2)}
-            </span>
-          </div>
-          
-          <div className="flex space-x-2">
-            <button
-              onClick={() => router.push(`/reclutador/preguntas/registrar?idVacante=${idVacante}`)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
-            >
-              + Añadir pregunta
-            </button>
-          </div>
+
+        {/* Botones superiores */}
+        <div className="flex justify-end items-center mb-6 gap-4">
+<button
+  onClick={async () => {
+    try {
+      Swal.fire({
+  title: 'Generando preguntas con IA…',
+  didOpen: () => {
+    Swal.showLoading();
+  },
+  allowOutsideClick: false,
+  allowEscapeKey: false,
+  allowEnterKey: false,
+  showConfirmButton: false,
+  backdrop: true,
+  customClass: {
+    popup: 'bg-pageBackground text-white rounded-xl p-6',
+    title: 'text-2xl font-bold mb-2',
+  },});
+
+
+
+      const res = await fetch(`http://localhost:5000/api/generar-preguntas/${idVacante}`, {
+        method: 'POST'
+      });
+
+      const data = await res.json();
+      Swal.close(); // Cierra el loader
+
+      await Alert({
+        title: 'Éxito',
+        text: data.mensaje,
+        icon: 'success',
+        showCancelButton: false
+      });
+
+      await fetchPreguntas();
+    } catch (err) {
+      console.error(err);
+      Swal.close(); // Cierra el loader si hubo error
+      await Alert({
+        title: 'Error',
+        text: 'No se pudieron generar preguntas con IA.',
+        icon: 'error',
+        showCancelButton: false
+      });
+    }
+  }}
+  className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-4 py-2 text-sm rounded shadow hover:brightness-110 transition-all"
+>
+  ✨ Generar preguntas con IA
+</button>
+
+
+          <button
+            onClick={() => router.push(`/reclutador/preguntas/registrar?idVacante=${idVacante}`)}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm rounded"
+          >
+            + Añadir pregunta
+          </button>
+
+          <button
+  onClick={() => router.push(`/reclutador/preguntas/registrar/tecnica?idVacante=${idVacante}`)}
+  className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 text-sm rounded"
+>
+  + Añadir pregunta técnica
+</button>
+
         </div>
 
-        <div className="space-y-4 mb-6">
-          {preguntas.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <p>No hay preguntas registradas para esta vacante.</p>
-              <button
-                onClick={() => router.push(`/reclutador/preguntas/registrar?idVacante=${idVacante}`)}
-                className="mt-2 text-green-600 hover:text-green-700 underline"
+<div className="space-y-4 mb-6">
+  {preguntas.length === 0 ? (
+    <div className="text-center py-8 text-gray-400">
+      <p>No hay preguntas registradas para esta vacante.</p>
+      <button
+        onClick={() => router.push(`/reclutador/preguntas/registrar?idVacante=${idVacante}`)}
+        className="mt-2 text-green-400 hover:text-green-500 underline"
+      >
+        Crear la primera pregunta
+      </button>
+    </div>
+  ) : (
+    preguntas.map((pregunta, index) => (
+<div key={pregunta.Id_Pregunta} className="border border-gray-700 bg-[#111827] rounded-lg px-4 py-4 text-white">
+  <div className="flex justify-between items-start">
+    <div>
+      <h3 className="font-semibold mb-1">
+        {index + 1}. {pregunta.Pregunta}
+{pregunta.preguntaTecnica && (
+  <div className="mt-4">
+    <p className="text-sm text-gray-300 font-semibold mb-1">Respuesta esperada (código):</p>
+    <pre className="bg-gray-800 p-3 rounded text-sm overflow-x-auto whitespace-pre-wrap font-mono text-green-300">
+      {pregunta.preguntaTecnica.Respuesta}
+    </pre>
+  </div>
+)}
+
+
+      </h3>
+
+      {pregunta.opciones && pregunta.opciones.length > 0 && (
+        <div className="mt-3">
+          <p className="text-sm text-gray-300 font-semibold mb-1">Opciones:</p>
+          <ul className="space-y-1">
+            {pregunta.opciones.map((op, i) => (
+              <li
+                key={op.Id_Opcion}
+                className={`px-3 py-1 rounded text-sm ${
+                  op.Correcta
+                    ? 'bg-green-700 text-white font-semibold'
+                    : 'bg-gray-800 text-gray-300'
+                }`}
               >
-                Crear la primera pregunta
-              </button>
-            </div>
-          ) : (
-            preguntas.map((pregunta, index) => (
-              <div key={pregunta.Id_Pregunta} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-medium text-gray-800">
-                    {index + 1}. {pregunta.Pregunta}
-                  </h3>
-                </div>
-                
-                <div className="text-sm text-gray-600 mb-3">
-                  Tipo: {getTipoPregunta(pregunta.Id_TipoPregunta)}
-                </div>
-                
-                {pregunta.RptaPregunta && (
-                  <div className="text-sm text-gray-700 mb-3 p-2 bg-gray-50 rounded">
-                    <strong>Respuesta esperada:</strong> {pregunta.RptaPregunta}
-                  </div>
-                )}
-                
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => router.push(`/preguntas/editar/${pregunta.Id_Pregunta}?idVacante=${idVacante}`)}
-                    className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
-                  >
-                    ✏️ Editar
-                  </button>
-                  <button
-                    onClick={() => handleEliminarPregunta(pregunta.Id_Pregunta)}
-                    className="text-red-600 hover:text-red-800 text-sm flex items-center"
-                  >
-                    🗑 Eliminar
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
+                {String.fromCharCode(65 + i)}. {op.Opcion}
+              </li>
+            ))}
+          </ul>
         </div>
+      )}
+
+
+    </div>
+
+    <div className="flex flex-col items-end gap-1">
+      <button
+        onClick={() =>
+          router.push(
+            pregunta.preguntaTecnica
+              ? `preguntas/registrar/tecnica?idVacante=${idVacante}&idPregunta=${pregunta.Id_Pregunta}`
+              : `preguntas/registrar?idVacante=${idVacante}&idPregunta=${pregunta.Id_Pregunta}`
+          )
+        }
+        className="text-blue-400 hover:text-blue-300 text-sm flex items-center"
+      >
+        ✏️ Editar
+      </button>
+      <button
+        onClick={() => handleEliminarPregunta(pregunta.Id_Pregunta)}
+        className="text-red-400 hover:text-red-300 text-sm flex items-center"
+      >
+        🗑 Eliminar
+      </button>
+    </div>
+  </div>
+</div>
+
+    ))
+  )}
+</div>
 
       </div>
     </div>

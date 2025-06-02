@@ -5,9 +5,6 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       autoIncrement: true
     },
-    Pregunta: {
-      type: DataTypes.STRING(500)
-    },
     Respuesta: {
       type: DataTypes.TEXT // Para código, se recomienda usar TEXT
     },

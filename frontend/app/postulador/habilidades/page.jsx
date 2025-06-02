@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Alert } from "../../../components/alerts/alerts";
+import { Alert } from "../../components/alerts/alerts";
 import { useRouter } from 'next/navigation';
 
 export default function SeleccionHabilidades() {
@@ -93,12 +93,16 @@ export default function SeleccionHabilidades() {
 
       if (res.ok) {
         await Alert({
-          title: 'Habilidades guardadas',
-          text: data.mensaje,
+          title: '¡Correo enviado!',
+          text: 'Te hemos enviado un correo con el enlace para iniciar tu entrevista.',
           icon: 'success',
-          confirmButtonText: 'Continuar'
+          confirmButtonText: 'Aceptar',
+          allowOutsideClick: false,
+          allowEscapeKey: false
         });
-        router.push('/');
+
+        // Puedes redirigir si lo deseas
+        // router.push('/instrucciones');
       } else {
         await Alert({
           title: 'Error',

@@ -1,11 +1,14 @@
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useStream } from '../../../../context/StreamContext';
 import { Alert } from '../../../components/alerts/Alerts';
 
 export default function InicioEntrevista() {
   const router = useRouter();
+  const searchParams = useSearchParams(); // 👈 Para acceder al token
+  const token = searchParams.get('token'); // 👈 Extrae el token de la URL
+
   const { setScreenStream } = useStream();
 
   const handleStart = async () => {
@@ -18,7 +21,6 @@ export default function InicioEntrevista() {
       const track = screen.getVideoTracks()[0];
       const settings = track.getSettings();
       const constraints = track.getConstraints();
-
       const displaySurface = settings.displaySurface || constraints.displaySurface;
 
       if (displaySurface && displaySurface !== 'monitor') {
@@ -34,7 +36,8 @@ export default function InicioEntrevista() {
       }
 
       setScreenStream(screen);
-      router.push('/postulador/entrevista/validacion-dispositivos');
+      // 👇 Redirección con el token
+      router.push(`/postulador/entrevista/validacion-dispositivos?token=${token}`);
     } catch (error) {
       console.error('Error al compartir pantalla:', error);
       await Alert({
@@ -49,10 +52,10 @@ export default function InicioEntrevista() {
 
   return (
     <div className="flex flex-col items-center justify-center h-screen text-white">
-      <h1 className="text-3xl font-bold mb-4 ">DevSelectAI</h1>
+      <h1 className="text-3xl font-bold mb-4">DevSelectAI</h1>
       <p className="mb-8 text-center max-w-2xl mx-auto">
-  Bienvenido al sistema inteligente de entrevistas y asignación de prácticas preprofesionales. A continuación, deberás seleccionar el itinerario de tu carrera. Con base en tu elección, se mostrarán las vacantes técnicas disponibles para que puedas postular.
-</p>
+        Bienvenido al sistema inteligente de entrevistas y asignación de prácticas preprofesionales. A continuación, se comenzará la entrevista.
+      </p>
       <button onClick={handleStart} className="px-6 py-3 bg-[#3BDCF6] rounded-md">Comenzar</button>
     </div>
   );

@@ -9,4 +9,9 @@ router.get('/:idVacante/habilidades', vacanteController.getHabilidadesByVacante)
 router.get('/itinerario/:idItinerario', vacanteController.getByItinerario);
 router.post('/', vacanteController.crearVacante);
 
+// Rutas para CRUD de vacantes
+router.get('/:id', vacanteController.getById); // Obtener por ID para edición
+router.put('/:id', vacanteController.actualizarVacante); // Actualizar
+router.delete('/:id', vacanteController.eliminarVacante); // Eliminar si no tiene preguntas
+
 module.exports = router;

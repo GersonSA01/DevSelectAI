@@ -29,6 +29,9 @@ db.Vacante = require('./Vacante')(sequelize, Sequelize);
 db.VacanteHabilidad = require('./VacanteHabilidad')(sequelize, Sequelize);
 db.Opcion = require('./Opcion')(sequelize, Sequelize);
 db.PreguntaTecnica = require('./PreguntaTecnica')(sequelize, Sequelize);
+db.DetalleHabilidad.belongsTo(db.Habilidad, { foreignKey: 'Id_Habilidad' });
+db.Postulante.hasMany(db.DetalleHabilidad, { foreignKey: 'Id_Postulante' });
+db.DetalleHabilidad.belongsTo(db.Postulante, { foreignKey: 'Id_Postulante' });
 
 // Postulante - Ciudad - EstadoPostulacion
 db.Postulante.belongsTo(db.Ciudad, {

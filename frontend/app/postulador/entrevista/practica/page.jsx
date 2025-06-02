@@ -1,13 +1,15 @@
 'use client';
 
 import { useContext, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { StreamContext } from '../../../../context/StreamContext';
 
 export default function PracticaPage() {
   const { cameraStream } = useContext(StreamContext);
   const camRef = useRef(null);
   const router = useRouter();
+  const searchParams = useSearchParams(); // 👈 PARA LEER PARAMETROS
+  const token = searchParams.get('token'); // 👈 EXTRAES EL TOKEN
 
   useEffect(() => {
     if (cameraStream && camRef.current) {
@@ -100,7 +102,7 @@ app.get('/estudiantes/:id', (req, res) => {
             <button className="px-4 py-2 text-sm bg-[#3BDCF6] text-black font-semibold rounded">Pedir ayuda</button>
             <button className="px-4 py-2 text-sm bg-gray-600 hover:bg-gray-700 rounded">Run</button>
             <button
-              onClick={() => router.push('/postulador/entrevista/finalizacion')}
+              onClick={() => router.push(`/postulador/entrevista/finalizacion?token=${token}`)}
               className="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 rounded"
             >
               Enviar

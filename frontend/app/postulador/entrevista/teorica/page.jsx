@@ -1,8 +1,9 @@
 'use client';
 
 import { useContext, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { StreamContext } from '../../../../context/StreamContext';
+
 
 const preguntas = [
   {
@@ -69,6 +70,8 @@ export default function TeoricaPage() {
   const camRef = useRef(null);
   const [respuestas, setRespuestas] = useState({});
   const [todoRespondido, setTodoRespondido] = useState(false);
+  const searchParams = useSearchParams(); // 👈 PARA LEER PARAMETROS
+  const token = searchParams.get('token'); // 👈 EXTRAES EL TOKEN
 
   useEffect(() => {
     if (cameraStream && camRef.current) {
@@ -125,7 +128,7 @@ export default function TeoricaPage() {
       {/* Botón continuar */}
       <div className="flex justify-center mt-10">
         <button
-          onClick={() => router.push('/postulador/entrevista/practica')}
+          onClick={() => router.push(`/postulador/entrevista/practica?token=${token}`)}
           disabled={!todoRespondido}
           className={`px-6 py-3 rounded-full font-semibold text-sm w-64
             ${

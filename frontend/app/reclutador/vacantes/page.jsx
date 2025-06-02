@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { FiEdit, FiTrash2, FiCheck, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { Alert } from '../../components/alerts/Alerts';
 
 export default function VacantesPage() {
   const router = useRouter();
@@ -16,22 +17,23 @@ export default function VacantesPage() {
   useEffect(() => {
     if (!idItinerario) return;
 
-    const fetchVacantes = async () => {
-      try {
-        const res = await fetch(`http://localhost:5000/api/vacantes/itinerario/${idItinerario}`);
-        const data = await res.json();
+const fetchVacantes = async () => {
+  try {
+    const res = await fetch(`http://localhost:5000/api/vacantes/itinerario/${idItinerario}`);
+    const data = await res.json();
 
-        if (Array.isArray(data)) {
-          setVacantes(data);
-        } else {
-          console.error('Respuesta inesperada:', data);
-          setVacantes([]);
-        }
-      } catch (err) {
-        console.error('Error al obtener vacantes:', err);
-        setVacantes([]);
-      }
-    };
+    if (Array.isArray(data)) {
+      setVacantes(data); // 🔥 aquí ya recibes v.habilidades si el backend las incluye
+    } else {
+      console.error('Respuesta inesperada:', data);
+      setVacantes([]);
+    }
+  } catch (err) {
+    console.error('Error al obtener vacantes:', err);
+    setVacantes([]);
+  }
+};
+
 
     fetchVacantes();
   }, [idItinerario]);
@@ -92,14 +94,16 @@ export default function VacantesPage() {
 
       <div className="overflow-x-auto">
         <table className="min-w-full bg-[#1e293b] text-left border border-gray-600">
-          <thead>
-            <tr className="bg-[#1e3a8a] text-white">
-              <th className="p-3 border border-gray-700">Empresa</th>
-              <th className="p-3 border border-gray-700">Nombre de vacante</th>
-              <th className="p-3 border border-gray-700">Vacantes disponibles</th>
-              <th className="p-3 border border-gray-700">Acciones</th>
-            </tr>
-          </thead>
+<thead>
+  <tr className="bg-[#1e3a8a] text-white">
+    <th className="p-3 border border-gray-700">Empresa</th>
+    <th className="p-3 border border-gray-700">Nombre de vacante</th>
+    <th className="p-3 border border-gray-700">Vacantes disponibles</th>
+    <th className="p-3 border border-gray-700">Habilidades</th>
+    <th className="p-3 border border-gray-700">Acciones</th>
+  </tr>
+</thead>
+
           <tbody>
             {Array.isArray(vacantes) && vacantes.length > 0 ? (
               vacantes.map((v, i) => (
@@ -124,16 +128,75 @@ export default function VacantesPage() {
                       </div>
                     </td>
                     <td className="p-3 border border-gray-700">{v.Cantidad}</td>
+                    <td className="p-3 border border-gray-700 text-sm text-gray-200">
+                      {v.habilidades?.length > 0
+                        ? v.habilidades
+                            .map(h => h.habilidad?.Descripcion || 'Sin descripción')
+                            .join(', ')
+                        : <span className="text-gray-400 italic">Sin habilidades</span>}
+                    </td>
+
                     <td className="p-3 border border-gray-700">
                       <div className="flex gap-2">
-                        <FiEdit 
-                          className="text-yellow-400 cursor-pointer hover:text-yellow-300" 
-                          size={18}
-                        />
-                        <FiTrash2 
-                          className="text-red-500 cursor-pointer hover:text-red-400" 
-                          size={18}
-                        />
+                       <FiEdit 
+  className="text-yellow-400 cursor-pointer hover:text-yellow-300" 
+  size={18}
+  onClick={() => router.push(
+    `/reclutador/vacantes/registrar?id=${idItinerario}&descripcion=${encodeURIComponent(descripcionItinerario)}&idVacante=${v.Id_Vacante}`
+  )}
+/>
+<FiTrash2 
+  className="text-red-500 cursor-pointer hover:text-red-400" 
+  size={18}
+  onClick={async () => {
+    const result = await Alert({
+      title: '¿Estás seguro?',
+      text: 'Esta acción eliminará la vacante (solo si no tiene preguntas).',
+      icon: 'warning',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const res = await fetch(`http://localhost:5000/api/vacantes/${v.Id_Vacante}`, {
+          method: 'DELETE'
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          await Alert({
+            title: 'Eliminado',
+            text: 'La vacante fue eliminada exitosamente.',
+            icon: 'success',
+            showCancelButton: false,
+            confirmButtonText: 'Ok'
+          });
+
+          setVacantes(prev => prev.filter(vac => vac.Id_Vacante !== v.Id_Vacante));
+        } else {
+          await Alert({
+            title: 'Error',
+            text: data.mensaje || 'No se pudo eliminar la vacante.',
+            icon: 'error',
+            showCancelButton: false,
+            confirmButtonText: 'Cerrar'
+          });
+        }
+      } catch (err) {
+        console.error('Error al eliminar vacante:', err);
+        await Alert({
+          title: 'Error',
+          text: 'Ocurrió un error inesperado al intentar eliminar la vacante.',
+          icon: 'error',
+          showCancelButton: false,
+          confirmButtonText: 'Cerrar'
+        });
+      }
+    }
+  }}
+/>
                         <FiCheck 
                           className="text-green-400 cursor-pointer hover:text-green-300" 
                           size={18}
@@ -188,12 +251,6 @@ export default function VacantesPage() {
 
                           {/* Botones de acción adicionales - CORREGIDOS */}
 <div className="mt-4 flex gap-2">
-  <button 
-    onClick={() => router.push(`/reclutador/preguntas/registrar?idVacante=${v.Id_Vacante}`)}
-    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
-  >
-    + Añadir pregunta
-  </button>
   <button 
     onClick={() => router.push(`/reclutador/preguntas?idVacante=${v.Id_Vacante}`)}
     className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded text-sm"

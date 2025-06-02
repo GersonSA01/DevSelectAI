@@ -1,13 +1,22 @@
-const { Vacante, VacanteHabilidad, Empresa } = require('../models');
+const { Vacante, VacanteHabilidad, Empresa, Pregunta } = require('../models');
 
 exports.getByItinerario = async (req, res) => {
   const { idItinerario } = req.params;
 
   try {
-    const vacantes = await Vacante.findAll({
-      where: { id_Itinerario: idItinerario },
-      include: [{ model: Empresa, as: 'empresa' }]
-    });
+const vacantes = await Vacante.findAll({
+  where: { id_Itinerario: idItinerario },
+  include: [
+    { model: Empresa, as: 'empresa' },
+    {
+      model: VacanteHabilidad,
+      as: 'habilidades',
+      include: [{ model: Habilidad, as: 'habilidad' }]
+    }
+  ]
+});
+
+
 
     // ⬇️ Muestra todo el contenido de las vacantes, incluyendo la relación
     console.log('📦 Vacantes encontradas:', JSON.stringify(vacantes, null, 2));
@@ -96,5 +105,111 @@ exports.getHabilidadesByVacante = async (req, res) => {
   } catch (error) {
     console.error('❌ Error al obtener habilidades de la vacante:', error);
     res.status(500).json({ error: 'Error al obtener habilidades' });
+  }
+};
+
+
+
+// Obtener vacante por ID (para editar)
+exports.getById = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const vacante = await Vacante.findByPk(id, {
+  include: [
+    {
+      model: VacanteHabilidad,
+      as: 'habilidades', // ⚠️ importante usar el alias
+      include: [
+        {
+          model: Habilidad,
+          as: 'habilidad' // también con alias
+        }
+      ]
+    },
+    { model: Empresa, as: 'empresa' }
+  ]
+});
+
+
+    if (!vacante) return res.status(404).json({ error: 'Vacante no encontrada' });
+
+const habilidades = vacante.habilidades.map(vh => vh.Id_Habilidad);
+
+    res.json({
+      ...vacante.toJSON(),
+      habilidades
+    });
+  } catch (error) {
+    console.error('❌ Error al obtener vacante:', error);
+    res.status(500).json({ error: 'Error al obtener vacante' });
+  }
+};
+
+// Actualizar vacante existente
+exports.actualizarVacante = async (req, res) => {
+  const { id } = req.params;
+  const {
+    Id_Itinerario,
+    Descripcion,
+    Cantidad,
+    Contexto,
+    Id_reclutador,
+    Id_Empresa,
+    id_nivel,
+    habilidades
+  } = req.body;
+
+  try {
+    const vacante = await Vacante.findByPk(id);
+    if (!vacante) return res.status(404).json({ error: 'Vacante no encontrada' });
+
+    await vacante.update({
+      id_Itinerario: Id_Itinerario,
+      Descripcion,
+      Contexto,
+      Cantidad,
+      Id_Empresa,
+      Id_reclutador,
+      id_nivel
+    });
+
+    // Eliminar habilidades anteriores
+    await VacanteHabilidad.destroy({ where: { Id_Vacante: id } });
+
+    // Insertar nuevas habilidades (máximo 3)
+    if (Array.isArray(habilidades)) {
+      const nuevas = habilidades.slice(0, 3).map(idHabilidad => ({
+        Id_Vacante: id,
+        Id_Habilidad: idHabilidad
+      }));
+      await VacanteHabilidad.bulkCreate(nuevas);
+    }
+
+    res.json({ mensaje: 'Vacante actualizada correctamente.' });
+  } catch (error) {
+    console.error('❌ Error al actualizar vacante:', error);
+    res.status(500).json({ error: 'Error al actualizar vacante' });
+  }
+};
+
+// Eliminar vacante si no tiene preguntas
+exports.eliminarVacante = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const preguntas = await Pregunta.findAll({ where: { Id_vacante: id } });
+
+    if (preguntas.length > 0) {
+      return res.status(400).json({ mensaje: 'No se puede eliminar la vacante porque tiene preguntas asociadas.' });
+    }
+
+    await VacanteHabilidad.destroy({ where: { Id_Vacante: id } }); // Limpia relaciones
+    await Vacante.destroy({ where: { Id_Vacante: id } });
+
+    res.json({ mensaje: 'Vacante eliminada correctamente.' });
+  } catch (error) {
+    console.error('❌ Error al eliminar vacante:', error);
+    res.status(500).json({ error: 'Error al eliminar la vacante' });
   }
 };

@@ -38,6 +38,8 @@ const empresaRouter = require('./routes/empresa');
 const nivelRouter = require('./routes/nivel');
 const habilidadRouter = require('./routes/habilidad');
 const preguntasRoutes = require('./routes/preguntas');
+const opcionesRoutes = require("./routes/opciones");
+const generarPreguntasRouter = require('./routes/generarPreguntasIA');
 
 
 
@@ -56,6 +58,8 @@ app.use('/api/niveles', nivelRouter);
 app.use('/api/habilidades', habilidadRouter);
 app.use('/api/preguntas', preguntasRoutes);
 app.use('/api/opciones', require('./routes/opciones'));
+app.use("/api/opciones", opcionesRoutes);
+app.use('/api/generar-preguntas', generarPreguntasRouter);
 
 // ✅ RUTA PRINCIPAL
 app.get("/", (req, res) => {

@@ -1,13 +1,42 @@
 const axios = require('axios');
 const FormData = require('form-data');
+const db = require('../models');
 
 exports.procesarAudio = async (req, res) => {
   try {
     const audioBlob = req.files.audio;
     const step = req.body.step;
     const respuestas = JSON.parse(req.body.respuestas || '[]');
+    const idPostulante = req.body.idPostulante;
 
-    // Preparar audio para Whisper
+    // Buscar info del postulante con habilidades
+    const postulante = await db.Postulante.findByPk(idPostulante, {
+      include: [
+        {
+          model: db.DetalleHabilidad,
+          as: 'habilidades',
+          include: [{ model: db.Habilidad, as: 'habilidad' }]
+        }
+      ]
+    });
+
+    const nombreCompleto = `${postulante.Nombre} ${postulante.Apellido}`;
+    const habilidades = postulante.habilidades.map(h => h.habilidad.Descripcion);
+    const habilidadesTexto = habilidades.join(', ');
+
+    // Crear entrevista si no existe
+    let entrevista = await db.EntrevistaOral.findOne({
+      where: { Id_Postulante: idPostulante }
+    });
+
+    if (!entrevista) {
+      entrevista = await db.EntrevistaOral.create({
+        Id_Postulante: idPostulante,
+        RetroalimentacionIA: null
+      });
+    }
+
+    // Transcripción con Whisper
     const formData = new FormData();
     formData.append('file', audioBlob.data, {
       filename: 'voz.webm',
@@ -15,33 +44,34 @@ exports.procesarAudio = async (req, res) => {
     });
     formData.append('model', 'whisper-1');
 
-    // Transcripción con Whisper
     const whisperRes = await axios.post(
       'https://api.openai.com/v1/audio/transcriptions',
       formData,
       {
         headers: {
           ...formData.getHeaders(),
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+        }
       }
     );
 
     const textoUsuario = whisperRes.data.text;
 
-    // Guardar texto transcrito en posición correspondiente
+    // Actualizar respuestas
     if (step === '1') respuestas[0] = textoUsuario;
     else if (step === '2') respuestas[1] = textoUsuario;
     else if (step === '3') respuestas[2] = textoUsuario;
 
-    // Crear prompt
+    // Generar prompt
     let prompt = '';
     if (step == 1) {
-      prompt = `El postulante se presentó así: "${textoUsuario}". Formula una primera pregunta técnica clara, concreta y breve para que la responda oralmente. Solo escribe la pregunta.`;
+      prompt = `Hola ${nombreCompleto}. Estas son tus habilidades seleccionadas: ${habilidadesTexto}.
+Con base en eso, genera una primera pregunta técnica clara, concreta y breve para que el postulante la responda oralmente. Solo escribe la pregunta.`;
     } else if (step == 2) {
       prompt = `El postulante respondió: "${textoUsuario}". Formula una segunda pregunta técnica relacionada. Sé breve y claro. Solo escribe la pregunta.`;
     } else if (step == 3) {
-      prompt = `Respuestas del postulante:\n1) ${respuestas[0]}\n2) ${respuestas[1]}\n3) ${textoUsuario}.\nRedacta un mensaje final breve para el postulante con feedback, haciendo un análisis hacia el postulante en base a las respuestas. Dile que avanzará a la siguiente etapa de evaluación teórica. Recuerda ser breve.`;
+      prompt = `Respuestas del postulante:\n1) ${respuestas[0]}\n2) ${respuestas[1]}\n3) ${textoUsuario}.
+Evalúa si es apto para avanzar a la siguiente etapa técnica. Justifica tu decisión brevemente y da un mensaje profesional y empático de retroalimentación.`;
     }
 
     // Obtener respuesta GPT
@@ -68,7 +98,24 @@ exports.procesarAudio = async (req, res) => {
 
     const respuestaGPT = gptRes.data.choices[0].message.content;
 
-    // TTS
+    // Guardar en base de datos
+    if (step === '1' || step === '2') {
+      await db.PreguntaOral.create({
+        Ronda: parseInt(step),
+        PreguntaIA: respuestaGPT,
+        RespuestaPostulante: textoUsuario,
+        CalificacionIA: null,
+        Id_Entrevista: entrevista.Id_Entrevista
+      });
+    }
+
+    if (step === '3') {
+      await entrevista.update({
+        RetroalimentacionIA: respuestaGPT
+      });
+    }
+
+    // TTS con OpenAI
     const ttsRes = await axios.post(
       'https://api.openai.com/v1/audio/speech',
       {
@@ -85,15 +132,15 @@ exports.procesarAudio = async (req, res) => {
       }
     );
 
-    // Enviar headers antes del audio
-    res.setHeader('X-Respuesta-GPT', respuestaGPT);
-    res.setHeader('X-Texto-Usuario', textoUsuario);
-    res.setHeader('Access-Control-Expose-Headers', 'X-Respuesta-GPT, X-Texto-Usuario');
-    res.setHeader('Content-Type', 'audio/mpeg');
-    res.send(ttsRes.data);
+    // Enviar headers + audio
+res.status(200).json({
+  audio: Buffer.from(ttsRes.data).toString('base64'), // codifica el audio como base64
+  respuestaGPT,
+  textoUsuario
+});
 
   } catch (error) {
-    console.error(error);
+    console.error('Error al procesar audio:', error);
     res.status(500).json({ error: 'Error al procesar el audio' });
   }
 };

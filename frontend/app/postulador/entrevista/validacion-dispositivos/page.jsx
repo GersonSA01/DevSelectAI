@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation'; // 👈 IMPORTADO
 import { useStream } from '../../../../context/StreamContext';
 import DetectorOscuridad from '../../../components/DetectorOscuridad';
 
@@ -10,7 +10,8 @@ export default function ValidacionDispositivos() {
   const { setCameraStream } = useStream();
   const videoRef = useRef(null);
   const audioRef = useRef(null);
-
+  const searchParams = useSearchParams(); // 👈 PARA LEER PARAMETROS
+  const token = searchParams.get('token'); // 👈 EXTRAES EL TOKEN
   const [cameraVisible, setCameraVisible] = useState(true);
   const [micReady, setMicReady] = useState(false);
   const [camReady, setCamReady] = useState(false);
@@ -52,7 +53,7 @@ export default function ValidacionDispositivos() {
   }, [setCameraStream]);
 
   const handleStart = () => {
-    router.push('/postulador/entrevista/preparacion');
+    router.push(`/postulador/entrevista/preparacion?token=${token}`);
   };
 
   return (

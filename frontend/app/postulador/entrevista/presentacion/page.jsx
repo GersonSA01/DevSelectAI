@@ -1,7 +1,7 @@
 'use client';
 
 import { useContext, useRef, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { StreamContext } from '../../../../context/StreamContext';
 import DetectorOscuridad from '../../../components/DetectorOscuridad';
 import AnimatedCircle from '../../../components/ui/AnimatedCircle';
@@ -24,6 +24,8 @@ export default function PresentacionEntrevista() {
   const [bloqueado, setBloqueado] = useState(false);
   const [mensajeVisible, setMensajeVisible] = useState('');
   const temporizadorRef = useRef(null);
+  const searchParams = useSearchParams(); // 👈 PARA LEER PARAMETROS
+  const token = searchParams.get('token'); // 👈 EXTRAES EL TOKEN
 
   const textoInicio =
     '¡Hola! Gracias por confiar tu postulación con DevSelectAI. Comencemos, cuéntame sobre ti y tus competencias técnicas en la carrera de Ingeniería en Software.';
@@ -124,6 +126,8 @@ export default function PresentacionEntrevista() {
       formData.append('audio', blob, 'voz.webm');
       formData.append('step', step);
       formData.append('respuestas', JSON.stringify(respuestas));
+      formData.append('idPostulante', localStorage.getItem('id_postulante')); // 👈 importante
+
 
       const response = await fetch(
         'http://localhost:5000/api/entrevista/procesar-audio',
@@ -255,7 +259,7 @@ export default function PresentacionEntrevista() {
         )}
 
         <button
-          onClick={() => router.push('/postulador/entrevista/teorica')}
+          onClick={() => router.push(`/postulador/entrevista/teorica?token=${token}`)}
           disabled={step < 4 || !cameraVisible}
           className={`px-6 py-3 rounded-md w-full ${
             step < 4 || !cameraVisible

@@ -55,7 +55,7 @@ export default function Entrevistas() {
 
     if (result.isConfirmed && result.value) {
       localStorage.setItem('id_itinerario', result.value); // Guardar selección
-      router.push('/postulador/entrevista/habilidades');
+      router.push('/postulador/habilidades');
     }
   };
 

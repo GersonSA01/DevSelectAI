@@ -9,6 +9,13 @@ export default function RegistrarVacante() {
   const searchParams = useSearchParams();
   const idItinerario = searchParams.get('id');
   const descripcion = searchParams.get('descripcion');
+const [idVacante, setIdVacante] = useState(null);
+
+useEffect(() => {
+  const nuevaId = searchParams.get('idVacante');
+  setIdVacante(nuevaId);
+}, [searchParams]);
+  const esEdicion = Boolean(idVacante);
 
   const [nombre, setNombre] = useState('');
   const [vacantes, setVacantes] = useState('');
@@ -21,6 +28,7 @@ export default function RegistrarVacante() {
   const [habilidadesSeleccionadas, setHabilidadesSeleccionadas] = useState([]);
   const [idReclutador, setIdReclutador] = useState(null);
 
+  // Obtener ID del reclutador desde localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const reclutadorGuardado = localStorage.getItem('reclutador');
@@ -40,6 +48,7 @@ export default function RegistrarVacante() {
     }
   }, []);
 
+  // Cargar habilidades disponibles
   useEffect(() => {
     const fetchData = async () => {
       const resHabilidades = await fetch('http://localhost:5000/api/habilidades');
@@ -49,6 +58,7 @@ export default function RegistrarVacante() {
     fetchData();
   }, []);
 
+  // Cargar niveles y empresas
   useEffect(() => {
     const fetchNiveles = async () => {
       const res = await fetch('http://localhost:5000/api/niveles');
@@ -66,6 +76,37 @@ export default function RegistrarVacante() {
     fetchEmpresas();
   }, []);
 
+useEffect(() => {
+  const cargarVacante = async () => {
+    if (!idVacante || habilidades.length === 0) return;
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/vacantes/${idVacante}`);
+      const vacante = await res.json();
+      setNombre(vacante.Descripcion);
+      setVacantes(vacante.Cantidad);
+      setContexto(vacante.Contexto);
+      setNivel(vacante.id_nivel);
+      setEmpresa(vacante.Id_Empresa);
+
+      // Espera a que las habilidades estén cargadas
+      const habilidadesVacante = vacante.habilidades || [];
+      const seleccionadas = habilidadesVacante.map(idH => {
+        return habilidades.find(h => h.Id_Habilidad === idH.Id_Habilidad || h.Id_Habilidad === idH);
+      }).filter(Boolean); // Filtra valores nulos o indefinidos
+
+      setHabilidadesSeleccionadas(seleccionadas);
+    } catch (err) {
+      console.error('Error al cargar vacante para edición:', err);
+    }
+  };
+
+  cargarVacante();
+}, [idVacante, habilidades]);
+
+
+
+  // Enviar datos al backend
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -88,21 +129,24 @@ export default function RegistrarVacante() {
     }
 
     try {
+      const metodo = esEdicion ? 'PUT' : 'POST';
+      const url = esEdicion
+        ? `http://localhost:5000/api/vacantes/${idVacante}`
+        : 'http://localhost:5000/api/vacantes';
+
       const nuevaVacante = {
         Id_Itinerario: parseInt(idItinerario),
         Descripcion: nombre,
         Cantidad: parseInt(vacantes),
         Contexto: contexto,
         Id_reclutador: parseInt(idReclutador),
-        Id_Empresa: parseInt(empresa),
-        id_nivel: parseInt(nivel),
-        habilidades: habilidadesSeleccionadas.map(h => parseInt(h.Id_Habilidad))
+        Id_Empresa: Number(empresa),
+        id_nivel: Number(nivel),
+        habilidades: habilidadesSeleccionadas.map(h => parseInt(h.Id_Habilidad)),
       };
 
-      console.log("📦 Enviando vacante:", nuevaVacante);
-
-      const res = await fetch('http://localhost:5000/api/vacantes', {
-        method: 'POST',
+      const res = await fetch(url, {
+        method: metodo,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(nuevaVacante),
       });
@@ -111,8 +155,8 @@ export default function RegistrarVacante() {
 
       Swal.fire({
         icon: 'success',
-        title: '¡Vacante registrada!',
-        text: 'La vacante ha sido añadida correctamente.',
+        title: esEdicion ? '¡Vacante actualizada!' : '¡Vacante registrada!',
+        text: esEdicion ? 'La vacante ha sido actualizada correctamente.' : 'La vacante ha sido añadida correctamente.',
         confirmButtonColor: '#22c55e',
       }).then(() => {
         router.push(`/reclutador/vacantes?id=${idItinerario}&descripcion=${descripcion}`);
@@ -129,7 +173,9 @@ export default function RegistrarVacante() {
 
   return (
     <div className="min-h-screen bg-[#0b1120] text-white p-8">
-      <h1 className="text-3xl font-bold mb-6">REGISTRAR VACANTE PARA "{descripcion}"</h1>
+      <h1 className="text-3xl font-bold mb-6">
+        {esEdicion ? 'EDITAR VACANTE' : `REGISTRAR VACANTE PARA "${descripcion}"`}
+      </h1>
       <form onSubmit={handleSubmit} className="max-w-md mx-auto bg-[#111827] p-6 rounded shadow">
         <label className="block mb-2">Nombre de vacante:</label>
         <input className="w-full p-2 rounded mb-4 text-black" value={nombre} onChange={(e) => setNombre(e.target.value)} />
@@ -149,7 +195,7 @@ export default function RegistrarVacante() {
         </select>
 
         <label className="block mb-2">Empresa:</label>
-        <select className="w-full p-2 rounded mb-4 text-black" value={empresa} onChange={(e) => setEmpresa(e.target.value)}>
+        <select className="w-full p-2 rounded mb-4 text-black" value={empresa} onChange={(e) => setEmpresa(Number(e.target.value))}>
           <option value="">Seleccione una empresa</option>
           {empresas.map((e) => (
             <option key={e.Id_Empresa} value={e.Id_Empresa}>{e.Descripcion}</option>
@@ -185,7 +231,7 @@ export default function RegistrarVacante() {
         </div>
 
         <button type="submit" className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded text-white">
-          Guardar vacante
+          {esEdicion ? 'Actualizar vacante' : 'Guardar vacante'}
         </button>
       </form>
     </div>

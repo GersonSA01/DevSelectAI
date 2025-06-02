@@ -7,6 +7,7 @@ export default function RegistrarPregunta() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const idVacante = searchParams.get('idVacante');
+  const idPregunta = searchParams.get('idPregunta');
 
   const [pregunta, setPregunta] = useState('');
   const [habilidades, setHabilidades] = useState([]);
@@ -25,16 +26,39 @@ export default function RegistrarPregunta() {
         console.error('Error al obtener habilidades:', error);
       }
     };
-
     fetchHabilidades();
   }, [idVacante]);
 
+  useEffect(() => {
+    const fetchPreguntaYRespuestas = async () => {
+      if (!idPregunta) return;
+
+      try {
+        const resPregunta = await fetch(`http://localhost:5000/api/preguntas/${idPregunta}`);
+        const preguntaData = await resPregunta.json();
+        console.log('Pregunta cargada:', preguntaData); // 👈 agrega esto
+
+        setPregunta(preguntaData.Pregunta || preguntaData.pregunta || '');
+
+        const resOpciones = await fetch(`http://localhost:5000/api/opciones/pregunta/${idPregunta}`);
+        const opcionesData = await resOpciones.json();
+
+        setOpciones(
+          opcionesData.map(op => ({
+            texto: op.Opcion,
+            correcta: op.Correcta
+          }))
+        );
+      } catch (error) {
+        console.error('Error al cargar pregunta:', error);
+      }
+    };
+
+    fetchPreguntaYRespuestas();
+  }, [idPregunta]);
+
   const handleOpcionChange = (index) => {
-    const nuevas = opciones.map((op, i) => ({
-      ...op,
-      correcta: i === index
-    }));
-    setOpciones(nuevas);
+    setOpciones(opciones.map((op, i) => ({ ...op, correcta: i === index })));
   };
 
   const handleTextoOpcion = (index, value) => {
@@ -57,64 +81,72 @@ export default function RegistrarPregunta() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const hayCorrecta = opciones.some((op) => op.correcta);
-    if (!hayCorrecta) {
+    if (!opciones.some(op => op.correcta)) {
       Swal.fire('Advertencia', 'Debes seleccionar una opción correcta.', 'warning');
       return;
     }
 
     try {
-      const resPregunta = await fetch('http://localhost:5000/api/preguntas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          Pregunta: pregunta,
-          EsIA: false,
-          Id_vacante: parseInt(idVacante),
-        }),
-      });
+      let idPreguntaActual = idPregunta;
 
-      const nuevaPregunta = await resPregunta.json();
+      if (!idPregunta) {
+        const res = await fetch('http://localhost:5000/api/preguntas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            Pregunta: pregunta,
+            EsIA: false,
+            Id_vacante: parseInt(idVacante)
+          })
+        });
+        const nueva = await res.json();
+        idPreguntaActual = nueva.Id_Pregunta;
+      } else {
+        await fetch(`http://localhost:5000/api/preguntas/${idPregunta}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ Pregunta: pregunta })
+        });
+        await fetch(`http://localhost:5000/api/opciones/pregunta/${idPregunta}`, { method: 'DELETE' });
+      }
 
       await Promise.all(
-        opciones.map(op =>
-          fetch('http://localhost:5000/api/opciones', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              Opcion: op.texto,
-              Correcta: op.correcta,
-              Id_Pregunta: nuevaPregunta.Id_Pregunta
+        opciones
+          .filter(op => op.texto.trim())
+          .map(op =>
+            fetch('http://localhost:5000/api/opciones', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                Opcion: op.texto,
+                Correcta: op.correcta,
+                Id_Pregunta: idPreguntaActual
+              })
             })
-          })
-        )
+          )
       );
 
       Swal.fire({
         icon: 'success',
-        title: '¡Pregunta registrada!',
-        text: 'La pregunta y sus opciones han sido guardadas.',
+        title: idPregunta ? '¡Pregunta actualizada!' : '¡Pregunta registrada!',
         confirmButtonColor: '#22c55e'
       }).then(() => {
         router.push(`/reclutador/preguntas?idVacante=${idVacante}`);
       });
+
     } catch (err) {
       console.error(err);
-      Swal.fire('Error', 'No se pudo registrar la pregunta.', 'error');
+      Swal.fire('Error', 'No se pudo guardar la pregunta.', 'error');
     }
   };
 
   return (
     <div className="min-h-screen bg-[#0b1120] text-white px-4 py-8">
       <div className="max-w-xl mx-auto">
-        {/* Nota de contexto */}
         <div className="bg-yellow-100 text-yellow-800 p-4 rounded mb-6 text-sm">
-          Esta pregunta se generará en base a las <strong>habilidades requeridas</strong> de esta vacante.
-          Solo se permite <strong>una opción correcta</strong>.
+          Esta pregunta se generará en base a las <strong>habilidades requeridas</strong> de esta vacante. Solo se permite <strong>una opción correcta</strong>.
         </div>
 
-        {/* Habilidades */}
         {habilidades.length > 0 && (
           <div className="mb-6">
             <h3 className="text-white font-semibold mb-2">Habilidades requeridas:</h3>
@@ -128,7 +160,6 @@ export default function RegistrarPregunta() {
           </div>
         )}
 
-        {/* Formulario */}
         <form onSubmit={handleSubmit} className="bg-[#111827] p-6 rounded shadow space-y-6">
           <div>
             <label className="block text-sm mb-1">Texto de la pregunta:</label>
@@ -168,9 +199,7 @@ export default function RegistrarPregunta() {
                     type="button"
                     onClick={() => eliminarOpcion(index)}
                     className="text-red-500 hover:text-red-700 text-sm"
-                  >
-                    ✖
-                  </button>
+                  >✖</button>
                 )}
               </div>
             ))}
@@ -180,18 +209,14 @@ export default function RegistrarPregunta() {
                 type="button"
                 onClick={agregarOpcion}
                 className="mt-2 bg-blue-600 hover:bg-blue-700 px-3 py-1 text-sm text-white rounded"
-              >
-                + Agregar opción
-              </button>
+              >+ Agregar opción</button>
             )}
           </div>
 
           <button
             type="submit"
             className="w-full bg-green-500 hover:bg-green-600 px-4 py-2 rounded text-white"
-          >
-            Guardar pregunta
-          </button>
+          >Guardar pregunta</button>
         </form>
       </div>
     </div>
