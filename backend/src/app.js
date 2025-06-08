@@ -4,12 +4,14 @@ const cors = require("cors");
 const fileUpload = require("express-fileupload");
 const app = express();
 
-// === 🔗 SEQUELIZE CONFIGURACIÓN ===
 const db = require("./models");
+const cargarDatosIniciales = require("./script/cargarDatosIniciales"); // ✅ importa la nueva función
 
+// === 🔗 SEQUELIZE CONFIGURACIÓN ===
 db.sequelize.sync({ force: false })
-  .then(() => {
+  .then(async () => {
     console.log("📦 Base de datos sincronizada con Sequelize (SQLite)");
+    await cargarDatosIniciales(); // ✅ ejecuta carga inicial
   })
   .catch((err) => {
     console.error("❌ Error al sincronizar la base de datos:", err);
@@ -26,8 +28,8 @@ app.use(fileUpload());
 
 // ✅ IMPORTACIÓN DE RUTAS
 const entrevistaRoutes = require("./routes/entrevista");
-const postulanteRoutes = require("./routes/postulante"); // corregido singular
-const reclutadorRoutes = require("./routes/reclutador"); // nuevo
+const postulanteRoutes = require("./routes/postulante");
+const reclutadorRoutes = require("./routes/reclutador");
 const excelRoutes = require("./routes/excel");
 const configuracionRoutes = require('./routes/configuracion');
 const registroRoutes = require("./routes/registro");
@@ -35,30 +37,25 @@ const loginRoutes = require("./routes/login");
 const itinerarioRoutes = require('./routes/itinerario');
 const vacanteRoutes = require('./routes/vacante');
 const empresaRouter = require('./routes/empresa');
-const nivelRouter = require('./routes/nivel');
 const habilidadRouter = require('./routes/habilidad');
 const preguntasRoutes = require('./routes/preguntas');
 const opcionesRoutes = require("./routes/opciones");
 const generarPreguntasRouter = require('./routes/generarPreguntasIA');
 
-
-
 // ✅ USO DE RUTAS
 app.use('/api/itinerarios', itinerarioRoutes);
 app.use("/api/entrevista", entrevistaRoutes);
-app.use("/api/postulante", postulanteRoutes);   // ✅ endpoint corregido
-app.use("/api/reclutador", reclutadorRoutes);   // ✅ endpoint nuevo
+app.use("/api/postulante", postulanteRoutes);
+app.use("/api/reclutador", reclutadorRoutes);
 app.use("/api/excel", excelRoutes);
 app.use('/api/configuracion', configuracionRoutes);
 app.use("/api/registro", registroRoutes);
 app.use('/api', loginRoutes);
 app.use('/api/vacantes', vacanteRoutes);
 app.use('/api/empresas', empresaRouter);
-app.use('/api/niveles', nivelRouter);
 app.use('/api/habilidades', habilidadRouter);
 app.use('/api/preguntas', preguntasRoutes);
-app.use('/api/opciones', require('./routes/opciones'));
-app.use("/api/opciones", opcionesRoutes);
+app.use('/api/opciones', opcionesRoutes);
 app.use('/api/generar-preguntas', generarPreguntasRouter);
 
 // ✅ RUTA PRINCIPAL

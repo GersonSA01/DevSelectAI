@@ -7,7 +7,6 @@ module.exports = (sequelize, DataTypes) => {
     CantidadUsoIA: DataTypes.INTEGER,
     Id_Empresa: DataTypes.INTEGER,
     Id_reclutador: DataTypes.INTEGER,
-    id_nivel: DataTypes.INTEGER,
     id_Itinerario: DataTypes.INTEGER
   }, {
     tableName: 'DAI_T_Vacante',

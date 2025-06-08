@@ -1,41 +1,31 @@
 'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation'; // ✅ Importar router
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { FiEye, FiCheck, FiX } from 'react-icons/fi';
 import Swal from 'sweetalert2';
 
 export default function PostulacionesPage() {
-  const router = useRouter(); // ✅ Inicializar router
+  const router = useRouter();
   const [filtroNombre, setFiltroNombre] = useState('');
   const [itinerario, setItinerario] = useState('1');
+  const [postulantes, setPostulantes] = useState([]);
 
-  const postulantes = [
-    {
-      nombre: 'Juanito',
-      estado: 'Por evaluar',
-      habilidades: 'React, Tailwind',
-      calificacion: null,
-    },
-    {
-      nombre: 'Juanita',
-      estado: 'Evaluado',
-      habilidades: 'Python, Java',
-      calificacion: '8/10',
-    },
-    {
-      nombre: 'Chimi',
-      estado: 'Rechazado',
-      habilidades: 'Comer, Dormir',
-      calificacion: '4/10',
-    },
-    {
-      nombre: '—',
-      estado: 'Por hacer',
-      habilidades: '—',
-      calificacion: '—',
-    },
-  ];
+  // ✅ Obtener postulantes desde el backend
+  useEffect(() => {
+    const fetchPostulantes = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/postulantes');
+        const data = await res.json();
+        setPostulantes(data);
+      } catch (error) {
+        console.error('Error al obtener postulantes:', error);
+      }
+    };
 
+    fetchPostulantes();
+  }, []);
+
+  // ✅ Modal para asignar vacante
   const mostrarModalAsignacion = () => {
     Swal.fire({
       title: 'Seleccionar Vacante para Asignar',
@@ -62,18 +52,6 @@ export default function PostulacionesPage() {
               <td>2</td>
               <td><button onclick="asignarVacante(1)" class="swal2-styled">Asignar</button></td>
             </tr>
-            <tr>
-              <td>Industria Nova</td>
-              <td>Soporte Técnico</td>
-              <td>5</td>
-              <td><button onclick="asignarVacante(2)" class="swal2-styled">Asignar</button></td>
-            </tr>
-            <tr>
-              <td>Data Solutions</td>
-              <td>Analista de Datos</td>
-              <td>1</td>
-              <td><button onclick="asignarVacante(3)" class="swal2-styled">Asignar</button></td>
-            </tr>
           </tbody>
         </table>
       `,
@@ -93,8 +71,34 @@ export default function PostulacionesPage() {
       }
     });
   };
-    const irAEvaluacion = () => {
-    router.push(`/reclutador/evaluaciones/`);
+
+  // ✅ Rechazar postulante
+  const rechazarPostulante = async (id) => {
+    const confirmacion = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'El postulante será rechazado',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, rechazar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (confirmacion.isConfirmed) {
+      try {
+        await fetch(`http://localhost:5000/api/postulantes/${id}/rechazar`, {
+          method: 'PUT'
+        });
+        Swal.fire('Rechazado', 'El postulante ha sido rechazado.', 'success');
+        setPostulantes(prev =>
+          prev.map(p =>
+            p.Id_Postulante === id ? { ...p, Estado: 'Rechazado' } : p
+          )
+        );
+      } catch (error) {
+        console.error('Error al rechazar:', error);
+        Swal.fire('Error', 'No se pudo rechazar el postulante.', 'error');
+      }
+    }
   };
 
   return (
@@ -136,41 +140,53 @@ export default function PostulacionesPage() {
             <tr>
               <th className="border border-gray-600 p-2">Nombre</th>
               <th className="border border-gray-600 p-2">Estado</th>
-              <th className="border border-gray-600 p-2">Habilidades detectadas</th>
+              <th className="border border-gray-600 p-2">Habilidades</th>
               <th className="border border-gray-600 p-2">Calificación</th>
               <th className="border border-gray-600 p-2">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {postulantes.map((p, i) => (
-              <tr key={i} className="border-t border-gray-700">
-                <td className="p-2">{p.nombre}</td>
-                <td className="p-2">{p.estado}</td>
-                <td className="p-2">{p.habilidades}</td>
-                <td className="p-2">
-                  {p.calificacion ? (
-                    p.calificacion
-                  ) : (
-                                    <button
-                  className="bg-green-100 text-black px-2 py-1 rounded text-sm"
-                  onClick={() => irAEvaluacion(p.nombre)} // ✅ Click para redirigir
-                >
-                  Comprobar calificación
-                </button>
-                  )}
-                </td>
-                <td className="p-2 flex justify-center gap-3">
-  <FiEye
-    className="text-yellow-400 cursor-pointer"
-    onClick={() => router.push('/reclutador/informes')} // ✅ Redirección a Informes
-  />                  <FiCheck
-                    className="text-green-400 cursor-pointer"
-                    onClick={mostrarModalAsignacion}
-                  />
-                  <FiX className="text-red-500 cursor-pointer" />
-                </td>
-              </tr>
-            ))}
+            {postulantes
+              .filter(p => p.Nombre?.toLowerCase().includes(filtroNombre.toLowerCase()))
+              .map((p, i) => (
+                <tr key={i} className="border-t border-gray-700">
+                  <td className="p-2">{p.Nombre} {p.Apellido}</td>
+                  <td className="p-2">{p.Estado || '—'}</td>
+                  <td className="p-2">
+                    {p.habilidades?.map(h => h.habilidad?.Descripcion).join(', ') || '—'}
+                  </td>
+                  <td className="p-2">
+                    {p.CalificacionEntrevista ? (
+                      `${p.CalificacionEntrevista}/10`
+                    ) : (
+                      <button
+                        className="bg-green-100 text-black px-2 py-1 rounded text-sm"
+                        onClick={() =>
+                          router.push(`/reclutador/evaluaciones?idPostulante=${p.Id_Postulante}`)
+                        }
+                      >
+                        Comprobar calificación
+                      </button>
+                    )}
+                  </td>
+                  <td className="p-2 flex justify-center gap-3">
+                    <FiEye
+                      className="text-yellow-400 cursor-pointer"
+                      onClick={() =>
+                        router.push(`/reclutador/informes?idPostulante=${p.Id_Postulante}`)
+                      }
+                    />
+                    <FiCheck
+                      className="text-green-400 cursor-pointer"
+                      onClick={() => mostrarModalAsignacion(p.Id_Postulante)}
+                    />
+                    <FiX
+                      className="text-red-500 cursor-pointer"
+                      onClick={() => rechazarPostulante(p.Id_Postulante)}
+                    />
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>

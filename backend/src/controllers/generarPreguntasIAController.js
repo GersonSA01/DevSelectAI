@@ -5,9 +5,7 @@ exports.generarPreguntas = async (req, res) => {
   const idVacante = parseInt(req.params.idVacante);
 
   try {
-    const vacante = await db.Vacante.findByPk(idVacante, {
-      include: [{ model: db.Nivel, as: 'nivel' }]
-    });
+
 
     if (!vacante) return res.status(404).json({ error: 'Vacante no encontrada' });
 
@@ -16,7 +14,6 @@ exports.generarPreguntas = async (req, res) => {
       include: [{ model: db.Habilidad, as: 'habilidad' }]
     });
 
-    const nivelDescripcion = vacante.nivel?.descripcion || 'Desconocido';
     const contexto = vacante.Contexto;
     const nombresHabilidades = habilidades
       .map(h => h.habilidad?.Descripcion)
@@ -24,7 +21,7 @@ exports.generarPreguntas = async (req, res) => {
       .join(', ');
 
     const promptMultiple = `
-Eres un experto en entrevistas técnicas. Crea 5 preguntas de opción múltiple para un estudiante de nivel ${nivelDescripcion}, basadas en las siguientes habilidades: ${nombresHabilidades}. El contexto del proyecto es: ${contexto}.
+Eres un experto en entrevistas técnicas. Crea 5 preguntas de opción múltiple para un estudiante basadas en las siguientes habilidades: ${nombresHabilidades}. El contexto del proyecto es: ${contexto}.
 Para cada pregunta, da:
 1. Una pregunta clara
 2. Tres opciones: una correcta y dos incorrectas
@@ -77,7 +74,7 @@ Formato JSON esperado:
     }
 
   const promptTecnica = `
-Eres un generador de preguntas técnicas de codificación. Crea una pregunta de nivel ${nivelDescripcion}, centrada exclusivamente en NodeJS y React.
+Eres un generador de preguntas técnicas de codificación. Crea una pregunta de centrada exclusivamente en NodeJS y React.
 
 La pregunta debe tener este formato JSON exacto y seguro para ser parseado:
 

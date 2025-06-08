@@ -20,9 +20,7 @@ useEffect(() => {
   const [nombre, setNombre] = useState('');
   const [vacantes, setVacantes] = useState('');
   const [contexto, setContexto] = useState('');
-  const [nivel, setNivel] = useState('');
   const [empresa, setEmpresa] = useState('');
-  const [niveles, setNiveles] = useState([]);
   const [empresas, setEmpresas] = useState([]);
   const [habilidades, setHabilidades] = useState([]);
   const [habilidadesSeleccionadas, setHabilidadesSeleccionadas] = useState([]);
@@ -58,13 +56,8 @@ useEffect(() => {
     fetchData();
   }, []);
 
-  // Cargar niveles y empresas
+  // Cargar empresas
   useEffect(() => {
-    const fetchNiveles = async () => {
-      const res = await fetch('http://localhost:5000/api/niveles');
-      const data = await res.json();
-      setNiveles(data);
-    };
 
     const fetchEmpresas = async () => {
       const res = await fetch('http://localhost:5000/api/empresas');
@@ -72,7 +65,6 @@ useEffect(() => {
       setEmpresas(data);
     };
 
-    fetchNiveles();
     fetchEmpresas();
   }, []);
 
@@ -86,7 +78,6 @@ useEffect(() => {
       setNombre(vacante.Descripcion);
       setVacantes(vacante.Cantidad);
       setContexto(vacante.Contexto);
-      setNivel(vacante.id_nivel);
       setEmpresa(vacante.Id_Empresa);
 
       // Espera a que las habilidades estén cargadas
@@ -119,7 +110,7 @@ useEffect(() => {
       return;
     }
 
-    if (!nombre || !vacantes || !contexto || !nivel || !empresa || habilidadesSeleccionadas.length === 0) {
+    if (!nombre || !vacantes || !contexto || !empresa || habilidadesSeleccionadas.length === 0) {
       Swal.fire({
         icon: 'warning',
         title: 'Campos incompletos',
@@ -141,7 +132,6 @@ useEffect(() => {
         Contexto: contexto,
         Id_reclutador: parseInt(idReclutador),
         Id_Empresa: Number(empresa),
-        id_nivel: Number(nivel),
         habilidades: habilidadesSeleccionadas.map(h => parseInt(h.Id_Habilidad)),
       };
 
@@ -186,13 +176,6 @@ useEffect(() => {
         <label className="block mb-2">Contexto:</label>
         <textarea className="w-full p-2 rounded mb-4 text-black" value={contexto} onChange={(e) => setContexto(e.target.value)} />
 
-        <label className="block mb-2">Nivel requerido:</label>
-        <select className="w-full p-2 rounded mb-4 text-black" value={nivel} onChange={(e) => setNivel(Number(e.target.value))}>
-          <option value="">Seleccione un nivel</option>
-          {niveles.map((n) => (
-            <option key={n.id_Nivel} value={n.id_Nivel}>{n.descripcion}</option>
-          ))}
-        </select>
 
         <label className="block mb-2">Empresa:</label>
         <select className="w-full p-2 rounded mb-4 text-black" value={empresa} onChange={(e) => setEmpresa(Number(e.target.value))}>

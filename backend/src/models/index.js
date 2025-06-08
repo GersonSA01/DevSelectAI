@@ -5,11 +5,14 @@ const dbConfig = config[env];
 
 const sequelize = new Sequelize(dbConfig);
 
+
+
 const db = {};
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
-
 // Registrar modelos
+db.PostulanteVacante = require('./PostulanteVacante')(sequelize, Sequelize);
+db.Capture = require('./Capture')(sequelize, Sequelize);
 db.Ciudad = require('./Ciudad')(sequelize, Sequelize);
 db.DetalleHabilidad = require('./DetalleHabilidad')(sequelize, Sequelize);
 db.Empresa = require('./Empresa')(sequelize, Sequelize);
@@ -18,7 +21,6 @@ db.EstadoPostulacion = require('./EstadoPostulacion')(sequelize, Sequelize);
 db.Evaluacion = require('./Evaluacion')(sequelize, Sequelize);
 db.Habilidad = require('./Habilidad')(sequelize, Sequelize);
 db.Itinerario = require('./Itinerario')(sequelize, Sequelize);
-db.Nivel = require('./Nivel')(sequelize, Sequelize);
 db.Pais = require('./Pais')(sequelize, Sequelize);
 db.Postulante = require('./Postulante')(sequelize, Sequelize);
 db.Pregunta = require('./Pregunta')(sequelize, Sequelize);
@@ -52,7 +54,7 @@ db.EstadoPostulacion.hasMany(db.Postulante, {
   as: 'postulantes'
 });
 
-// Vacante - Empresa - Reclutador - Nivel - Itinerario
+// Vacante - Empresa - Reclutador -  Itinerario
 db.Vacante.belongsTo(db.Empresa, {
   foreignKey: 'Id_Empresa',
   as: 'empresa'
@@ -71,14 +73,6 @@ db.Reclutador.hasMany(db.Vacante, {
   as: 'vacantes'
 });
 
-db.Vacante.belongsTo(db.Nivel, {
-  foreignKey: 'id_nivel',
-  as: 'nivel'
-});
-db.Nivel.hasMany(db.Vacante, {
-  foreignKey: 'id_nivel',
-  as: 'vacantes'
-});
 
 db.Vacante.belongsTo(db.Itinerario, {
   foreignKey: 'id_Itinerario',
@@ -224,6 +218,40 @@ Object.keys(db).forEach(modelName => {
 });
 
 
+db.PostulanteVacante.belongsTo(db.Postulante, {
+  foreignKey: 'Id_Postulante',
+  as: 'postulante'
+});
+
+
+// PostulanteVacante - Vacante
+db.PostulanteVacante.belongsTo(db.Vacante, {
+  foreignKey: 'Id_Vacante',
+  as: 'vacante'
+});
+
+db.Postulante.hasMany(db.PostulanteVacante, {
+  foreignKey: 'Id_Postulante',
+  as: 'selecciones'
+});
+
+db.Vacante.hasMany(db.PostulanteVacante, {
+  foreignKey: 'Id_Vacante',
+  as: 'postulantesSeleccionados'
+});
+
+
+// Evaluacion - Capture
+db.Evaluacion.hasMany(db.Capture, {
+  foreignKey: 'id_Evaluacion',
+  as: 'captures'
+});
+db.Capture.belongsTo(db.Evaluacion, {
+  foreignKey: 'id_Evaluacion',
+  as: 'evaluacion'
+});
+
 
 
 module.exports = db;
+

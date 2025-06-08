@@ -7,8 +7,6 @@ module.exports = (sequelize, DataTypes) => {
     Correo: DataTypes.STRING,
     Telefono: DataTypes.STRING(13),
     Contrasena: DataTypes.STRING,
-    ayuda: DataTypes.BOOLEAN,
-    cant_alert: DataTypes.INTEGER,
     FechPostulacion: DataTypes.DATE,
     id_ciudad: DataTypes.INTEGER,
     id_EstadoPostulacion: DataTypes.INTEGER,

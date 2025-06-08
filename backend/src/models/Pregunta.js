@@ -13,6 +13,12 @@ module.exports = (sequelize, DataTypes) => {
     },
     EsIA: {
       type: DataTypes.BOOLEAN
+    },    
+    TiempoRptaPostulante: {
+    type: DataTypes.INTEGER
+    },
+    TiempoLimite: {
+    type: DataTypes.INTEGER
     },
     Id_vacante: {
       type: DataTypes.INTEGER

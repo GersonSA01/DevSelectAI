@@ -3,7 +3,7 @@ module.exports = (sequelize, DataTypes) => {
     id_Evaluacion: { type: DataTypes.INTEGER, primaryKey: true },
     RptaPostulante: DataTypes.STRING,
     Puntaje: DataTypes.INTEGER,
-    Observaciones: DataTypes.STRING,
+    ObservacionGeneral: DataTypes.STRING,
     Id_pregunta: DataTypes.INTEGER,
     Id_postulante: DataTypes.INTEGER
   }, {
