@@ -25,7 +25,7 @@ export async function Alert(options) {
       htmlContainer: 'text-primaryButton mb-4',
       confirmButton: 'bg-primaryButton hover:bg-primaryButtonHover text-white font-semibold py-2 px-6 rounded-full',
       cancelButton: 'bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-full',
-      input: 'text-black p-2 rounded mt-4',
+      input: 'text-black p-2 rounded mt-4 bg-white', // asegura visibilidad del <select>
     },
     preConfirm: options.preConfirm || undefined,
   });

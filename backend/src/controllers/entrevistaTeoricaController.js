@@ -1,11 +1,12 @@
 const db = require('../models');
 const { Sequelize } = require('sequelize');
+const { OpenAI } = require("openai");
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); // asegúrate de tener esta variable en `.env`
 
 exports.generarEvaluacion = async (req, res) => {
   try {
     const idPostulante = parseInt(req.params.idPostulante);
 
-    // Buscar vacante asignada al postulante
     const seleccion = await db.PostulanteVacante.findOne({
       where: { Id_Postulante: idPostulante }
     });
@@ -16,7 +17,6 @@ exports.generarEvaluacion = async (req, res) => {
 
     const idVacante = seleccion.Id_Vacante;
 
-    // Verificar si ya tiene evaluación
     const evaluacionesExistentes = await db.Evaluacion.findAll({
       where: { Id_postulante: idPostulante },
       include: {
@@ -34,12 +34,10 @@ exports.generarEvaluacion = async (req, res) => {
         opciones: ev.pregunta.opciones?.map(o => ({
           Id_Opcion: o.Id_Opcion,
           Opcion: o.Opcion
-        })) || [] // puede estar vacío en la técnica
+        })) || []
       }));
       return res.json(resultado);
     }
-
-    // Si no tiene, generar 5 preguntas teóricas + 1 técnica
 
     const preguntas = await db.Pregunta.findAll({
       where: { Id_vacante: idVacante },
@@ -50,7 +48,6 @@ exports.generarEvaluacion = async (req, res) => {
 
     const evaluaciones = [];
 
-    // ➕ Insertar las 5 teóricas
     for (const pregunta of preguntas) {
       const evaluacion = await db.Evaluacion.create({
         Id_postulante: idPostulante,
@@ -71,16 +68,15 @@ exports.generarEvaluacion = async (req, res) => {
       });
     }
 
-   // Excluir preguntas que ya se usaron como teóricas
-const idsPreguntasTeoricas = preguntas.map(p => p.Id_Pregunta);
+    const idsPreguntasTeoricas = preguntas.map(p => p.Id_Pregunta);
 
-const preguntaTecnica = await db.Pregunta.findOne({
-  where: {
-    Id_vacante: idVacante,
-    Id_Pregunta: { [Sequelize.Op.notIn]: idsPreguntasTeoricas }
-  },
-  include: [{ model: db.PreguntaTecnica, as: 'preguntaTecnica', required: true }]
-});
+    const preguntaTecnica = await db.Pregunta.findOne({
+      where: {
+        Id_vacante: idVacante,
+        Id_Pregunta: { [Sequelize.Op.notIn]: idsPreguntasTeoricas }
+      },
+      include: [{ model: db.PreguntaTecnica, as: 'preguntaTecnica', required: true }]
+    });
 
     if (preguntaTecnica && preguntaTecnica.preguntaTecnica) {
       const evaluacionTecnica = await db.Evaluacion.create({
@@ -95,7 +91,7 @@ const preguntaTecnica = await db.Pregunta.findOne({
         Id_Evaluacion: evaluacionTecnica.id_Evaluacion,
         Id_Pregunta: preguntaTecnica.Id_Pregunta,
         Pregunta: preguntaTecnica.Pregunta,
-        opciones: [] // una pregunta técnica no tiene opciones
+        opciones: []
       });
     }
 
@@ -106,9 +102,6 @@ const preguntaTecnica = await db.Pregunta.findOne({
   }
 };
 
-
-
-// ✅ Guardar la respuesta del postulante a una pregunta
 exports.responderPregunta = async (req, res) => {
   try {
     const idEvaluacion = parseInt(req.params.idEvaluacion);
@@ -133,7 +126,6 @@ exports.responderPregunta = async (req, res) => {
     res.status(500).json({ error: 'Error al guardar respuesta' });
   }
 };
-
 
 exports.obtenerPreguntaTecnicaAsignada = async (req, res) => {
   try {
@@ -167,5 +159,57 @@ exports.obtenerPreguntaTecnicaAsignada = async (req, res) => {
   } catch (error) {
     console.error('❌ Error al obtener pregunta técnica:', error);
     res.status(500).json({ error: 'Error interno al obtener la pregunta técnica' });
+  }
+};
+
+exports.pedirAyudaIA = async (req, res) => {
+  try {
+    const { idPostulante } = req.body;
+
+    const evaluacion = await db.Evaluacion.findOne({
+      where: { Id_postulante: idPostulante },
+      include: {
+        model: db.Pregunta,
+        as: 'pregunta',
+        required: true,
+        include: [{
+          model: db.PreguntaTecnica,
+          as: 'preguntaTecnica',
+          required: true
+        }]
+      }
+    });
+
+    if (!evaluacion || !evaluacion.pregunta?.preguntaTecnica) {
+      return res.status(404).json({ error: 'Pregunta técnica no encontrada para el postulante' });
+    }
+
+    if (evaluacion.pregunta.preguntaTecnica.UsoIA) {
+      return res.status(400).json({ error: 'La ayuda de IA ya fue utilizada para esta pregunta.' });
+    }
+
+const prompt = `Eres un entrevistador técnico. Da al postulante una pista muy breve y útil: una idea clave, una línea de código orientativa o un enfoque inicial. Sé amable y no reveles la solución.
+
+Pregunta:
+${evaluacion.pregunta.Pregunta}`;
+
+
+    const completion = await openai.chat.completions.create({
+      messages: [{ role: 'user', content: prompt }],
+      model: 'gpt-4',
+      temperature: 0.6
+    });
+
+    const sugerencia = completion.choices[0].message.content;
+
+    await db.PreguntaTecnica.update(
+      { UsoIA: true },
+      { where: { Id_Pregunta: evaluacion.pregunta.Id_Pregunta } }
+    );
+
+    res.json({ sugerencia });
+  } catch (error) {
+    console.error('❌ Error al pedir ayuda IA:', error);
+    res.status(500).json({ error: 'Error interno al solicitar ayuda' });
   }
 };

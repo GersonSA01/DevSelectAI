@@ -1,0 +1,33 @@
+[33md8661e9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrecuperar-trabajo[m[33m, [m[1;32mrecuperar-desde-backup[m[33m, [m[1;32mmain[m[33m)[m HEAD@{2025-06-07 23:27:14 -0500}: checkout: moving from main to recuperar-trabajo
+[33md8661e9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrecuperar-trabajo[m[33m, [m[1;32mrecuperar-desde-backup[m[33m, [m[1;32mmain[m[33m)[m HEAD@{2025-06-07 23:26:19 -0500}: checkout: moving from recuperar-trabajo to main
+[33md8661e9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrecuperar-trabajo[m[33m, [m[1;32mrecuperar-desde-backup[m[33m, [m[1;32mmain[m[33m)[m HEAD@{2025-06-07 23:25:24 -0500}: checkout: moving from recuperar-todo to recuperar-trabajo
+[33mc060441[m[33m ([m[1;32mrecuperar-todo[m[33m)[m HEAD@{2025-06-07 23:24:04 -0500}: commit: Guardando cambios antes de recuperar backup
+[33m014e0fb[m[33m ([m[1;31morigin/main[m[33m, [m[1;32mPostulantes[m[33m)[m HEAD@{2025-06-07 23:23:27 -0500}: checkout: moving from main to recuperar-todo
+[33md8661e9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrecuperar-trabajo[m[33m, [m[1;32mrecuperar-desde-backup[m[33m, [m[1;32mmain[m[33m)[m HEAD@{2025-06-07 23:23:14 -0500}: reset: moving to HEAD
+[33md8661e9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrecuperar-trabajo[m[33m, [m[1;32mrecuperar-desde-backup[m[33m, [m[1;32mmain[m[33m)[m HEAD@{2025-06-07 23:16:00 -0500}: checkout: moving from recuperar-desde-backup to main
+[33md8661e9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrecuperar-trabajo[m[33m, [m[1;32mrecuperar-desde-backup[m[33m, [m[1;32mmain[m[33m)[m HEAD@{2025-06-07 23:14:53 -0500}: checkout: moving from main to recuperar-desde-backup
+[33md8661e9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrecuperar-trabajo[m[33m, [m[1;32mrecuperar-desde-backup[m[33m, [m[1;32mmain[m[33m)[m HEAD@{2025-06-07 23:10:58 -0500}: checkout: moving from main to main
+[33md8661e9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrecuperar-trabajo[m[33m, [m[1;32mrecuperar-desde-backup[m[33m, [m[1;32mmain[m[33m)[m HEAD@{2025-06-07 23:10:08 -0500}: commit: � Backup antes de resolver conflicto de ramas
+[33mebaeec9[m HEAD@{2025-06-07 23:07:56 -0500}: rebase (abort): returning to refs/heads/main
+[33m014e0fb[m[33m ([m[1;31morigin/main[m[33m, [m[1;32mPostulantes[m[33m)[m HEAD@{2025-06-07 23:07:05 -0500}: checkout: moving from main to Postulantes
+[33m014e0fb[m[33m ([m[1;31morigin/main[m[33m, [m[1;32mPostulantes[m[33m)[m HEAD@{2025-06-07 21:17:52 -0500}: commit: Aparcion de vacantes segun habilidad y arreglo de entrevista IA
+[33m7e12734[m HEAD@{2025-06-01 20:05:37 -0500}: commit: Se añadio la generacion de preguntas con IA, y se finalizo el modulo de Vacantes. Se completo el login del postulante y la eleccion de habilidades junto al envio de correo y se añadio el token de acceso a las rutas de la entrevista
+[33mc43cbdc[m HEAD@{2025-05-31 22:49:58 -0500}: commit: Registro de las habilidades del postulante y implementacoin del modulo de preguntas
+[33m657ea8a[m HEAD@{2025-05-29 22:21:03 -0500}: commit: Realizacion de login y register exitosos, se sufrio que se registre tanto el docente como estudiante, ya aparece el nombre del docente en el sidebar, aparecen las habilidades pendiente en que se registren las vacantes
+[33m6c60e0a[m HEAD@{2025-05-28 00:01:45 -0500}: commit: Integracion de bdd al modulo de configuracion, integracion de Sidebar integracion de login y register con el docente y estudiante
+[33maabff79[m HEAD@{2025-05-23 22:52:37 -0500}: commit: Añadir informes y editar habilidades
+[33mdd34455[m HEAD@{2025-05-06 23:05:08 -0500}: commit: Gerson: Arreglo de postulante, Angeles: Pantallas de reclutador
+[33mfbd1600[m HEAD@{2025-05-02 10:32:15 -0500}: commit: Correccion de errores
+[33mebaeec9[m HEAD@{2025-04-30 22:10:58 -0500}: rebase (abort): returning to refs/heads/main
+[33mebaeec9[m HEAD@{2025-04-30 22:10:58 -0500}: rebase (abort): returning to refs/heads/main
+[33md850d91[m HEAD@{2025-04-30 22:07:38 -0500}: commit (amend): Entrevista con IA
+[33mebaeec9[m HEAD@{2025-04-30 22:03:20 -0500}: commit: Entrevista con IA
+[33m031076e[m HEAD@{2025-04-30 22:01:42 -0500}: commit: Entrevista con IA
+[33mbb92b4e[m HEAD@{2025-04-28 22:06:02 -0500}: pull origin main: Fast-forward
+[33m34b9055[m[33m ([m[1;31morigin/dev[m[33m, [m[1;32mdev[m[33m)[m HEAD@{2025-04-28 22:05:59 -0500}: checkout: moving from feature/gerson/postulacion to main
+[33m6b6afb7[m[33m ([m[1;31morigin/feature/gerson/postulacion[m[33m, [m[1;32mfeature/gerson/postulacion[m[33m)[m HEAD@{2025-04-28 21:59:15 -0500}: commit: Templates from Postulant: Pending from Validation of cameras onwards
+[33m34b9055[m[33m ([m[1;31morigin/dev[m[33m, [m[1;32mdev[m[33m)[m HEAD@{2025-04-28 16:00:34 -0500}: checkout: moving from dev to feature/gerson/postulacion
+[33m34b9055[m[33m ([m[1;31morigin/dev[m[33m, [m[1;32mdev[m[33m)[m HEAD@{2025-04-28 16:00:26 -0500}: checkout: moving from dev to dev
+[33m34b9055[m[33m ([m[1;31morigin/dev[m[33m, [m[1;32mdev[m[33m)[m HEAD@{2025-04-28 15:59:51 -0500}: checkout: moving from main to dev
+[33m34b9055[m[33m ([m[1;31morigin/dev[m[33m, [m[1;32mdev[m[33m)[m HEAD@{2025-04-25 19:06:36 -0500}: Branch: renamed refs/heads/main to refs/heads/main
+[33m34b9055[m[33m ([m[1;31morigin/dev[m[33m, [m[1;32mdev[m[33m)[m HEAD@{2025-04-25 19:06:36 -0500}: commit (initial): Primer commit: Subida inicial del proyecto

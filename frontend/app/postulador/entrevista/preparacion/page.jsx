@@ -1,7 +1,7 @@
 'use client';
 
 import { useContext, useRef, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { StreamContext } from '../../../../context/StreamContext';
 import AnimatedCircle from '../../../components/ui/AnimatedCircle';
 import DetectorOscuridad from '../../../components/DetectorOscuridad';
@@ -11,7 +11,8 @@ export default function PresentacionEntrevista() {
   const { cameraStream } = useContext(StreamContext);
   const camRef = useRef(null);
   const [cameraVisible, setCameraVisible] = useState(true); // 🆕 Estado para visibilidad
-
+  const searchParams = useSearchParams(); // 👈 PARA LEER PARAMETROS
+  const token = searchParams.get('token'); // 👈 EXTRAES EL TOKEN
   useEffect(() => {
     if (cameraStream && camRef.current) {
       camRef.current.srcObject = cameraStream;
@@ -39,7 +40,7 @@ export default function PresentacionEntrevista() {
           <li>Si tienes dudas, puedes expresarlas en voz alta durante la entrevista.</li>
         </ul>
         <button
-          onClick={() => router.push('/postulador/entrevista/presentacion')}
+          onClick={() => router.push(`/postulador/entrevista/presentacion?token=${token}`)}
           disabled={!cameraVisible}
           className={`px-6 py-2 rounded-full font-semibold text-black ${cameraVisible ? '' : 'cursor-not-allowed bg-gray-500'}`}
           style={{ backgroundColor: cameraVisible ? '#3BDCF6' : '#6B7280' }}

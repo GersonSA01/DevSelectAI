@@ -34,10 +34,9 @@ const config: Config = {
           foreground: 'hsl(var(--primary-foreground))',
         },
         primaryButton: {
-          DEFAULT: '#00C2FF',         // Azul celeste
-          hover: '#009AC9',            // Azul más oscuro al pasar mouse
+          DEFAULT: '#00c8ff',
+          hover: '#0099cc',
         },
-  
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
           foreground: 'hsl(var(--secondary-foreground))',
@@ -64,9 +63,6 @@ const config: Config = {
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))',
         },
-
-        primaryButton: '#00c8ff',
-        primaryButtonHover: '#0099cc',
         secondaryText: '#cbd5e1',
         pageBackground: '#0a0a23',
       },

@@ -7,6 +7,8 @@ router.get('/generar-evaluacion/:idPostulante', entrevistaTeoricaController.gene
 
 // Guardar la respuesta del postulante a una pregunta
 router.post('/responder/:idEvaluacion', entrevistaTeoricaController.responderPregunta);
+// Obtener las preguntas teóricas y técnicas asignadas al postulante
+router.post('/pedir-ayuda', entrevistaTeoricaController.pedirAyudaIA);
 
 router.get('/pregunta-tecnica-asignada/:idPostulante', entrevistaTeoricaController.obtenerPreguntaTecnicaAsignada);
 

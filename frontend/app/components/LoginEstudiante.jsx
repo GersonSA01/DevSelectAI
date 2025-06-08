@@ -1,11 +1,47 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import RegistroDialog from "../components/RegistroDialog";
 import SeleccionarPerfilDialog from "../components/SeleccionarPerfilDialog";
 
 export default function LoginEstudiante() {
+  const router = useRouter();
   const [openRegistro, setOpenRegistro] = useState(false);
   const [openPerfil, setOpenPerfil] = useState(false);
+
+  const [correo, setCorreo] = useState("");
+  const [contrasena, setContrasena] = useState("");
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
+    try {
+      const res = await fetch("http://localhost:5000/api/login-postulante", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ correo, contrasena }),
+      });
+
+      if (!res.ok) {
+        alert("Correo o contraseña incorrectos");
+        return;
+      }
+
+      const data = await res.json();
+      console.log("Inicio de sesión exitoso:", data);
+
+      // ✅ Guarda el ID en localStorage
+      localStorage.setItem("id_postulante", data.id);
+
+      alert(`Bienvenido/a ${data.nombres}`);
+      router.push("/postulador");
+    } catch (error) {
+      console.error("Error al iniciar sesión:", error);
+      alert("Ocurrió un error al intentar iniciar sesión");
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
@@ -17,15 +53,19 @@ export default function LoginEstudiante() {
           Sistema Inteligente para Prácticas Preprofesionales UNEMI
         </p>
 
-        <form className="flex flex-col gap-4">
+        <form className="flex flex-col gap-4" onSubmit={handleLogin}>
           <input
             type="email"
             placeholder="correo@unemi.edu.ec"
+            value={correo}
+            onChange={(e) => setCorreo(e.target.value)}
             className="p-3 rounded-md bg-[#1E293B] text-white placeholder-gray-400 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#38bdf8]"
           />
           <input
             type="password"
             placeholder="Contraseña"
+            value={contrasena}
+            onChange={(e) => setContrasena(e.target.value)}
             className="p-3 rounded-md bg-[#1E293B] text-white placeholder-gray-400 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#38bdf8]"
           />
 
@@ -50,7 +90,11 @@ export default function LoginEstudiante() {
       </div>
 
       {/* Modales */}
-      <RegistroDialog open={openRegistro} setOpen={setOpenRegistro} setOpenPerfil={setOpenPerfil} />
+      <RegistroDialog
+        open={openRegistro}
+        setOpen={setOpenRegistro}
+        setOpenPerfil={setOpenPerfil}
+      />
       <SeleccionarPerfilDialog open={openPerfil} setOpen={setOpenPerfil} />
     </div>
   );
