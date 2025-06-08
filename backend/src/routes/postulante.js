@@ -1,11 +1,16 @@
 const express = require("express");
 const router = express.Router();
-const { crearPostulante, guardarHabilidades, obtenerPorToken, seleccionarVacante } = require("../controllers/postulanteController");
+const {
+  crearPostulante,
+  guardarHabilidades,
+  obtenerPorToken,
+  seleccionarVacante,
+  getAllPostulantes // ⬅️ Agregado
+} = require("../controllers/postulanteController");
 
+router.get("/", getAllPostulantes); // ⬅️ Nueva ruta GET
 router.post("/", crearPostulante);
 router.post("/habilidades", guardarHabilidades);
-
-// 🔥 NUEVA RUTA GET PARA CONSULTAR POSTULANTE POR TOKEN
 router.get("/token/:token", obtenerPorToken);
 router.post('/seleccionar-vacante', seleccionarVacante);
 
