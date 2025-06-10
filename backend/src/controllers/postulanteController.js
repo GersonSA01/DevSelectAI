@@ -2,8 +2,10 @@ const crypto = require("crypto");
 const db = require('../models');
 const sendEmail = require('../../utils/sendEmail');
 require('dotenv').config();
+
 const baseUrl = process.env.URL_FRONTEND || "http://localhost:3000";
 
+// 👉 Crear postulante y enviar correo con link de entrevista
 const crearPostulante = async (req, res) => {
   const datos = req.body;
 
@@ -30,6 +32,13 @@ const crearPostulante = async (req, res) => {
           <a href="${baseUrl}/login" style="color: #0f172a;">${baseUrl}/login</a>
         </p>
 
+        <p style="margin: 20px 0;">
+          🎤 Cuando estés listo para iniciar la entrevista, accede al siguiente enlace único:<br>
+          <a href="${baseUrl}/invitacion?token=${token}" style="color: #0f172a;">
+            ${baseUrl}/invitacion?token=${token}
+          </a>
+        </p>
+
         <p>Si tienes algún inconveniente, no dudes en contactarnos.</p>
 
         <div style="background-color: #0f172a; color: white; text-align: center; font-size: 12px; padding: 10px; margin-top: 40px;">
@@ -47,6 +56,7 @@ const crearPostulante = async (req, res) => {
   }
 };
 
+// 👉 Guardar hasta 3 habilidades seleccionadas por el postulante
 const guardarHabilidades = async (req, res) => {
   const { idPostulante, habilidades } = req.body;
 
@@ -71,6 +81,7 @@ const guardarHabilidades = async (req, res) => {
   }
 };
 
+// 👉 Buscar postulante por token (para entrevista)
 const obtenerPorToken = async (req, res) => {
   const { token } = req.params;
 
@@ -90,6 +101,7 @@ const obtenerPorToken = async (req, res) => {
   }
 };
 
+// 👉 Asignar vacante a postulante y enviar correo con botón de entrevista
 const seleccionarVacante = async (req, res) => {
   const { idPostulante, idVacante } = req.body;
 
@@ -143,7 +155,14 @@ const seleccionarVacante = async (req, res) => {
 
           <p><strong>✅ Tus habilidades seleccionadas:</strong><br>${habilidadesTexto}</p>
 
-          <p>Revisa tu panel para continuar con el proceso.</p>
+          <p style="margin-top: 30px; text-align: center;">
+            <a href="${baseUrl}/invitacion?token=${postulante.token_entrevista}" 
+              style="background-color: #0f172a; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+              🎤 Iniciar entrevista
+            </a>
+          </p>
+
+          <p style="margin-top: 20px;">Revisa tu panel para continuar con el proceso.</p>
         </div>
 
         <div style="background-color: #0f172a; color: white; text-align: center; font-size: 12px; padding: 10px;">
@@ -161,9 +180,30 @@ const seleccionarVacante = async (req, res) => {
   }
 };
 
+// ✅ NUEVO: Obtener todos los postulantes
+const getAllPostulantes = async (req, res) => {
+  try {
+    const postulantes = await db.Postulante.findAll({
+      include: [
+        {
+          model: db.DetalleHabilidad,
+          as: 'habilidades',
+          include: [{ model: db.Habilidad, as: 'habilidad' }]
+        }
+      ]
+    });
+
+    res.json(postulantes);
+  } catch (error) {
+    console.error('❌ Error al obtener postulantes:', error);
+    res.status(500).json({ error: 'Error al obtener postulantes' });
+  }
+};
+
 module.exports = {
   crearPostulante,
   guardarHabilidades,
   obtenerPorToken,
-  seleccionarVacante
+  seleccionarVacante,
+  getAllPostulantes // 👈 Asegúrate de exportarla
 };
