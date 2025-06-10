@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
   const router = useRouter();
@@ -16,37 +16,57 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
   const [contrasena, setContrasena] = useState("");
   const [confirmarContrasena, setConfirmarContrasena] = useState("");
   const [carrera, setCarrera] = useState("");
-const [itinerario, setItinerario] = useState('');
+  const [itinerario, setItinerario] = useState("");
+  const [ciudadNombre, setCiudadNombre] = useState("");
+  const [ciudades, setCiudades] = useState([]);
 
-const handleBuscar = async () => {
-  if (!cedula) return;
+  // Cargar ciudades al montar el componente
+  useEffect(() => {
+    fetch("http://localhost:5000/api/ciudades")
+      .then((res) => res.json())
+      .then((data) => setCiudades(data));
+  }, []);
 
-  try {
-    const res = await fetch(`http://localhost:5000/api/excel/${cedula}`);
-    if (!res.ok) {
-      alert("Postulante no encontrado");
-      return;
+  const handleBuscar = async () => {
+    if (!cedula) return;
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/excel/${cedula}`);
+      if (!res.ok) {
+        alert("Postulante no encontrado");
+        return;
+      }
+
+      const data = await res.json();
+
+      if (!data.Carrera || !data.Carrera.toLowerCase().includes("software")) {
+        alert("Solo se permiten registros para carreras de Software.");
+        return;
+      }
+
+      setNombres(data.Nombre);
+      setApellidos(data.Apellido);
+      setCorreo(data.Correo);
+      setRol(data.Rol);
+      setCarrera(data.Carrera);
+      setItinerario(data.Itinerario || "Sin Itinerario");
+      setCiudadNombre(data.Ciudad || ""); // Guarda la ciudad del Excel
+      setTelefono("");
+    } catch (error) {
+      console.error("Error buscando postulante:", error);
     }
+  };
 
-    const data = await res.json();
-
-    if (!data.Carrera || !data.Carrera.toLowerCase().includes("software")) {
-      alert("Solo se permiten registros para carreras de Software.");
-      return;
-    }
-
-    setNombres(data.Nombre);
-    setApellidos(data.Apellido);
-    setCorreo(data.Correo);
-    setRol(data.Rol);
-    setCarrera(data.Carrera);
-    setItinerario(data.Itinerario || 'Sin Itinerario');
-    setTelefono(""); // campo editable
-  } catch (error) {
-    console.error("Error buscando postulante:", error);
-  }
-};
-
+  // Función para buscar el id_ciudad por nombre
+  const getIdCiudad = (nombreCiudad) => {
+    if (!ciudades.length) return null; // Si no hay ciudades, retorna null
+    const ciudad = ciudades.find(
+      (c) =>
+        c.Descripcion &&
+        c.Descripcion.toLowerCase().trim() === (nombreCiudad || "").toLowerCase().trim()
+    );
+    return ciudad ? ciudad.id_ciudad : null;
+  };
 
   const handleClose = () => {
     setOpen(false);
@@ -71,26 +91,36 @@ const handleBuscar = async () => {
       return;
     }
 
+    if (!ciudades.length) {
+      alert("Catálogo de ciudades no cargado. Intenta de nuevo en unos segundos.");
+      return;
+    }
+
+    const idCiudad = getIdCiudad(ciudadNombre);
+    if (!idCiudad) {
+      alert("No se encontró la ciudad en el catálogo. Contacta al administrador.");
+      return;
+    }
+
     let body = {};
     let endpoint = "";
 
     if (rol.toLowerCase() === "estudiante") {
       endpoint = "http://localhost:5000/api/postulante";
       body = {
-  Cedula: cedula,
-  Nombre: nombres,
-  Apellido: apellidos,
-  Correo: correo,
-  Telefono: telefono,
-  Contrasena: contrasena,
-  ayuda: false,
-  cant_alert: 0,
-  FechPostulacion: new Date(),
-  id_ciudad: null,
-  id_EstadoPostulacion: 1,
-  Itinerario: itinerario
-};
-
+        Cedula: cedula,
+        Nombre: nombres,
+        Apellido: apellidos,
+        Correo: correo,
+        Telefono: telefono,
+        Contrasena: contrasena,
+        ayuda: false,
+        cant_alert: 0,
+        FechPostulacion: new Date(),
+        id_ciudad: idCiudad, // Asigna el id de la ciudad aquí
+        id_EstadoPostulacion: 1,
+        Itinerario: itinerario,
+      };
     } else if (rol.toLowerCase() === "docente") {
       endpoint = "http://localhost:5000/api/reclutador";
       body = {
@@ -99,7 +129,7 @@ const handleBuscar = async () => {
         Apellidos: apellidos,
         Correo: correo,
         Telefono: telefono,
-        Contrasena: contrasena
+        Contrasena: contrasena,
       };
     } else {
       alert("Rol no reconocido.");
@@ -196,6 +226,14 @@ const handleBuscar = async () => {
             type="text"
             placeholder="Rol"
             value={rol}
+            readOnly
+            className="p-2 rounded-md bg-gray-800 text-white border border-gray-600 opacity-70 cursor-not-allowed"
+          />
+
+          <input
+            type="text"
+            placeholder="Ciudad"
+            value={ciudadNombre}
             readOnly
             className="p-2 rounded-md bg-gray-800 text-white border border-gray-600 opacity-70 cursor-not-allowed"
           />
