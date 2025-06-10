@@ -181,15 +181,25 @@ const seleccionarVacante = async (req, res) => {
   }
 };
 
-// ✅ NUEVO: Obtener todos los postulantes
+
 const getAllPostulantes = async (req, res) => {
   try {
     const postulantes = await db.Postulante.findAll({
       include: [
         {
+          model: db.EstadoPostulacion,
+          as: 'estadoPostulacion', // 👈 Usa este alias
+          attributes: ['descripcion']
+        },
+        {
           model: db.DetalleHabilidad,
           as: 'habilidades',
           include: [{ model: db.Habilidad, as: 'habilidad' }]
+        },
+        {
+          model: db.PostulanteVacante,
+          as: 'selecciones',
+          include: [{ model: db.Vacante, as: 'vacante' }]
         }
       ]
     });
@@ -200,6 +210,9 @@ const getAllPostulantes = async (req, res) => {
     res.status(500).json({ error: 'Error al obtener postulantes' });
   }
 };
+
+
+
 
 const obtenerPorId = async (req, res) => {
   const id = req.params.id;

@@ -18,7 +18,13 @@ router.get("/:cedula", (req, res) => {
       return res.status(404).json({ mensaje: "Estudiante no encontrado" });
     }
 
-    res.json(estudiante);
+    // Normaliza el nombre de la ciudad si es necesario
+    const ciudad = estudiante.Ciudad || estudiante.ciudad || estudiante.CIUDAD || "";
+
+    res.json({
+      ...estudiante,
+      Ciudad: ciudad
+    });
   } catch (error) {
     console.error("❌ Error leyendo Excel:", error);
     res.status(500).json({ error: "Error leyendo el archivo Excel" });

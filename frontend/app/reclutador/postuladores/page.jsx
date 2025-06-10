@@ -7,26 +7,30 @@ import Swal from 'sweetalert2';
 export default function PostulacionesPage() {
   const router = useRouter();
   const [filtroNombre, setFiltroNombre] = useState('');
-  const [itinerario, setItinerario] = useState('1');
+  const [itinerario, setItinerario] = useState('');
   const [postulantes, setPostulantes] = useState([]);
+  const [itinerarios, setItinerarios] = useState([]);
 
-  useEffect(() => {
-    const fetchPostulantes = async () => {
-      try {
-        const res = await fetch('http://localhost:5000/api/postulantes');
-        const data = await res.json();
-        console.log('🔍 Datos recibidos:', data);
-        if (Array.isArray(data)) setPostulantes(data);
-        else if (Array.isArray(data.postulantes)) setPostulantes(data.postulantes);
-        else setPostulantes([]);
-      } catch (error) {
-        console.error('Error al obtener postulantes:', error);
-        setPostulantes([]);
-      }
-    };
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const [resPostulantes, resItinerarios] = await Promise.all([
+        fetch('http://localhost:5000/api/postulantes'),
+        fetch('http://localhost:5000/api/itinerarios'),
+      ]);
 
-    fetchPostulantes();
-  }, []);
+      const postulantesData = await resPostulantes.json();
+      const itinerariosData = await resItinerarios.json();
+
+      setPostulantes(Array.isArray(postulantesData) ? postulantesData : postulantesData.postulantes || []);
+      setItinerarios(itinerariosData || []);
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+    }
+  };
+
+  fetchData();
+}, []);
 
   const aceptarPostulante = async (id, nombre, vacante) => {
     const confirmacion = await Swal.fire({
@@ -102,15 +106,19 @@ export default function PostulacionesPage() {
 
         <div className="flex items-center gap-2">
           <label>Itinerario:</label>
-          <select
-            className="text-black rounded px-2 py-1"
-            value={itinerario}
-            onChange={(e) => setItinerario(e.target.value)}
-          >
-            <option value="1">Itinerario 1</option>
-            <option value="2">Itinerario 2</option>
-            <option value="3">Itinerario 3</option>
-          </select>
+<select
+  className="text-black rounded px-2 py-1"
+  value={itinerario}
+  onChange={(e) => setItinerario(e.target.value)}
+>
+  <option value="">Todos</option>
+  {itinerarios.map(it => (
+    <option key={it.id_Itinerario} value={it.id_Itinerario}>
+      {it.descripcion}
+    </option>
+  ))}
+</select>
+
         </div>
       </div>
 
@@ -119,9 +127,9 @@ export default function PostulacionesPage() {
           <thead className="bg-[#1e3a8a]">
             <tr>
               <th className="border p-2">Nombre</th>
-              <th className="border p-2">Estado</th>
-              <th className="border p-2">Vacante</th>
+              <th className="border p-2">Vacante Escogida</th>
               <th className="border p-2">Habilidades</th>
+              <th className="border p-2">Estado</th>
               <th className="border p-2">Calificación</th>
               <th className="border p-2">Acciones</th>
             </tr>
@@ -129,27 +137,35 @@ export default function PostulacionesPage() {
           <tbody>
             {postulantes
               .filter(p => `${p.Nombre} ${p.Apellido}`.toLowerCase().includes(filtroNombre.toLowerCase()))
+              .filter(p =>
+                // Filtra por itinerario solo si hay uno seleccionado
+                !itinerario || 
+                (p.selecciones?.[0]?.vacante?.id_Itinerario?.toString() === itinerario)
+              )
               .map((p, i) => (
                 <tr key={i} className="border-t border-gray-700">
                   <td className="p-2">{p.Nombre} {p.Apellido}</td>
-                  <td className="p-2">{p.Estado || '—'}</td>
-                  <td className="p-2">{p.PostulanteVacantes?.[0]?.vacante?.Descripcion || '—'}</td>
+                  <td className="p-2">{p.selecciones?.[0]?.vacante?.Descripcion || '—'}</td>
                   <td className="p-2">
                     {(p.habilidades || []).map(h => h.habilidad?.Descripcion).join(', ') || '—'}
                   </td>
+                  <td className="p-2">{p.estadoPostulacion?.descripcion || '—'}</td>
                   <td className="p-2">
-                    {p.CalificacionEntrevista ? (
-                      `${p.CalificacionEntrevista}/10`
-                    ) : (
-                      <button
-                        className="bg-green-100 text-black px-2 py-1 rounded text-sm"
-                        onClick={() =>
-                          router.push(`/reclutador/evaluaciones?idPostulante=${p.Id_Postulante}`)
-                        }
-                      >
-                        Comprobar calificación
-                      </button>
-                    )}
+                   {p.CalificacionEntrevista ? (
+  `${p.CalificacionEntrevista}/10`
+) : p.estadoPostulacion?.descripcion === 'Evaluado' ? (
+  <button
+    className="bg-green-100 text-black px-2 py-1 rounded text-sm"
+    onClick={() =>
+      router.push(`/reclutador/evaluaciones?idPostulante=${p.Id_Postulante}`)
+    }
+  >
+    Comprobar calificación
+  </button>
+) : (
+  '—'
+)}
+
                   </td>
                   <td className="p-2 flex justify-center gap-3">
                     <FiEye
