@@ -69,11 +69,15 @@ export default function SeleccionHabilidades() {
       });
 
       // Buscar vacantes por habilidades
-      const resVacantes = await fetch('http://localhost:5000/api/vacantes/por-habilidades', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ habilidades: habilidadesSeleccionadas.map(h => h.Id_Habilidad) })
-      });
+const resVacantes = await fetch('http://localhost:5000/api/vacantes/por-habilidades', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    habilidades: habilidadesSeleccionadas.map(h => h.Id_Habilidad),
+    idPostulante
+  })
+});
+
 
       const vacantesData = await resVacantes.json();
       setVacantes(vacantesData);
@@ -123,13 +127,18 @@ export default function SeleccionHabilidades() {
 
       if (!resSeleccion.ok) throw new Error('Error al seleccionar vacante');
 
-      await Alert({
-        title: '¡Vacante asignada!',
-        text: 'Has sido asignado a la vacante exitosamente. Revisa tu correo para continuar.',
-        icon: 'success'
-      });
+await Alert({
+  title: '¡Proceso finalizado!',
+  text: 'Tu selección ha sido registrada correctamente. Serás redirigido al inicio.',
+  icon: 'success'
+});
 
-      router.push('/instrucciones');
+// Limpiar datos si deseas (opcional)
+localStorage.removeItem('id_postulante');
+
+// Redirigir al inicio
+router.push('/');
+
     } catch (error) {
       console.error('Error en el proceso:', error);
       await Alert({ title: 'Error', text: 'Ocurrió un error durante el proceso.', icon: 'error' });

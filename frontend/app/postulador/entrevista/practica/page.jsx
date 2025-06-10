@@ -1,15 +1,21 @@
 'use client';
 
-import { useContext, useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { StreamContext } from '../../../../context/StreamContext';
+import Temporizador from '../../../components/ui/Temporizador';
 
 export default function PracticaPage() {
   const { cameraStream } = useContext(StreamContext);
   const camRef = useRef(null);
   const router = useRouter();
-  const searchParams = useSearchParams(); // 👈 PARA LEER PARAMETROS
-  const token = searchParams.get('token'); // 👈 EXTRAES EL TOKEN
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token');
+
+  const [preguntaTecnica, setPreguntaTecnica] = useState(null);
+  const [codigo, setCodigo] = useState('');
+  const [ayudaIA, setAyudaIA] = useState('');
+  const [cargandoAyuda, setCargandoAyuda] = useState(false);
 
   useEffect(() => {
     if (cameraStream && camRef.current) {
@@ -18,101 +24,131 @@ export default function PracticaPage() {
     }
   }, [cameraStream]);
 
-  return (
-    <div className="min-h-screen w-full bg-[#0A0A23] text-white p-8 flex flex-col items-center">
-      <h2 className="text-2xl font-bold mb-6">Ejercicio de código</h2>
+  useEffect(() => {
+    const cargarPreguntaTecnica = async () => {
+      const idPostulante = localStorage.getItem('id_postulante');
+      console.log('📦 ID POSTULANTE ENVIADO:', localStorage.getItem('id_postulante'));
 
-      <div className="flex flex-col lg:flex-row w-full max-w-7xl gap-6">
-        {/* Panel de enunciado + cámara */}
-        <div className="w-full lg:w-1/2 bg-[#1D1E33] rounded-xl p-6 space-y-4">
-          <p className="text-sm text-gray-300">
-            Crea una API RESTful que permita gestionar una lista de estudiantes con operaciones básicas.
+      const res = await fetch(`http://localhost:5000/api/entrevista-teorica/pregunta-tecnica-asignada/${idPostulante}`);
+      const data = await res.json();
+      setPreguntaTecnica(data);
+    };
+    cargarPreguntaTecnica();
+  }, []);
+
+  const handlePedirAyuda = async () => {
+    if (!preguntaTecnica?.Pregunta) return;
+    setCargandoAyuda(true);
+    setAyudaIA('// Cargando ayuda...');
+
+    try {
+      const idPostulante = localStorage.getItem('id_postulante');
+
+      const res = await fetch('http://localhost:5000/api/entrevista-teorica/pedir-ayuda', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPostulante })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (res.status === 400 && data.error?.includes('ayuda')) {
+          setAyudaIA('// Ya utilizaste la ayuda de la IA para esta pregunta.');
+        } else {
+          setAyudaIA('// No se pudo obtener ayuda.');
+        }
+        return;
+      }
+
+      setAyudaIA(data.sugerencia || '// No se pudo obtener ayuda.');
+    } catch (err) {
+      console.error('❌ Error al pedir ayuda a la IA:', err);
+      setAyudaIA('// Ocurrió un error al pedir ayuda.');
+    } finally {
+      setCargandoAyuda(false);
+    }
+  };
+
+  const handleEnviar = async () => {
+    const idPostulante = localStorage.getItem('id_postulante');
+    try {
+      await fetch('http://localhost:5000/api/entrevista-teorica/guardar-respuesta-tecnica', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idPostulante,
+          idPregunta: preguntaTecnica.Id_Pregunta,
+          respuesta: codigo
+        })
+      });
+
+      router.push(`/postulador/entrevista/finalizacion?token=${token}`);
+    } catch (err) {
+      console.error('❌ Error al guardar respuesta técnica:', err);
+    }
+  };
+
+  return (
+<div className="min-h-screen w-full bg-[#0A0A23] text-white px-4 sm:px-6 lg:px-8 pt-24 pb-12 flex flex-col items-center">
+      <div className="w-full max-w-7xl flex items-center justify-between mb-6">
+        <h2 className="text-3xl font-bold text-white">Evaluación Técnica</h2>
+        <Temporizador duracion={900} onFinalizar={handleEnviar} />
+      </div>
+
+      <div className="flex flex-col lg:flex-row w-full max-w-7xl gap-8">
+        <div className="w-full lg:w-1/2 bg-[#1D1E33] rounded-2xl p-6 space-y-6 shadow-lg">
+          <p className="text-sm text-gray-300 mb-1 font-semibold uppercase">Enunciado</p>
+          <p className="text-base text-gray-200 whitespace-pre-wrap">
+            {preguntaTecnica?.Pregunta || 'Cargando pregunta técnica...'}
           </p>
 
-          <div className="bg-[#2B2C3F] p-4 rounded">
-            <p className="font-semibold mb-1">EJEMPLO 1</p>
-            <p className="text-sm"><strong>Input:</strong> POST /estudiantes</p>
-            <p className="text-sm mb-1">{'{ "nombre": "Ana", "edad": 22 }'}</p>
-            <p className="text-sm"><strong>Output:</strong> 201 Created</p>
-            <p className="text-sm">{'{ "id": 1, "nombre": "Ana", "edad": 22 }'}</p>
-          </div>
+          {[preguntaTecnica?.ejemplo1, preguntaTecnica?.ejemplo2].map((ej, i) => (
+            ej && (
+              <div key={i} className="bg-[#2B2C3F] p-4 rounded-xl">
+                <p className="font-semibold text-cyan-400 mb-2">EJEMPLO {i + 1}</p>
+                <pre className="text-sm text-white whitespace-pre-wrap">{ej}</pre>
+              </div>
+            )
+          ))}
 
-          <div className="bg-[#2B2C3F] p-4 rounded">
-            <p className="font-semibold mb-1">EJEMPLO 2</p>
-            <p className="text-sm"><strong>Input:</strong> GET /estudiantes/1</p>
-            <p className="text-sm"><strong>Output:</strong> 200 OK</p>
-            <p className="text-sm">{'{ "id": 1, "nombre": "Ana", "edad": 22 }'}</p>
-          </div>
-
-          <div className="text-sm text-gray-400">
-            <p><strong>Requerimientos:</strong></p>
-            <ul className="list-disc ml-5 mt-1 space-y-1">
-              <li>POST /estudiantes para agregar estudiantes</li>
-              <li>GET /estudiantes/:id para obtener un estudiante</li>
-              <li>Usar Express.js o FastAPI</li>
-              <li>Datos almacenados en memoria (lista)</li>
-              <li>Formato JSON entrada/salida</li>
-              <li>Manejo de errores (ej: 404)</li>
-            </ul>
-          </div>
-
-          {/* Cámara corregida */}
-          <div className="w-full aspect-video bg-black rounded-lg overflow-hidden mt-4">
-            <video
-              ref={camRef}
-              autoPlay
-              muted
-              className="w-full h-full object-cover rounded"
-            />
+          <div className="w-full aspect-video bg-black rounded-lg overflow-hidden">
+            <video ref={camRef} autoPlay muted className="w-full h-full object-cover" />
           </div>
         </div>
 
-        {/* Panel de código */}
-        <div className="w-full lg:w-1/2 bg-[#1D1E33] rounded-xl p-6 space-y-4">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm">Lenguaje:</span>
-            <div className="bg-[#2B2C3F] px-3 py-1 rounded text-sm">JavaScript</div>
-            <div className="ml-auto text-sm text-gray-300">⏱ 15:00</div>
-          </div>
-
+        <div className="w-full lg:w-1/2 bg-[#1D1E33] rounded-2xl p-6 space-y-6 shadow-lg">
           <textarea
-            placeholder="// Escribe tu código aquí..."
-            className="w-full h-64 bg-[#2B2C3F] text-sm text-white p-4 rounded resize-none font-mono"
-          >
-{`const express = require('express');
-const app = express();
-app.use(express.json());
+  value={codigo}
+  onChange={(e) => setCodigo(e.target.value)}
+  placeholder="// Escribe tu código aquí..."
+  className="w-full min-h-[200px] sm:min-h-[250px] lg:min-h-[300px] bg-[#2B2C3F] text-white text-sm p-4 rounded-xl font-mono resize-y border border-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+/>
 
-let estudiantes = [];
 
-app.post('/estudiantes', (req, res) => {
-  const nuevo = { id: estudiantes.length + 1, ...req.body };
-  estudiantes.push(nuevo);
-  res.status(201).json(nuevo);
-});
-
-app.get('/estudiantes/:id', (req, res) => {
-  const est = estudiantes.find(e => e.id == req.params.id);
-  if (!est) return res.status(404).json({ mensaje: 'No encontrado' });
-  res.json(est);
-});`}
-          </textarea>
-
-          <div className="flex gap-4 justify-start">
-            <button className="px-4 py-2 text-sm bg-[#3BDCF6] text-black font-semibold rounded">Pedir ayuda</button>
-            <button className="px-4 py-2 text-sm bg-gray-600 hover:bg-gray-700 rounded">Run</button>
+          <div className="flex flex-wrap gap-4 justify-start">
             <button
-              onClick={() => router.push(`/postulador/entrevista/finalizacion?token=${token}`)}
-              className="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 rounded"
+              onClick={handlePedirAyuda}
+              className="px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-black font-semibold rounded-lg transition"
+              disabled={cargandoAyuda}
             >
-              Enviar
+              {cargandoAyuda ? 'Cargando...' : 'Pedir ayuda'}
+            </button>
+
+            <button
+              onClick={handleEnviar}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition"
+            >
+              Enviar código
             </button>
           </div>
 
-          <div className="text-sm mt-2 text-gray-400">
-            <p>// Output de tu código aparecerá aquí…</p>
-            <p>{'{ "id": 1, "nombre": "Ana", "edad": 22 }'}</p>
-          </div>
+          {ayudaIA && (
+            <div className="mt-4 p-4 bg-[#0F172A] border border-cyan-400 rounded-lg text-sm text-white">
+              <p className="font-semibold mb-2 text-cyan-400">Sugerencia IA:</p>
+              <pre className="whitespace-pre-wrap">{ayudaIA}</pre>
+            </div>
+          )}
         </div>
       </div>
     </div>

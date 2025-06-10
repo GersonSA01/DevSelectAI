@@ -16,34 +16,37 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
   const [contrasena, setContrasena] = useState("");
   const [confirmarContrasena, setConfirmarContrasena] = useState("");
   const [carrera, setCarrera] = useState("");
+const [itinerario, setItinerario] = useState('');
 
-  const handleBuscar = async () => {
-    if (!cedula) return;
+const handleBuscar = async () => {
+  if (!cedula) return;
 
-    try {
-      const res = await fetch(`http://localhost:5000/api/excel/${cedula}`);
-      if (!res.ok) {
-        alert("Postulante no encontrado");
-        return;
-      }
-
-      const data = await res.json();
-
-      if (!data.Carrera || !data.Carrera.toLowerCase().includes("software")) {
-        alert("Solo se permiten registros para carreras de Software.");
-        return;
-      }
-
-      setNombres(data.Nombre);
-      setApellidos(data.Apellido);
-      setCorreo(data.Correo);
-      setRol(data.Rol);
-      setCarrera(data.Carrera);
-      setTelefono(""); // campo editable
-    } catch (error) {
-      console.error("Error buscando postulante:", error);
+  try {
+    const res = await fetch(`http://localhost:5000/api/excel/${cedula}`);
+    if (!res.ok) {
+      alert("Postulante no encontrado");
+      return;
     }
-  };
+
+    const data = await res.json();
+
+    if (!data.Carrera || !data.Carrera.toLowerCase().includes("software")) {
+      alert("Solo se permiten registros para carreras de Software.");
+      return;
+    }
+
+    setNombres(data.Nombre);
+    setApellidos(data.Apellido);
+    setCorreo(data.Correo);
+    setRol(data.Rol);
+    setCarrera(data.Carrera);
+    setItinerario(data.Itinerario || 'Sin Itinerario');
+    setTelefono(""); // campo editable
+  } catch (error) {
+    console.error("Error buscando postulante:", error);
+  }
+};
+
 
   const handleClose = () => {
     setOpen(false);
@@ -74,18 +77,20 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
     if (rol.toLowerCase() === "estudiante") {
       endpoint = "http://localhost:5000/api/postulante";
       body = {
-        Cedula: cedula,
-        Nombre: nombres,
-        Apellido: apellidos,
-        Correo: correo,
-        Telefono: telefono,
-        Contrasena: contrasena,
-        ayuda: false,
-        cant_alert: 0,
-        FechPostulacion: new Date(),
-        id_ciudad: null,
-        id_EstadoPostulacion: 1
-      };
+  Cedula: cedula,
+  Nombre: nombres,
+  Apellido: apellidos,
+  Correo: correo,
+  Telefono: telefono,
+  Contrasena: contrasena,
+  ayuda: false,
+  cant_alert: 0,
+  FechPostulacion: new Date(),
+  id_ciudad: null,
+  id_EstadoPostulacion: 1,
+  Itinerario: itinerario
+};
+
     } else if (rol.toLowerCase() === "docente") {
       endpoint = "http://localhost:5000/api/reclutador";
       body = {

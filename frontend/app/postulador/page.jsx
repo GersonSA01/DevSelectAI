@@ -5,58 +5,48 @@ import { useRouter } from 'next/navigation';
 import { Alert } from "../components/alerts/alerts";
 
 export default function Entrevistas() {
-  const [itinerarios, setItinerarios] = useState([]);
+  const [itinerario, setItinerario] = useState('');
   const router = useRouter();
 
   useEffect(() => {
-    const fetchItinerarios = async () => {
-      try {
-        const res = await fetch('http://localhost:5000/api/itinerarios');
-        const data = await res.json();
-        setItinerarios(data);
-      } catch (err) {
-        console.error('Error al cargar itinerarios:', err);
-        Alert({
+    const obtenerItinerario = async () => {
+      const idPostulante = localStorage.getItem('id_postulante');
+      console.log("🧾 ID del postulante:", idPostulante);
+
+      if (!idPostulante) {
+        await Alert({
           title: 'Error',
-          text: 'No se pudieron cargar los itinerarios.',
+          text: 'No se encontró el ID del postulante. Inicia sesión de nuevo.',
+          icon: 'error'
+        });
+        router.push('/');
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:5000/api/postulante/${idPostulante}`);
+        const data = await res.json();
+
+        if (!data || !data.Itinerario) {
+          throw new Error("No se pudo obtener el itinerario");
+        }
+
+        setItinerario(data.Itinerario);
+      } catch (err) {
+        console.error('Error al cargar itinerario:', err);
+        await Alert({
+          title: 'Error',
+          text: 'No se pudo obtener su itinerario. Intente más tarde.',
           icon: 'error'
         });
       }
     };
 
-    fetchItinerarios();
+    obtenerItinerario();
   }, []);
 
-  const handleContinuar = async () => {
-    const inputOptions = {};
-    itinerarios.forEach(it => {
-      inputOptions[it.id_Itinerario] = it.descripcion;
-    });
-
-    const result = await Alert({
-      title: 'Solicitud de Prácticas Pre-Profesionales',
-      text: 'Por favor elige tu itinerario para continuar',
-      icon: 'info',
-      input: 'select',
-      inputOptions,
-      inputPlaceholder: '-- Selecciona un itinerario --',
-      customClass: {
-        popup: 'bg-slate-900 text-white', // fondo oscuro del modal
-        input: 'text-black',               // input select con texto negro
-        confirmButton: 'bg-blue-600 text-white hover:bg-blue-700',
-      },
-      preConfirm: (value) => {
-        if (!value) {
-          Swal.showValidationMessage('Por favor selecciona un itinerario.');
-        }
-        return value;
-      },
-    });
-
-    if (result.isConfirmed && result.value) {
-      localStorage.setItem('id_itinerario', result.value); // Guardar selección
-      router.push('/postulador/habilidades');
-    }
+  const handleContinuar = () => {
+    router.push('/postulador/habilidades');
   };
 
   return (
@@ -65,9 +55,16 @@ export default function Entrevistas() {
       style={{ backgroundImage: "url('/fondo_pantalla.png')" }}
     >
       <h1 className="text-4xl font-bold text-secondaryText mb-6">Bienvenido a DevSelectAI</h1>
-      <p className="text-lg text-secondaryText text-center mb-8 mx-32">
-        Bienvenido al sistema inteligente de entrevistas y asignación de prácticas preprofesionales. A continuación, deberás seleccionar el itinerario de tu carrera. Con base en tu elección, se mostrarán las vacantes técnicas disponibles para que puedas postular.
+      
+      <p className="text-lg text-secondaryText text-center mb-4 mx-32">
+        Bienvenido al sistema inteligente de entrevistas y asignación de prácticas preprofesionales.
       </p>
+
+      {itinerario && (
+        <p className="text-md text-white text-center mb-6">
+          Usted está por seleccionar sus habilidades y vacantes del <strong>{itinerario}</strong>
+        </p>
+      )}
 
       <button
         onClick={handleContinuar}

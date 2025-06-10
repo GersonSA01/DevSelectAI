@@ -1,23 +1,39 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation'; // 👈 IMPORTADO
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useStream } from '../../../../context/StreamContext';
 import DetectorOscuridad from '../../../components/DetectorOscuridad';
+import CapturaPantalla from '../../../components/CapturaPantalla'; // ✅ IMPORTADO
 
 export default function ValidacionDispositivos() {
   const router = useRouter();
-  const { setCameraStream } = useStream();
+  const { setCameraStream, setScreenStream } = useStream(); // incluye screenStream
   const videoRef = useRef(null);
-  const audioRef = useRef(null);
-  const searchParams = useSearchParams(); // 👈 PARA LEER PARAMETROS
-  const token = searchParams.get('token'); // 👈 EXTRAES EL TOKEN
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token');
   const [cameraVisible, setCameraVisible] = useState(true);
   const [micReady, setMicReady] = useState(false);
   const [camReady, setCamReady] = useState(false);
   const [micVolume, setMicVolume] = useState(0);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
+  // Capturar pantalla al cargar
+  useEffect(() => {
+    const pedirPantalla = async () => {
+      try {
+        const streamPantalla = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        setScreenStream(streamPantalla);
+        console.log('🖥️ Pantalla compartida correctamente');
+      } catch (error) {
+        console.error('❌ Error al compartir pantalla:', error);
+        alert('Debes permitir compartir pantalla para continuar.');
+      }
+    };
+    pedirPantalla();
+  }, [setScreenStream]);
+
+  // Validar cámara y micrófono
   useEffect(() => {
     const initDevices = async () => {
       try {
@@ -26,7 +42,6 @@ export default function ValidacionDispositivos() {
         setCameraStream(stream);
         setCamReady(true);
 
-        // Probar micrófono
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const micSource = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
@@ -56,9 +71,15 @@ export default function ValidacionDispositivos() {
     router.push(`/postulador/entrevista/preparacion?token=${token}`);
   };
 
+  // ID evaluación simulado (ajústalo según tu flujo real)
+  const idEvaluacion = localStorage.getItem('id_evaluacion') || 1;
+
   return (
     <div className="min-h-screen bg-[#0A0A23] text-white px-6 py-10 flex flex-col items-center">
       <DetectorOscuridad onVisibilityChange={setCameraVisible} />
+
+      {/* Captura automática cada 30s */}
+      <CapturaPantalla idEvaluacion={idEvaluacion} auto={true} /> {/* ✅ INTEGRADO */}
 
       <h2 className="text-2xl font-bold mb-8">Verifica tu cámara, micrófono y comparte pantalla</h2>
 
@@ -77,27 +98,18 @@ export default function ValidacionDispositivos() {
         <div className="bg-[#1D1E33] p-6 rounded-lg shadow-md">
           <label className="block mb-2 text-sm text-gray-300">Selecciona tu micrófono</label>
           <div className="bg-[#2B2C3F] p-2 rounded text-sm mb-4">Predeterminado - Headset Microphone</div>
-          <label className="text-sm mb-1 block">Habla para probar tu micrófono. Escucharás tu voz <span className="text-[#3BDCF6] font-semibold">(obligatorio)</span></label>
-
-          {/* Indicador de volumen */}
+          <label className="text-sm mb-1 block">Habla para probar tu micrófono.</label>
           <div className="bg-gray-700 h-5 rounded overflow-hidden mt-2 mb-4">
             <div
               className="h-full bg-[#3BDCF6] transition-all duration-300"
               style={{ width: `${Math.min(100, micVolume * 2)}%` }}
             ></div>
           </div>
-
-          <button
-            onClick={() => alert('Micrófono detectado')}
-            className="px-4 py-2 text-sm bg-[#3BDCF6] text-black font-semibold rounded-md"
-          >
-            Probar micrófono
-          </button>
           <p className="mt-2 text-sm">{micReady ? 'Micrófono detectado ✔️' : 'Micrófono no detectado ❌'}</p>
         </div>
       </div>
 
-      {/* Aceptar términos */}
+      {/* Términos */}
       <label className="flex items-center mb-6 text-sm text-gray-300">
         <input
           type="checkbox"
@@ -105,10 +117,9 @@ export default function ValidacionDispositivos() {
           onChange={() => setTermsAccepted(!termsAccepted)}
           className="mr-2"
         />
-        Acepto los <a href="#" className="text-[#3BDCF6] underline mx-1">términos y condiciones</a> del proceso de entrevista por IA.
+        Acepto los <a href="#" className="text-[#3BDCF6] underline mx-1">términos y condiciones</a>.
       </label>
 
-      {/* Botón continuar */}
       <button
         onClick={handleStart}
         disabled={!termsAccepted || !cameraVisible}
@@ -121,10 +132,8 @@ export default function ValidacionDispositivos() {
         Iniciar entrevista
       </button>
 
-      {/* Nota inferior */}
       <p className="text-xs text-gray-400 text-center mt-6 max-w-3xl">
-        Al continuar, acepta que los resultados de esta entrevista asistida por IA, incluidas grabaciones y evaluaciones,
-        pueden compartirse para fines de asignación de plazas. Sus datos serán manejados con seguridad.
+        Al continuar, acepta que los resultados de esta entrevista asistida por IA pueden incluir grabaciones y capturas automáticas.
       </p>
     </div>
   );

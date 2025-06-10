@@ -10,9 +10,36 @@ export default function PresentacionEntrevista() {
   const router = useRouter();
   const { cameraStream } = useContext(StreamContext);
   const camRef = useRef(null);
-  const [cameraVisible, setCameraVisible] = useState(true); // 🆕 Estado para visibilidad
-  const searchParams = useSearchParams(); // 👈 PARA LEER PARAMETROS
-  const token = searchParams.get('token'); // 👈 EXTRAES EL TOKEN
+  const [cameraVisible, setCameraVisible] = useState(true);
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token');
+
+  const [nombrePostulante, setNombrePostulante] = useState('');
+
+  // ✅ Obtener datos del postulante al cargar
+  useEffect(() => {
+    const obtenerPostulante = async () => {
+      const yaGuardado = localStorage.getItem('id_postulante');
+      if (yaGuardado) return;
+
+      try {
+        const res = await fetch(`http://localhost:5000/api/postulante/token/${token}`);
+        const data = await res.json();
+
+        if (data?.Id_Postulante) {
+          localStorage.setItem('id_postulante', data.Id_Postulante);
+          setNombrePostulante(`${data.Nombre} ${data.Apellido}`);
+        } else {
+          console.warn('❌ Token inválido o sin datos de postulante.');
+        }
+      } catch (error) {
+        console.error('❌ Error al cargar datos del postulante:', error);
+      }
+    };
+
+    obtenerPostulante();
+  }, [token]);
+
   useEffect(() => {
     if (cameraStream && camRef.current) {
       camRef.current.srcObject = cameraStream;
@@ -22,16 +49,18 @@ export default function PresentacionEntrevista() {
 
   return (
     <div className="relative h-screen w-full bg-[#0A0A23] text-white overflow-hidden">
-      {/* Detector de oscuridad 🧠 */}
       <DetectorOscuridad onVisibilityChange={setCameraVisible} />
 
-      {/* Círculo centrado */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
         <AnimatedCircle letter="D" />
       </div>
 
-      {/* Instrucciones */}
       <div className="absolute right-10 top-1/2 -translate-y-1/2 max-w-sm">
+        {nombrePostulante && (
+          <p className="text-cyan-400 font-medium text-base mb-2">
+            Postulante: {nombrePostulante}
+          </p>
+        )}
         <h2 className="font-semibold mb-2 text-white">Antes de iniciar la entrevista:</h2>
         <ul className="list-decimal list-inside text-sm text-secondaryText mb-6">
           <li>Quédate en el entorno de entrevista.</li>
@@ -42,14 +71,15 @@ export default function PresentacionEntrevista() {
         <button
           onClick={() => router.push(`/postulador/entrevista/presentacion?token=${token}`)}
           disabled={!cameraVisible}
-          className={`px-6 py-2 rounded-full font-semibold text-black ${cameraVisible ? '' : 'cursor-not-allowed bg-gray-500'}`}
+          className={`px-6 py-2 rounded-full font-semibold text-black ${
+            cameraVisible ? '' : 'cursor-not-allowed bg-gray-500'
+          }`}
           style={{ backgroundColor: cameraVisible ? '#3BDCF6' : '#6B7280' }}
         >
           Listo, iniciar entrevista
         </button>
       </div>
 
-      {/* Video abajo */}
       <video
         ref={camRef}
         muted
