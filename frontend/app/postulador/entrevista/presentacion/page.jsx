@@ -12,6 +12,7 @@ export default function PresentacionEntrevista() {
   const { cameraStream } = useContext(StreamContext);
   const camRef = useRef(null);
   const audioRef = useRef(null);
+
   const [presentacionIniciada, setPresentacionIniciada] = useState(false);
   const [recording, setRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
@@ -24,17 +25,41 @@ export default function PresentacionEntrevista() {
   const [tiempoRestante, setTiempoRestante] = useState(15);
   const [bloqueado, setBloqueado] = useState(false);
   const [mensajeVisible, setMensajeVisible] = useState('');
+  const [inicioGrabacion, setInicioGrabacion] = useState(null);
+
+  const [nombrePostulante, setNombrePostulante] = useState('');
+
   const temporizadorRef = useRef(null);
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
-const mediaRecorderRef = useRef(null);
-const [grabacionFinalizada, setGrabacionFinalizada] = useState(false);
+
+  // ✅ Obtener y guardar id_postulante si no está en localStorage
+  useEffect(() => {
+    const obtenerPostulante = async () => {
+      if (!token || localStorage.getItem('id_postulante')) return;
+
+      try {
+        const res = await fetch(`http://localhost:5000/api/postulante/token/${token}`);
+        const data = await res.json();
+
+        if (data?.Id_Postulante) {
+          localStorage.setItem('id_postulante', data.Id_Postulante);
+          setNombrePostulante(`${data.Nombre} ${data.Apellido}`);
+        }
+      } catch (error) {
+        console.error('❌ Error al cargar el postulante:', error);
+      }
+    };
+
+    obtenerPostulante();
+  }, [token]);
 
   useEffect(() => {
     if (cameraStream && camRef.current) {
       camRef.current.srcObject = cameraStream;
       camRef.current.play();
     }
+
     return () => {
       if (camRef.current) {
         camRef.current.pause();
@@ -47,6 +72,7 @@ const [grabacionFinalizada, setGrabacionFinalizada] = useState(false);
     const chars = Array.from(texto);
     let index = 0;
     let acumulado = '';
+
     const escribir = () => {
       if (index < chars.length) {
         acumulado += chars[index];
@@ -55,6 +81,7 @@ const [grabacionFinalizada, setGrabacionFinalizada] = useState(false);
         setTimeout(escribir, delay);
       }
     };
+
     escribir();
   };
 
@@ -63,7 +90,7 @@ const [grabacionFinalizada, setGrabacionFinalizada] = useState(false);
     setRespuestaAnimada('');
     setRespuestaGPT('');
     setPresentacionIniciada(true);
-    await procesarAudio(null);
+    await procesarAudio(null); // Paso 0 sin audio
   };
 
   const startRecording = async () => {
@@ -72,39 +99,21 @@ const [grabacionFinalizada, setGrabacionFinalizada] = useState(false);
     let chunks = [];
 
     recorder.ondataavailable = e => chunks.push(e.data);
-recorder.onstop = async () => {
-  if (grabacionFinalizada) return;
-  setGrabacionFinalizada(true);
+    recorder.onstop = async () => {
+      const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+      clearInterval(temporizadorRef.current);
+      setTiempoRestante(15);
 
-  const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-  clearInterval(temporizadorRef.current);
-  setTiempoRestante(15);
+      const duracion = Math.round((Date.now() - inicioGrabacion) / 1000);
+      await procesarAudio(audioBlob, duracion);
+    };
 
-  console.log('🎤 Paso actual antes de procesar audio:', step);
-
-  await procesarAudio(audioBlob);
-
-  console.log('✅ Finalizó procesamiento del paso', step);
-
-  if (step < 4) {
-    setStep(prev => {
-      const siguiente = prev + 1;
-      console.log('➡️ Avanzando al paso:', siguiente);
-      return siguiente;
-    });
-  } else {
-    setStep(5);
-  }
-};
-
-setGrabacionFinalizada(false);
-
-
+    setInicioGrabacion(Date.now());
     recorder.start();
-mediaRecorderRef.current = recorder;
+    setMediaRecorder(recorder);
     setRecording(true);
-    setTiempoRestante(15);
 
+    setTiempoRestante(15);
     temporizadorRef.current = setInterval(() => {
       setTiempoRestante(prev => {
         if (prev <= 1) {
@@ -118,22 +127,25 @@ mediaRecorderRef.current = recorder;
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-  mediaRecorderRef.current.stop();
-}
-
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+      setRecording(false);
+    }
   };
 
-  const procesarAudio = async blob => {
+  const procesarAudio = async (blob, tiempoRespuesta = 0) => {
     try {
       setBloqueado(true);
       const formData = new FormData();
+
       if (blob) {
         formData.append('audio', blob, 'voz.webm');
       }
+
       formData.append('step', step);
       formData.append('respuestas', JSON.stringify(respuestas));
       formData.append('idPostulante', localStorage.getItem('id_postulante'));
+      formData.append('tiempoRespuesta', tiempoRespuesta);
 
       const response = await fetch('http://localhost:5000/api/entrevista/procesar-audio', {
         method: 'POST',
@@ -159,35 +171,20 @@ mediaRecorderRef.current = recorder;
         escribirTexto(gptTexto, setRespuestaAnimada, 50);
       }
 
-audio.onended = () => {
-  console.log('🔊 Audio finalizado en step:', step);
-  setIsPlayingAudio(false);
-  setBloqueado(false);
+      setIsPlayingAudio(true);
+      audio.play().then(() => {
+        audio.onended = () => {
+          setIsPlayingAudio(false);
+          setBloqueado(false);
+        };
+      }).catch(err => {
+        console.error('Error al reproducir respuesta:', err);
+        setIsPlayingAudio(false);
+        setBloqueado(false);
+      });
 
-  if (step >= 0 && step < 4) {
-    console.log('🎙️ Iniciando grabación en paso', step + 1);
-    setTimeout(() => startRecording(), 300);
-  }
-};
-
-
-
-
-setIsPlayingAudio(true);
-
-// Si estamos en paso 0 (presentación), avanzar a paso 1 inmediatamente después de reproducir
-if (step === 0) {
-  console.log('✅ Paso 0 completado. Avanzando a paso 1.');
-  setStep(1);
-}
-
-audio.play().catch(err => {
-  console.error('Error al reproducir respuesta:', err);
-  setIsPlayingAudio(false);
-  setBloqueado(false);
-});
-
-
+      if (step < 4) setStep(prev => prev + 1);
+      else setStep(5);
     } catch (error) {
       console.error('Error al procesar audio:', error);
       setBloqueado(false);
@@ -197,18 +194,14 @@ audio.play().catch(err => {
   return (
     <div className="relative h-screen w-full bg-[#0A0A23] text-white overflow-hidden">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-        <div className="flex flex-col items-center justify-center">
-<AnimatedCircle
-  letter="D"
-  isPlaying={isPlayingAudio}
-  isRecording={recording}
-  onStop={stopRecording}
-/>
-
-        </div>
+        <AnimatedCircle letter="D" isPlaying={isPlayingAudio} />
       </div>
 
       <div className="absolute right-10 top-1/2 -translate-y-1/2 max-w-sm">
+        {nombrePostulante && (
+          <p className="text-cyan-400 text-sm font-medium mb-2">Postulante: {nombrePostulante}</p>
+        )}
+
         {recording && tiempoRestante > 0 && (
           <p className="text-center text-sm text-red-400 mb-2">
             Tiempo restante: {tiempoRestante} segundos
@@ -249,6 +242,31 @@ audio.play().catch(err => {
           </button>
         )}
 
+        {presentacionIniciada && step > 0 && step < 4 && (
+          <div className="flex gap-4 mb-4">
+            {!recording ? (
+              <button
+                onClick={startRecording}
+                disabled={step >= 4 || bloqueado}
+                className={`px-6 py-3 rounded-md w-full ${
+                  step >= 4 || bloqueado
+                    ? 'bg-gray-500 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700'
+                }`}
+              >
+                Iniciar Grabación
+              </button>
+            ) : (
+              <button
+                onClick={stopRecording}
+                disabled={bloqueado}
+                className="px-6 py-3 bg-red-600 rounded-md w-full"
+              >
+                Detener y Enviar
+              </button>
+            )}
+          </div>
+        )}
 
         <button
           onClick={() => router.push(`/postulador/entrevista/teorica?token=${token}`)}

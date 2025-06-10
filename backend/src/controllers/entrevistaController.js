@@ -5,12 +5,10 @@ const db = require('../models');
 exports.procesarAudio = async (req, res) => {
   try {
     const audioBlob = req.files?.audio;
-    const step = parseInt(req.body.step);
+    const step = req.body.step;
     const respuestas = JSON.parse(req.body.respuestas || '[]');
     const idPostulante = req.body.idPostulante;
-
-    console.log('📥 Paso recibido:', step);
-    console.log('🆔 ID del postulante:', idPostulante);
+    const tiempoRespuesta = parseInt(req.body.tiempoRespuesta || '0');
 
     const postulante = await db.Postulante.findByPk(idPostulante, {
       include: [
@@ -26,9 +24,6 @@ exports.procesarAudio = async (req, res) => {
     const habilidades = postulante.habilidades.map(h => h.habilidad.Descripcion);
     const habilidadesTexto = habilidades.join(', ');
 
-    console.log('👤 Postulante:', nombreCompleto);
-    console.log('💡 Habilidades:', habilidadesTexto);
-
     let entrevista = await db.EntrevistaOral.findOne({
       where: { Id_Postulante: idPostulante }
     });
@@ -38,13 +33,10 @@ exports.procesarAudio = async (req, res) => {
         Id_Postulante: idPostulante,
         RetroalimentacionIA: null
       });
-      console.log('🆕 Entrevista creada con ID:', entrevista.Id_Entrevista);
-    } else {
-      console.log('📋 Entrevista existente:', entrevista.Id_Entrevista);
     }
 
     let textoUsuario = '';
-    if (step !== 0 && audioBlob) {
+    if (step !== '0') {
       const formData = new FormData();
       formData.append('file', audioBlob.data, {
         filename: 'voz.webm',
@@ -64,23 +56,23 @@ exports.procesarAudio = async (req, res) => {
       );
 
       textoUsuario = whisperRes.data.text;
-      console.log(`📝 Transcripción (${step}):`, textoUsuario);
 
-      if (step >= 1 && step <= 3) {
-        respuestas[step - 1] = textoUsuario;
-      }
+      if (step === '1') respuestas[0] = textoUsuario;
+      else if (step === '2') respuestas[1] = textoUsuario;
+      else if (step === '3') respuestas[2] = textoUsuario;
     }
 
     let prompt = '';
-    if (step === 0) {
-      prompt = `Este es el nombre completo del postulante: ${nombreCompleto}. Estas son sus habilidades destacadas: ${habilidadesTexto}. Actúa como un entrevistador virtual asignado por DevSelectAI. Presentate al postulante y formula una primera pregunta técnica relacionada con esas habilidades. Solo escribe la pregunta, sin introducciones.`;
-    } else if (step === 1 || step === 2) {
-      prompt = `El postulante respondió: "${textoUsuario}". Formula una pregunta técnica relacionada con las habilidades: ${habilidadesTexto}. Sé breve y claro.`;
-    } else if (step === 3) {
+    if (step === '0') {
+      prompt = `Este es el nombre completo del postulante: ${nombreCompleto}. Estas son sus habilidades destacadas: ${habilidadesTexto}. Actúa como un entrevistador virtual asignado por DevSelectAI. Presentate al postulante y formula una primera pregunta técnica relacionada con esas habilidades. La pregunta debe ser clara, breve y concreta. Solo escribe la pregunta, sin introducciones.`;
+    } else if (step === '1') {
+      prompt = `El postulante respondió: "${textoUsuario}". Formula una segunda pregunta técnica relacionada con las habilidades: ${habilidadesTexto}. Sé breve y claro.`;
+    } else if (step === '2') {
+      prompt = `El postulante respondió: "${textoUsuario}". Formula una tercera y última pregunta técnica relacionada con las habilidades: ${habilidadesTexto}.`;
+    } else if (step === '3') {
       prompt = `Respuestas del postulante:\n1) ${respuestas[0]}\n2) ${respuestas[1]}\n3) ${textoUsuario}.\nDi en una sola frase si el postulante AVANZA o NO AVANZA. Luego, en una segunda frase muy breve, justifica tu decisión como retroalimentación profesional y empática.`;
     }
 
-    console.log('🤖 Enviando prompt a GPT...');
     const gptRes = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
@@ -103,35 +95,33 @@ exports.procesarAudio = async (req, res) => {
     );
 
     const respuestaGPT = gptRes.data.choices[0].message.content;
-    console.log(`📨 Respuesta GPT (step ${step}):`, respuestaGPT);
 
-    // Guardar pregunta o retroalimentación
-    if (step >= 0 && step <= 3) {
+    console.log('➡️ Paso actual:', step);
+    console.log('🧠 Respuesta generada por IA:', respuestaGPT);
+
+    if (['1', '2', '3'].includes(step)) {
       await db.PreguntaOral.create({
-        Ronda: step === 0 ? 1 : step,
+        Ronda: parseInt(step),
         PreguntaIA: respuestaGPT,
-        RespuestaPostulante: step === 0 ? null : textoUsuario,
+        RespuestaPostulante: textoUsuario,
         CalificacionIA: null,
-        Id_Entrevista: entrevista.Id_Entrevista
+        Id_Entrevista: entrevista.Id_Entrevista,
+        TiempoRptaPostulante: tiempoRespuesta
       });
-      console.log('💾 Guardando PreguntaOral en ronda', step === 0 ? 1 : step);
     }
 
-    if (step === 3) {
+    if (parseInt(step) === 3) {
       await entrevista.update({
         RetroalimentacionIA: respuestaGPT
       });
-      console.log('📝 Retroalimentación guardada en EntrevistaOral');
     }
 
-    // Convertir texto en voz
-    console.log('🗣️ Generando audio con TTS...');
     const ttsRes = await axios.post(
       'https://api.openai.com/v1/audio/speech',
       {
         model: 'tts-1',
         input: respuestaGPT,
-        voice: 'echo'
+        voice: 'alloy'
       },
       {
         headers: {
@@ -142,17 +132,14 @@ exports.procesarAudio = async (req, res) => {
       }
     );
 
-    const audioBase64 = Buffer.from(ttsRes.data).toString('base64');
-    console.log('✅ Audio generado con éxito. Tamaño base64:', audioBase64.length);
-
     res.status(200).json({
-      audio: audioBase64,
+      audio: Buffer.from(ttsRes.data).toString('base64'),
       respuestaGPT,
       textoUsuario
     });
 
   } catch (error) {
-    console.error('❌ Error al procesar audio:', error?.response?.data || error.message);
+    console.error('Error al procesar audio:', error);
     res.status(500).json({ error: 'Error al procesar el audio' });
   }
 };

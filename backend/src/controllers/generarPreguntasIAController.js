@@ -4,10 +4,12 @@ const axios = require('axios');
 exports.generarPreguntas = async (req, res) => {
   const idVacante = parseInt(req.params.idVacante);
 
-  try {
+try {
+  const vacante = await db.Vacante.findByPk(idVacante); // ✅ definir vacante
+
+  if (!vacante) return res.status(404).json({ error: 'Vacante no encontrada' });
 
 
-    if (!vacante) return res.status(404).json({ error: 'Vacante no encontrada' });
 
     const habilidades = await db.VacanteHabilidad.findAll({
       where: { Id_Vacante: idVacante },
@@ -73,16 +75,28 @@ Formato JSON esperado:
       }
     }
 
-  const promptTecnica = `
-Eres un generador de preguntas técnicas de codificación. Crea una pregunta de centrada exclusivamente en NodeJS y React.
+ const habilidadAleatoria = habilidades.length > 0
+  ? habilidades[Math.floor(Math.random() * habilidades.length)].habilidad.Descripcion
+  : 'JavaScript';
 
-La pregunta debe tener este formato JSON exacto y seguro para ser parseado:
+const promptTecnica = `
+Eres un generador de preguntas técnicas de codificación para entrevistas a estudiantes universitarios.
+
+Crea una pregunta técnica **fácil a intermedia** centrada exclusivamente en la habilidad: **${habilidadAleatoria}**.
+
+Debe incluir:
+- Un enunciado claro.
+- Una pequeña guía o pista para resolverla.
+- Una posible solución escrita en código.
+
+Formato JSON exacto requerido (sin markdown):
 
 {
-  "pregunta": "Escribe un componente funcional en React que muestre 'Hola Mundo'.",
-  "respuesta": "import React from 'react';\\nfunction Hola() {\\n  return <h1>Hola Mundo</h1>;\\n}\\nexport default Hola;"
+  "pregunta": "Describe cómo implementar una función en ${habilidadAleatoria} que ... (aquí va el enunciado).\\n\\nPista: considera usar ...",
+  "respuesta": "aquí_va_el_código_con_\\n_escapado"
 }
-Solo devuelve el JSON, sin markdown, sin explicaciones. Escapa correctamente los saltos de línea con \\n. No uses comillas internas sin escapado.
+
+Solo devuelve el JSON. NO incluyas explicaciones ni markdown. Escapa todos los saltos de línea con \\n y usa comillas dobles sin errores.
 `;
 
     console.log('💻 Prompt técnica:\n', promptTecnica);

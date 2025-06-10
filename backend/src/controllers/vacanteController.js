@@ -25,6 +25,7 @@ exports.getByItinerario = async (req, res) => {
   }
 };
 
+
 exports.crearVacante = async (req, res) => {
   try {
     console.log('📥 Datos recibidos:', req.body);
@@ -184,32 +185,52 @@ exports.eliminarVacante = async (req, res) => {
 };
 
 exports.getVacantesPorHabilidades = async (req, res) => {
-  const { habilidades } = req.body;
+  const { habilidades, idPostulante } = req.body;
 
-  if (!Array.isArray(habilidades) || habilidades.length === 0) {
-    return res.status(400).json({ error: 'Se requieren habilidades válidas.' });
+  if (!Array.isArray(habilidades) || habilidades.length === 0 || !idPostulante) {
+    return res.status(400).json({ error: 'Se requieren habilidades válidas y el ID del postulante.' });
   }
 
   try {
+    // Obtener el itinerario como texto plano desde el postulante
+    const postulante = await db.Postulante.findByPk(idPostulante);
+    if (!postulante || !postulante.Itinerario) {
+      return res.status(404).json({ error: 'Postulante no encontrado o sin itinerario.' });
+    }
+
+    // Extraer número desde "Itinerario 2" → 2
+    const match = postulante.Itinerario.match(/Itinerario\s*(\d+)/i);
+    const idItinerario = match ? parseInt(match[1]) : null;
+
+    if (!idItinerario) {
+      return res.status(400).json({ error: 'No se pudo interpretar el itinerario.' });
+    }
+
+    // Buscar vacantes con coincidencia de habilidades + itinerario
     const vacantes = await db.Vacante.findAll({
+      where: { id_Itinerario: idItinerario },
       include: [
         {
           model: db.VacanteHabilidad,
           as: 'habilidades',
-          where: { Id_Habilidad: habilidades },
           required: true,
+          where: { Id_Habilidad: habilidades },
           include: [{ model: db.Habilidad, as: 'habilidad' }]
         },
         {
           model: db.Empresa,
           as: 'empresa'
+        },
+        {
+          model: db.Itinerario,
+          as: 'itinerario'
         }
       ]
     });
 
     res.json(vacantes);
   } catch (error) {
-    console.error('Error al obtener vacantes:', error);
-    res.status(500).json({ error: 'Error al obtener vacantes' });
+    console.error('❌ Error al obtener vacantes por habilidades + itinerario:', error);
+    res.status(500).json({ error: 'Error al buscar vacantes' });
   }
 };

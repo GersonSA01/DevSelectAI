@@ -41,6 +41,9 @@ const habilidadRouter = require('./routes/habilidad');
 const preguntasRoutes = require('./routes/preguntas');
 const opcionesRoutes = require("./routes/opciones");
 const generarPreguntasRouter = require('./routes/generarPreguntasIA');
+const entrevistaTeoricaRoutes = require('./routes/entrevistaTeorica');
+const captureRoutes = require('./routes/capture');
+
 
 
 
@@ -60,7 +63,8 @@ app.use('/api/preguntas', preguntasRoutes);
 app.use('/api/opciones', opcionesRoutes);
 app.use('/api/generar-preguntas', generarPreguntasRouter);
 app.use('/api/postulantes', postulanteRoutes);
-
+app.use('/api/entrevista-teorica', entrevistaTeoricaRoutes);
+app.use('/api/captures', captureRoutes);
 
 // ✅ RUTA PRINCIPAL
 app.get("/", (req, res) => {

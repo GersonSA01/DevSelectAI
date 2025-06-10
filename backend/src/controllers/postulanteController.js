@@ -83,7 +83,7 @@ const guardarHabilidades = async (req, res) => {
 
 // 👉 Buscar postulante por token (para entrevista)
 const obtenerPorToken = async (req, res) => {
-  const { token } = req.params;
+const { token } = req.params;
 
   try {
     const postulante = await db.Postulante.findOne({
@@ -155,12 +155,13 @@ const seleccionarVacante = async (req, res) => {
 
           <p><strong>✅ Tus habilidades seleccionadas:</strong><br>${habilidadesTexto}</p>
 
-          <p style="margin-top: 30px; text-align: center;">
-            <a href="${baseUrl}/invitacion?token=${postulante.token_entrevista}" 
-              style="background-color: #0f172a; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
-              🎤 Iniciar entrevista
-            </a>
-          </p>
+         <p style="margin-top: 30px; text-align: center;">
+  <a href="${baseUrl}/postulador/entrevista/inicio?token=${postulante.token_entrevista}"
+     style="background-color: #0f172a; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+     🎤 Iniciar entrevista
+  </a>
+</p>
+
 
           <p style="margin-top: 20px;">Revisa tu panel para continuar con el proceso.</p>
         </div>
@@ -200,10 +201,28 @@ const getAllPostulantes = async (req, res) => {
   }
 };
 
+const obtenerPorId = async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const postulante = await db.Postulante.findByPk(id);
+    if (!postulante) {
+      return res.status(404).json({ error: "Postulante no encontrado" });
+    }
+
+    res.json(postulante);
+  } catch (error) {
+    console.error("❌ Error al obtener postulante por ID:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+};
+
+
 module.exports = {
   crearPostulante,
   guardarHabilidades,
   obtenerPorToken,
   seleccionarVacante,
-  getAllPostulantes // 👈 Asegúrate de exportarla
+  getAllPostulantes,
+  obtenerPorId
 };
