@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 function CalificacionEditable({ tipo, valor, maximo, onChange, confirmada, setConfirmada }) {
   const [editando, setEditando] = useState(false);
@@ -40,12 +40,7 @@ function CalificacionEditable({ tipo, valor, maximo, onChange, confirmada, setCo
           {confirmada[tipo] ? (
             <>
               <span className="text-xs text-green-400 ml-2">✅ Confirmado</span>
-              <button
-                onClick={handleCancelar}
-                className="text-xs bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded"
-              >
-                Cancelar
-              </button>
+              <button onClick={handleCancelar} className="text-xs bg-red-600 text-white px-2 py-1 rounded">Cancelar</button>
             </>
           ) : (
             <>
@@ -74,8 +69,8 @@ function CalificacionEditable({ tipo, valor, maximo, onChange, confirmada, setCo
 export default function CalificacionPage() {
   const [calificaciones, setCalificaciones] = useState({
     entrevista: 3,
-    teorico: 4,
-    tecnica: 2,
+    teorico: 0,
+    tecnica: 0,
     capturas: 0,
   });
 
@@ -88,9 +83,32 @@ export default function CalificacionPage() {
 
   const [observacionCapturas, setObservacionCapturas] = useState('');
   const [observacionGeneral, setObservacionGeneral] = useState('');
+  const [preguntasTeoricas, setPreguntasTeoricas] = useState([]);
+
+  const searchParams = useSearchParams();
+  const idPostulante = searchParams.get('id');
+  const router = useRouter();
+
+  useEffect(() => {
+    const cargarPreguntas = async () => {
+      if (!idPostulante) return;
+      try {
+        const res = await fetch(`/api/postulante/preguntas-teoricas?id=${idPostulante}`);
+        const data = await res.json();
+        setPreguntasTeoricas(data);
+
+        // Calificación automática: contar las correctas
+        const puntajeTeorico = data.filter(p => p.correcta).length;
+        setCalificaciones(prev => ({ ...prev, teorico: puntajeTeorico }));
+      } catch (err) {
+        console.error('Error cargando preguntas teóricas:', err);
+      }
+    };
+    cargarPreguntas();
+  }, [idPostulante]);
 
   const actualizarCalificacion = (tipo, nuevoValor) => {
-    setCalificaciones((prev) => ({ ...prev, [tipo]: nuevoValor }));
+    setCalificaciones(prev => ({ ...prev, [tipo]: nuevoValor }));
   };
 
   const maximos = {
@@ -102,47 +120,9 @@ export default function CalificacionPage() {
 
   const total = Object.entries(calificaciones).reduce((acc, [k, v]) => acc + Math.min(v, maximos[k]), 0);
 
-  const router = useRouter();
-
   const handleFinalizar = () => {
-    // Aquí podrías guardar los datos si lo deseas
     router.push('/reclutador/informes');
   };
-
-  const preguntasTeoricas = [
-  {
-    habilidad: 'React',
-    pregunta: '¿Qué hook se usa para manejar estado en React?',
-    respuesta: 'useState',
-    correcta: true
-  },
-  {
-    habilidad: 'SQL',
-    pregunta: '¿Qué comando se usa para eliminar una tabla?',
-    respuesta: 'DROP TABLE',
-    correcta: true
-  },
-  {
-    habilidad: 'React',
-    pregunta: '¿Qué hook permite ejecutar efectos secundarios?',
-    respuesta: 'useEffect',
-    correcta: true
-  },
-  {
-    habilidad: 'Express',
-    pregunta: '¿Cómo se define una ruta GET en Express?',
-    respuesta: `app.get('/', callback)`,
-    correcta: true
-  },
-  {
-    habilidad: 'SQL',
-    pregunta: '¿Qué hace el comando SELECT?',
-    respuesta: 'Recupera datos de una tabla',
-    correcta: true
-  }
-];
-
-
 
   return (
     <div className="min-h-screen bg-[#0A0A23] text-white p-10 space-y-10">
@@ -177,62 +157,29 @@ export default function CalificacionPage() {
             />
           </div>
 
-          {id === 'entrevista' && (
-            <div className="space-y-2 text-sm text-gray-300 mt-6">
-              <p><strong>IA:</strong> ¿Qué es una API REST?</p>
-              <p><strong>Estudiante:</strong> Es una interfaz que permite la comunicación entre sistemas usando HTTP.</p>
-              <p><strong>IA:</strong> ¿Cuándo usarías una base NoSQL?</p>
-              <p><strong>Estudiante:</strong> Para datos no estructurados o escalabilidad horizontal.</p>
-              <p><strong>IA:</strong> ¿Qué herramienta usas para probar APIs?</p>
-              <p><strong>Estudiante:</strong> Postman y fetch en frontend.</p>
-              <p className="text-[#22C55E] mt-2"><strong>Retroalimentación IA:</strong> Buen manejo del concepto y claridad al expresarse.</p>
-            </div>
-          )}
-
-{id === 'teorico' && (
-  <div className="space-y-4 text-sm text-gray-300 mt-6">
-    {preguntasTeoricas.map((p, i) => (
-      <div
-        key={i}
-        className="border border-[#2B2C3F] p-3 rounded-lg bg-[#12132B] space-y-1"
-      >
-        <p><strong>Pregunta {i + 1} ({p.habilidad}):</strong> {p.pregunta}</p>
-        <p><strong>Respuesta del postulante:</strong> {p.respuesta}</p>
-        <p className={p.correcta ? 'text-green-400' : 'text-red-400'}>
-          {p.correcta ? '✔️ Respuesta Correcta' : '❌ Respuesta Incorrecta'}
-        </p>
-      </div>
-    ))}
-  </div>
-)}
-
-
-
-          {id === 'tecnica' && (
-            <div className="space-y-2 text-sm text-gray-300">
-              <p className="text-[#3BDCF6] font-semibold">📌 Enunciado:</p>
-              <p>Crea una API RESTful para gestionar estudiantes (POST/GET).</p>
-              <p className="text-[#3BDCF6] font-semibold mt-3">💡 Respuesta:</p>
-              <pre className="bg-[#2B2C3F] text-green-300 text-sm p-4 rounded overflow-x-auto whitespace-pre-wrap">
-{`const express = require('express');
-const app = express();
-app.use(express.json());
-
-let estudiantes = [];
-
-app.post('/estudiantes', (req, res) => {
-  const nuevo = { id: estudiantes.length + 1, ...req.body };
-  estudiantes.push(nuevo);
-  res.status(201).json(nuevo);
-});
-
-app.get('/estudiantes/:id', (req, res) => {
-  const est = estudiantes.find(e => e.id == req.params.id);
-  if (!est) return res.status(404).json({ mensaje: 'No encontrado' });
-  res.json(est);
-});`}
-              </pre>
-              <p className="text-[#3BDCF6]">✅ Usó botón de asistencia IA: <strong>Sí</strong></p>
+          {id === 'teorico' && (
+            <div className="mt-6 space-y-4 text-sm text-gray-300">
+              {preguntasTeoricas.length === 0 ? (
+                <p className="text-yellow-400 italic">⏳ Cargando preguntas teóricas...</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {preguntasTeoricas.map((p, i) => (
+                    <div key={i} className="bg-[#181A2F] border border-[#2B2C3F] p-4 rounded-lg shadow">
+                      <p className="text-sm text-[#3BDCF6] mb-1">
+                        <strong>Pregunta {i + 1}</strong> <span className="text-gray-400">({p.habilidad || 'General'})</span>
+                      </p>
+                      <p className="text-white mb-2">❓ {p.pregunta}</p>
+                      <p className="text-gray-300 mb-1">
+                        <strong>Respuesta del postulante:</strong><br />
+                        <span className="text-white">{p.respuesta}</span>
+                      </p>
+                      <div className={`mt-2 font-bold ${p.correcta ? 'text-green-400' : 'text-red-400'}`}>
+                        {p.correcta ? '✔️ Respuesta Correcta' : '❌ Respuesta Incorrecta'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -258,7 +205,6 @@ app.get('/estudiantes/:id', (req, res) => {
         </div>
       ))}
 
-      {/* Observación General */}
       <div className="bg-[#1D1E33] p-6 rounded-lg mt-10">
         <h2 className="text-xl font-semibold mb-2">Observación General</h2>
         <textarea
@@ -269,7 +215,6 @@ app.get('/estudiantes/:id', (req, res) => {
         />
       </div>
 
-      {/* Botón finalizar evaluación */}
       <div className="flex justify-center mt-12">
         <button
           onClick={handleFinalizar}

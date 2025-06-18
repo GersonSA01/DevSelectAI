@@ -1,15 +1,16 @@
 'use client';
 
-import { useContext, useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { StreamContext } from '../../../../context/StreamContext';
-import DetectorOscuridad from '../../../components/DetectorOscuridad';
 import AnimatedCircle from '../../../components/ui/AnimatedCircle';
-import { Mic } from 'lucide-react';
+import ValidadorEntorno from '../../../components/ValidadorEntorno';
+import { useStream } from '../../../../context/StreamContext';
 
 export default function PresentacionEntrevista() {
   const router = useRouter();
-  const { cameraStream } = useContext(StreamContext);
+  const { cameraStream, screenStream, reiniciarCamara } = useStream();
+
+
   const camRef = useRef(null);
   const audioRef = useRef(null);
 
@@ -26,6 +27,7 @@ export default function PresentacionEntrevista() {
   const [bloqueado, setBloqueado] = useState(false);
   const [mensajeVisible, setMensajeVisible] = useState('');
   const [inicioGrabacion, setInicioGrabacion] = useState(null);
+  const [audioTimeout, setAudioTimeout] = useState(null);
 
   const [nombrePostulante, setNombrePostulante] = useState('');
 
@@ -33,7 +35,8 @@ export default function PresentacionEntrevista() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
-  // ✅ Obtener y guardar id_postulante si no está en localStorage
+  const idEvaluacion = localStorage.getItem('id_evaluacion') || 1;
+
   useEffect(() => {
     const obtenerPostulante = async () => {
       if (!token || localStorage.getItem('id_postulante')) return;
@@ -54,19 +57,36 @@ export default function PresentacionEntrevista() {
     obtenerPostulante();
   }, [token]);
 
-  useEffect(() => {
-    if (cameraStream && camRef.current) {
-      camRef.current.srcObject = cameraStream;
-      camRef.current.play();
-    }
+useEffect(() => {
+  if (!cameraStream) {
+    reiniciarCamara(); // intenta recuperar el stream perdido
+  } else if (camRef.current) {
+    camRef.current.srcObject = cameraStream;
+    camRef.current.play();
+  }
 
-    return () => {
-      if (camRef.current) {
-        camRef.current.pause();
-        camRef.current.srcObject = null;
-      }
-    };
-  }, [cameraStream]);
+  return () => {
+    if (camRef.current) {
+      camRef.current.pause();
+      camRef.current.srcObject = null;
+    }
+  };
+}, [cameraStream]);
+
+
+
+  const limpiarAudioTimeout = () => {
+    if (audioTimeout) {
+      clearTimeout(audioTimeout);
+      setAudioTimeout(null);
+    }
+  };
+
+  const desbloquearInterfaz = () => {
+    setIsPlayingAudio(false);
+    setBloqueado(false);
+    limpiarAudioTimeout();
+  };
 
   const escribirTexto = (texto, setter, delay = 60) => {
     const chars = Array.from(texto);
@@ -93,38 +113,40 @@ export default function PresentacionEntrevista() {
     await procesarAudio(null); // Paso 0 sin audio
   };
 
-  const startRecording = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const recorder = new MediaRecorder(stream);
-    let chunks = [];
+ const startRecording = async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const recorder = new MediaRecorder(stream);
+  let chunks = [];
 
-    recorder.ondataavailable = e => chunks.push(e.data);
-    recorder.onstop = async () => {
-      const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-      clearInterval(temporizadorRef.current);
-      setTiempoRestante(15);
-
-      const duracion = Math.round((Date.now() - inicioGrabacion) / 1000);
-      await procesarAudio(audioBlob, duracion);
-    };
-
-    setInicioGrabacion(Date.now());
-    recorder.start();
-    setMediaRecorder(recorder);
-    setRecording(true);
-
+  recorder.ondataavailable = e => chunks.push(e.data);
+  recorder.onstop = async () => {
+    const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+    clearInterval(temporizadorRef.current);
     setTiempoRestante(15);
-    temporizadorRef.current = setInterval(() => {
-      setTiempoRestante(prev => {
-        if (prev <= 1) {
-          if (recorder.state === 'recording') recorder.stop();
-          setRecording(false);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+
+    // 🟥 Calcular tiempo exacto entre IA y fin de grabación
+    const duracion = Math.round((Date.now() - inicioGrabacion) / 1000);
+    await procesarAudio(audioBlob, duracion);
   };
+
+  recorder.start();
+  setMediaRecorder(recorder);
+  setRecording(true);
+
+  // Temporizador visual de 15s
+  setTiempoRestante(15);
+  temporizadorRef.current = setInterval(() => {
+    setTiempoRestante(prev => {
+      if (prev <= 1) {
+        if (recorder.state === 'recording') recorder.stop();
+        setRecording(false);
+        return 0;
+      }
+      return prev - 1;
+    });
+  }, 1000);
+};
+
 
   const stopRecording = () => {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
@@ -135,12 +157,14 @@ export default function PresentacionEntrevista() {
 
   const procesarAudio = async (blob, tiempoRespuesta = 0) => {
     try {
+      setRespuestaGPT('');
+      setRespuestaAnimada('');
       setBloqueado(true);
-      const formData = new FormData();
+      limpiarAudioTimeout();
 
-      if (blob) {
-        formData.append('audio', blob, 'voz.webm');
-      }
+
+      const formData = new FormData();
+      if (blob) formData.append('audio', blob, 'voz.webm');
 
       formData.append('step', step);
       formData.append('respuestas', JSON.stringify(respuestas));
@@ -157,13 +181,9 @@ export default function PresentacionEntrevista() {
       const json = await response.json();
       const gptTexto = json.respuestaGPT;
       const textoUsuario = json.textoUsuario;
-      const audio = new Audio(`data:audio/webm;base64,${json.audio}`);
 
-      if (step === 1) {
-        setRespuestas([textoUsuario]);
-      } else if (step > 1 && step <= 3) {
-        setRespuestas(prev => [...prev, textoUsuario]);
-      }
+      if (step === 1) setRespuestas([textoUsuario]);
+      else if (step > 1 && step <= 3) setRespuestas(prev => [...prev, textoUsuario]);
 
       if (gptTexto) {
         setRespuestaGPT(gptTexto);
@@ -171,123 +191,191 @@ export default function PresentacionEntrevista() {
         escribirTexto(gptTexto, setRespuestaAnimada, 50);
       }
 
-      setIsPlayingAudio(true);
-      audio.play().then(() => {
-        audio.onended = () => {
-          setIsPlayingAudio(false);
-          setBloqueado(false);
-        };
-      }).catch(err => {
-        console.error('Error al reproducir respuesta:', err);
-        setIsPlayingAudio(false);
-        setBloqueado(false);
-      });
+      if (json.audio) {
+        try {
+          const audio = new Audio(`data:audio/webm;base64,${json.audio}`);
+          setIsPlayingAudio(true);
 
-      if (step < 4) setStep(prev => prev + 1);
-      else setStep(5);
+          const timeout = setTimeout(() => {
+            console.warn('⚠️ Timeout de audio alcanzado, continuando...');
+            desbloquearInterfaz();
+          }, 30000);
+          setAudioTimeout(timeout);
+
+          audio.play().then(() => {
+            audio.onended = () => {
+              desbloquearInterfaz();
+              setInicioGrabacion(Date.now()); // ✅ Aquí sí se activa justo cuando termina la IA
+            };
+
+            audio.onerror = err => {
+              console.error('❌ Error al reproducir audio:', err);
+              desbloquearInterfaz();
+              setInicioGrabacion(Date.now()); // (fallback por si falla el audio)
+            };
+          }).catch(err => {
+            console.error('❌ Error al iniciar audio:', err);
+            desbloquearInterfaz();
+          });
+        } catch (err) {
+          console.error('❌ Error al crear audio:', err);
+          desbloquearInterfaz();
+        }
+      } else {
+        console.warn('⚠️ No se recibió audio, continuando...');
+        desbloquearInterfaz();
+      }
+
+      setStep(prev => (prev < 4 ? prev + 1 : 5));
     } catch (error) {
-      console.error('Error al procesar audio:', error);
-      setBloqueado(false);
+      console.error('❌ Error al procesar audio:', error);
+      desbloquearInterfaz();
     }
   };
 
-  return (
-    <div className="relative h-screen w-full bg-[#0A0A23] text-white overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-        <AnimatedCircle letter="D" isPlaying={isPlayingAudio} />
-      </div>
+  const continuarManualmente = () => {
+    desbloquearInterfaz();
+  };
 
-      <div className="absolute right-10 top-1/2 -translate-y-1/2 max-w-sm">
-        {nombrePostulante && (
-          <p className="text-cyan-400 text-sm font-medium mb-2">Postulante: {nombrePostulante}</p>
-        )}
+return (
+  <div className="relative h-screen w-full bg-[#0A0A23] text-white overflow-hidden">
+    <ValidadorEntorno idEvaluacion={idEvaluacion} onCamVisibilityChange={setCameraVisible} />
 
-        {recording && tiempoRestante > 0 && (
-          <p className="text-center text-sm text-red-400 mb-2">
-            Tiempo restante: {tiempoRestante} segundos
-          </p>
-        )}
+    {!presentacionIniciada ? (
+      // 🔹 Pantalla de bienvenida antes de iniciar
+      <div className="flex flex-col items-center justify-center h-full px-6 text-center">
+        <div className="max-w-md">
+          <h1 className="text-2xl font-bold text-white mb-4">Antes de iniciar la entrevista</h1>
 
-        <h2 className="text-2xl font-semibold mb-4">Presentación Personal</h2>
-        <DetectorOscuridad onVisibilityChange={setCameraVisible} />
+          {nombrePostulante && (
+            <p className="text-cyan-400 text-base font-semibold mb-4">
+              Postulante: {nombrePostulante}
+            </p>
+          )}
 
-        <div className="bg-[#1C1F2E] p-4 rounded-lg mb-6 border border-[#3BDCF6] shadow w-[400px] h-[150px] overflow-y-auto">
-          <h3 className="text-xl text-white font-semibold mb-2">Respuesta de IA</h3>
-          <p className="text-sm text-white whitespace-pre-line">
-            {respuestaGPT ? (
-              <>
-                {respuestaAnimada}
-                <span className="animate-pulse text-cyan-400">|</span>
-              </>
-            ) : (
-              <>
-                {mensajeVisible}
-                <span className="animate-pulse text-cyan-400">|</span>
-              </>
-            )}
-          </p>
-        </div>
+          <ul className="list-decimal list-inside text-sm text-secondaryText text-left mb-6 space-y-2">
+            <li>Quédate en el entorno de entrevista.</li>
+            <li>No abandones ni cambies de pestaña.</li>
+            <li>Mantén contacto visual general con la pantalla.</li>
+            <li>Si tienes dudas, puedes expresarlas en voz alta durante la entrevista.</li>
+          </ul>
 
-        {!presentacionIniciada && (
           <button
             onClick={reproducirPresentacion}
-            disabled={!cameraVisible}
-            className={`px-6 py-3 rounded-md mb-4 w-full ${
-              cameraVisible
+            disabled={!cameraVisible || !screenStream}
+            className={`px-6 py-3 rounded-md w-full ${
+              cameraVisible && screenStream
                 ? 'bg-yellow-600 hover:bg-yellow-700'
                 : 'bg-gray-500 cursor-not-allowed'
             }`}
           >
-            Iniciar presentación
+            Iniciar Entrevista
           </button>
-        )}
-
-        {presentacionIniciada && step > 0 && step < 4 && (
-          <div className="flex gap-4 mb-4">
-            {!recording ? (
-              <button
-                onClick={startRecording}
-                disabled={step >= 4 || bloqueado}
-                className={`px-6 py-3 rounded-md w-full ${
-                  step >= 4 || bloqueado
-                    ? 'bg-gray-500 cursor-not-allowed'
-                    : 'bg-green-600 hover:bg-green-700'
-                }`}
-              >
-                Iniciar Grabación
-              </button>
-            ) : (
-              <button
-                onClick={stopRecording}
-                disabled={bloqueado}
-                className="px-6 py-3 bg-red-600 rounded-md w-full"
-              >
-                Detener y Enviar
-              </button>
-            )}
-          </div>
-        )}
-
-        <button
-          onClick={() => router.push(`/postulador/entrevista/teorica?token=${token}`)}
-          disabled={step < 4 || !cameraVisible}
-          className={`px-6 py-3 rounded-md w-full ${
-            step < 4 || !cameraVisible
-              ? 'bg-gray-500 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700'
-          }`}
-        >
-          Siguiente: Entrevista Teórica
-        </button>
+        </div>
       </div>
+    ) : (
+      // 🔸 Pantalla completa de la entrevista una vez iniciada
+      <>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+          <AnimatedCircle letter="D" isPlaying={isPlayingAudio} />
+        </div>
 
-      <video
-        ref={camRef}
-        muted
-        className="absolute bottom-4 left-4 w-[320px] h-[192px] bg-black rounded-lg object-cover z-50"
-      />
+        <div className="absolute right-10 top-1/2 -translate-y-1/2 max-w-sm">
+          {nombrePostulante && (
+            <p className="text-cyan-400 text-sm font-medium mb-2">
+              Postulante: {nombrePostulante}
+            </p>
+          )}
 
-      <audio ref={audioRef} hidden controls />
-    </div>
-  );
+          {recording && tiempoRestante > 0 && (
+            <p className="text-center text-sm text-red-400 mb-2">
+              Tiempo restante: {tiempoRestante} segundos
+            </p>
+          )}
+
+          <h2 className="text-2xl font-semibold mb-4">Entrevista con IA</h2>
+
+          <div className="bg-[#1C1F2E] p-4 rounded-lg mb-6 border border-[#3BDCF6] shadow w-[400px] h-[150px] overflow-y-auto">
+            <h3 className="text-xl text-white font-semibold mb-2">Respuesta de IA</h3>
+            <p className="text-sm text-white whitespace-pre-line min-h-[40px]">
+              {respuestaAnimada ? (
+                <>
+                  {respuestaAnimada}
+                  <span className="animate-pulse text-cyan-400">|</span>
+                </>
+              ) : bloqueado ? (
+                <span className="flex items-center gap-1 text-cyan-400 font-medium animate-pulse">
+                  Procesando<span className="animate-bounce delay-0">.</span>
+                  <span className="animate-bounce delay-100">.</span>
+                  <span className="animate-bounce delay-200">.</span>
+                </span>
+              ) : (
+                <span className="text-gray-400 italic">Esperando acción del postulante...</span>
+              )}
+            </p>
+
+
+          </div>
+
+          {step > 0 && step < 4 && (
+            <div className="flex gap-4 mb-4">
+              {!recording ? (
+                <button
+                  onClick={startRecording}
+                  disabled={step >= 4 || bloqueado}
+                  className={`px-6 py-3 rounded-md w-full ${
+                    step >= 4 || bloqueado
+                      ? 'bg-gray-500 cursor-not-allowed'
+                      : 'bg-green-600 hover:bg-green-700'
+                  }`}
+                >
+                  Iniciar Grabación
+                </button>
+              ) : (
+                <button
+                  onClick={stopRecording}
+                  disabled={bloqueado}
+                  className="px-6 py-3 bg-red-600 rounded-md w-full"
+                >
+                  Detener y Enviar
+                </button>
+              )}
+            </div>
+          )}
+
+          {bloqueado && isPlayingAudio && (
+            <button
+              onClick={continuarManualmente}
+              className="px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded-md mb-4 w-full text-sm"
+            >
+              Continuar sin audio
+            </button>
+          )}
+
+          <button
+            onClick={() => router.push(`/postulador/entrevista/teorica?token=${token}`)}
+            disabled={step < 4 || !cameraVisible || !screenStream}
+            className={`px-6 py-3 rounded-md w-full ${
+              step < 4 || !cameraVisible || !screenStream
+                ? 'bg-gray-500 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700'
+            }`}
+          >
+            Siguiente: Entrevista Teórica
+          </button>
+        </div>
+      </>
+    )}
+
+    {/* ✅ Cámara visible SIEMPRE */}
+    <video
+      ref={camRef}
+      muted
+      className="absolute bottom-4 left-4 w-[320px] h-[192px] bg-black rounded-lg object-cover z-50"
+    />
+
+    <audio ref={audioRef} hidden controls />
+  </div>
+);
+
 }

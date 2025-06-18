@@ -3,14 +3,14 @@
 import { useEffect, useRef, useState } from 'react';
 import * as faceapi from 'face-api.js';
 import { useStream } from '../../context/StreamContext';
-import { Alert } from '../components/alerts/Alerts';
+import { toast } from 'sonner';
 
-export default function DetectorOscuridad({ onVisibilityChange }) {
+export default function DetectorOscuridad({ onVisibilityChange, idEvaluacion }) {
   const videoRef = useRef(null);
-  const { cameraStream } = useStream();
-  const [alertShown, setAlertShown] = useState(false);
+  const { cameraStream, tomarCapturaPantalla } = useStream();
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const failureCountRef = useRef(0);
+  const alertaActivaRef = useRef(false);
 
   useEffect(() => {
     const loadModels = async () => {
@@ -32,7 +32,7 @@ export default function DetectorOscuridad({ onVisibilityChange }) {
     videoRef.current.play();
 
     const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
+    const context = canvas.getContext('2d', { willReadFrequently: true });
 
     const interval = setInterval(async () => {
       const video = videoRef.current;
@@ -61,7 +61,7 @@ export default function DetectorOscuridad({ onVisibilityChange }) {
         );
         faceDetected = detections.length > 0;
       } catch (err) {
-        console.warn("⚠️ Error detectando rostro:", err);
+        console.warn('⚠️ Error detectando rostro:', err);
       }
 
       const isVisible = isBrightEnough && faceDetected;
@@ -72,39 +72,29 @@ export default function DetectorOscuridad({ onVisibilityChange }) {
         failureCountRef.current = 0;
       }
 
-      if (failureCountRef.current >= 3 && !alertShown) {
-        // ⚠️ Captura imagen antes de mostrar alerta
-        const blob = await new Promise((resolve) => {
-          canvas.toBlob((b) => resolve(b), 'image/jpeg');
-        });
+      if (failureCountRef.current >= 3 && !alertaActivaRef.current) {
+        alertaActivaRef.current = true;
 
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `capture/captura_${Date.now()}.jpg`; // navegador debe permitir carpetas
-        link.click();
+        toast.warning(
+          !isBrightEnough
+            ? '📷 Cámara muy oscura o bloqueada. Se realizará una captura.'
+            : '📷 No se detecta tu rostro. Se realizará una captura.'
+        );
 
-        setAlertShown(true);
-        await Alert({
-          title: 'Advertencia',
-          text: !isBrightEnough
-            ? 'Tu cámara está muy oscura o bloqueada.'
-            : 'No se detecta tu rostro. Asegúrate de estar frente a la cámara.',
-          icon: 'warning',
-          confirmButtonText: 'Entendido',
-        });
-        setTimeout(() => {
-          setAlertShown(false);
+        setTimeout(async () => {
+          if (typeof tomarCapturaPantalla === 'function') {
+            await tomarCapturaPantalla(idEvaluacion);
+          }
+          alertaActivaRef.current = false;
           failureCountRef.current = 0;
-        }, 4000);
+        }, 1000); // espera antes de capturar
       }
 
       onVisibilityChange(isVisible);
     }, 1500);
 
     return () => clearInterval(interval);
-  }, [cameraStream, modelsLoaded, alertShown, onVisibilityChange]);
+  }, [cameraStream, modelsLoaded, onVisibilityChange, tomarCapturaPantalla, idEvaluacion]);
 
-  return (
-    <video ref={videoRef} style={{ display: 'none' }} playsInline muted />
-  );
+  return <video ref={videoRef} style={{ display: 'none' }} playsInline muted />;
 }

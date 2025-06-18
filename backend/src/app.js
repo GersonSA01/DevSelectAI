@@ -25,6 +25,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(fileUpload());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ✅ IMPORTACIÓN DE RUTAS
 const entrevistaRoutes = require("./routes/entrevista");
@@ -43,7 +44,7 @@ const opcionesRoutes = require("./routes/opciones");
 const generarPreguntasRouter = require('./routes/generarPreguntasIA');
 const entrevistaTeoricaRoutes = require('./routes/entrevistaTeorica');
 const captureRoutes = require('./routes/capture');
-
+const ciudadRoutes = require('./routes/ciudad');
 
 
 
@@ -65,6 +66,7 @@ app.use('/api/generar-preguntas', generarPreguntasRouter);
 app.use('/api/postulantes', postulanteRoutes);
 app.use('/api/entrevista-teorica', entrevistaTeoricaRoutes);
 app.use('/api/captures', captureRoutes);
+app.use('/api/ciudades', ciudadRoutes);
 
 // ✅ RUTA PRINCIPAL
 app.get("/", (req, res) => {

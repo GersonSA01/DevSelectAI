@@ -4,25 +4,30 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { StreamContext } from '../../../../context/StreamContext';
 import Temporizador from '../../../components/ui/Temporizador';
+import ValidadorEntorno from '../../../components/ValidadorEntorno';
 
 export default function PracticaPage() {
-  const { cameraStream } = useContext(StreamContext);
+  const { cameraStream, reiniciarCamara } = useContext(StreamContext);
   const camRef = useRef(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
-
+  const [cameraVisible, setCameraVisible] = useState(true);
   const [preguntaTecnica, setPreguntaTecnica] = useState(null);
   const [codigo, setCodigo] = useState('');
   const [ayudaIA, setAyudaIA] = useState('');
   const [cargandoAyuda, setCargandoAyuda] = useState(false);
+  const idEvaluacion = preguntaTecnica?.Id_Evaluacion;
 
   useEffect(() => {
-    if (cameraStream && camRef.current) {
-      camRef.current.srcObject = cameraStream;
-      camRef.current.play();
-    }
-  }, [cameraStream]);
+  if (!cameraStream) {
+    reiniciarCamara(); // 🔁 si se perdió la cámara, vuelve a pedirla
+  } else if (camRef.current) {
+    camRef.current.srcObject = cameraStream;
+    camRef.current.play();
+  }
+}, [cameraStream]);
+
 
   useEffect(() => {
     const cargarPreguntaTecnica = async () => {
@@ -70,27 +75,41 @@ export default function PracticaPage() {
     }
   };
 
-  const handleEnviar = async () => {
-    const idPostulante = localStorage.getItem('id_postulante');
-    try {
-      await fetch('http://localhost:5000/api/entrevista-teorica/guardar-respuesta-tecnica', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          idPostulante,
-          idPregunta: preguntaTecnica.Id_Pregunta,
-          respuesta: codigo
-        })
-      });
+ const handleEnviar = async () => {
+  const idPostulante = localStorage.getItem('id_postulante');
 
-      router.push(`/postulador/entrevista/finalizacion?token=${token}`);
-    } catch (err) {
-      console.error('❌ Error al guardar respuesta técnica:', err);
-    }
-  };
+  try {
+    // 1. Guardar respuesta técnica
+    await fetch('http://localhost:5000/api/entrevista-teorica/guardar-respuesta-tecnica', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        idPostulante,
+        idPregunta: preguntaTecnica.Id_Pregunta,
+        respuesta: codigo
+      })
+    });
+
+    // 2. Cambiar estado a "Evaluado" (ID 3)
+    await fetch(`http://localhost:5000/api/postulante/${idPostulante}/cambiar-estado`, {
+  method: 'PUT',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ nuevoEstado: 3 })
+});
+
+
+    // 3. Redirigir a pantalla de finalización
+    router.push(`/postulador/entrevista/finalizacion?token=${token}`);
+  } catch (err) {
+    console.error('❌ Error al guardar respuesta técnica o actualizar estado:', err);
+  }
+};
+
 
   return (
 <div className="min-h-screen w-full bg-[#0A0A23] text-white px-4 sm:px-6 lg:px-8 pt-24 pb-12 flex flex-col items-center">
+            <ValidadorEntorno idEvaluacion={idEvaluacion} onCamVisibilityChange={setCameraVisible} />
+      
       <div className="w-full max-w-7xl flex items-center justify-between mb-6">
         <h2 className="text-3xl font-bold text-white">Evaluación Técnica</h2>
         <Temporizador duracion={900} onFinalizar={handleEnviar} />

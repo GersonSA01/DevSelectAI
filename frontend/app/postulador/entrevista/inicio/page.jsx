@@ -37,43 +37,10 @@ export default function InicioEntrevista() {
     obtenerPostulante();
   }, [token]);
 
-  const handleStart = async () => {
-    try {
-      const screen = await navigator.mediaDevices.getDisplayMedia({
-        video: { displaySurface: 'monitor' },
-        audio: false
-      });
+const handleStart = () => {
+  router.push(`/postulador/entrevista/validacion-dispositivos?token=${token}`);
+};
 
-      const track = screen.getVideoTracks()[0];
-      const settings = track.getSettings();
-      const constraints = track.getConstraints();
-      const displaySurface = settings.displaySurface || constraints.displaySurface;
-
-      if (displaySurface && displaySurface !== 'monitor') {
-        track.stop();
-        await Alert({
-          title: 'Pantalla incorrecta',
-          text: 'Debes compartir toda la pantalla, no una ventana o pestaña.',
-          icon: 'warning',
-          confirmButtonText: 'Entendido',
-          showCancelButton: false,
-        });
-        return;
-      }
-
-      setScreenStream(screen);
-      router.push(`/postulador/entrevista/validacion-dispositivos?token=${token}`);
-    } catch (error) {
-      console.error('Error al compartir pantalla:', error);
-      await Alert({
-        title: 'Error al compartir pantalla',
-        text: 'No se pudo iniciar la compartición de pantalla. Asegúrate de otorgar los permisos y selecciona "Pantalla completa".',
-        icon: 'error',
-        confirmButtonText: 'Intentar de nuevo',
-        showCancelButton: false,
-      });
-    }
-  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4 text-white text-center">

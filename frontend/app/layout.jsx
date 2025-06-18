@@ -1,4 +1,5 @@
 import './globals.css';
+import ToasterAlert from './components/alerts/toastAlert.jsx';
 
 export const metadata = {
   title: 'DevSelectAI',
@@ -17,7 +18,8 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="es">
-    <body className="min-h-screen bg-background font-sans text-white">
+      <body className="min-h-screen bg-background font-sans text-white">
+        <ToasterAlert />
         {children}
       </body>
     </html>

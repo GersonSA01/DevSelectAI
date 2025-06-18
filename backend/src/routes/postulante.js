@@ -5,7 +5,8 @@ const {
   guardarHabilidades,
   obtenerPorToken,
   seleccionarVacante,
-  getAllPostulantes, // ⬅️ Agregado
+  getAllPostulantes,
+  cambiarEstado,
   obtenerPorId
 } = require("../controllers/postulanteController");
 
@@ -15,5 +16,6 @@ router.post("/habilidades", guardarHabilidades);
 router.get("/token/:token", obtenerPorToken);
 router.post('/seleccionar-vacante', seleccionarVacante);
 router.get("/:id", obtenerPorId); // ✅ NUEVA RUTA
+router.put('/:id/cambiar-estado', cambiarEstado);
 
 module.exports = router;

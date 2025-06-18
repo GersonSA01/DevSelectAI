@@ -27,6 +27,8 @@ router.post('/tecnica', preguntasController.createPreguntaTecnica);
 router.get('/tecnica/:idPregunta', preguntasController.getPreguntaTecnicaByPreguntaId);
 // PUT /api/preguntas/tecnica/:idPregunta - Actualizar pregunta técnica
 router.put('/tecnica/:idPregunta', preguntasController.updatePreguntaTecnica);
+//
+router.get('/preguntas-teoricas', preguntasController.getPreguntasTeoricasPorPostulante);
 
 
 module.exports = router;

@@ -10,7 +10,7 @@ import Swal from 'sweetalert2';
 export async function Alert(options) {
   return Swal.fire({
     title: options.title || '',
-    text: options.text || '',
+    html: options.html || '', // 👈 aquí está el cambio importante
     icon: options.icon || 'info',
     input: options.input || undefined,
     inputOptions: options.inputOptions || undefined,
@@ -25,7 +25,7 @@ export async function Alert(options) {
       htmlContainer: 'text-primaryButton mb-4',
       confirmButton: 'bg-primaryButton hover:bg-primaryButtonHover text-white font-semibold py-2 px-6 rounded-full',
       cancelButton: 'bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-full',
-      input: 'text-black p-2 rounded mt-4 bg-white', // asegura visibilidad del <select>
+      input: 'text-black p-2 rounded mt-4 bg-white',
     },
     preConfirm: options.preConfirm || undefined,
   });

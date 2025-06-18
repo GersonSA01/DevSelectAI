@@ -4,16 +4,19 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { StreamContext } from '../../../../context/StreamContext';
 import Temporizador from '../../../components/ui/Temporizador'; // Asegúrate de que esta ruta sea la correcta
+import ValidadorEntorno from '../../../components/ValidadorEntorno';
 
 export default function TeoricaPage() {
   const router = useRouter();
   const { cameraStream } = useContext(StreamContext);
   const camRef = useRef(null);
+  const [cameraVisible, setCameraVisible] = useState(true);
   const [respuestas, setRespuestas] = useState({});
   const [todoRespondido, setTodoRespondido] = useState(false);
   const [preguntas, setPreguntas] = useState([]);
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
+  const idEvaluacion = preguntas[0]?.Id_Evaluacion || null;
 
 useEffect(() => {
   const cargarPreguntas = async () => {
@@ -88,6 +91,8 @@ else {
 
 
       <div className="max-w-4xl mx-auto space-y-8">
+              <ValidadorEntorno idEvaluacion={idEvaluacion} onCamVisibilityChange={setCameraVisible} />
+        
         {preguntas.map((pregunta, index) => (
           <div key={pregunta.Id_Pregunta} className="bg-[#1D1E33] p-6 rounded-lg shadow">
             <p className="text-sm text-[#3BDCF6] font-medium mb-1">

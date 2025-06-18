@@ -2,6 +2,33 @@ const axios = require('axios');
 const FormData = require('form-data');
 const db = require('../models');
 
+// Función de reintento con espera creciente
+const retryAxiosTTS = async (data, config, maxRetries = 2) => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await axios.post(
+        'https://api.openai.com/v1/audio/speech',
+        data,
+        config
+      );
+      return response;
+    } catch (error) {
+      const status = error?.response?.status;
+      const isRetryable =
+        status === 429 || status === 500 || error.code === 'ECONNABORTED';
+
+      console.warn(`⚠️ Intento ${attempt} fallido (${status || error.code}).`);
+
+      if (!isRetryable || attempt === maxRetries) {
+        throw error;
+      }
+
+      // Espera mayor: 4s, 8s
+      await new Promise(resolve => setTimeout(resolve, 4000 * attempt));
+    }
+  }
+};
+
 exports.procesarAudio = async (req, res) => {
   try {
     const audioBlob = req.files?.audio;
@@ -64,7 +91,7 @@ exports.procesarAudio = async (req, res) => {
 
     let prompt = '';
     if (step === '0') {
-      prompt = `Este es el nombre completo del postulante: ${nombreCompleto}. Estas son sus habilidades destacadas: ${habilidadesTexto}. Actúa como un entrevistador virtual asignado por DevSelectAI. Presentate al postulante y formula una primera pregunta técnica relacionada con esas habilidades. La pregunta debe ser clara, breve y concreta. Solo escribe la pregunta, sin introducciones.`;
+      prompt = `Este es el nombre completo del postulante: ${nombreCompleto}. Estas son sus habilidades destacadas: ${habilidadesTexto}. Actúa como un entrevistador virtual asignado por DevSelectAI. Saluda al postulante y di "veo que te destacas en (menciona las habilidades)" y formula una primera pregunta técnica relacionada con esas habilidades. Debes ser breve.`;
     } else if (step === '1') {
       prompt = `El postulante respondió: "${textoUsuario}". Formula una segunda pregunta técnica relacionada con las habilidades: ${habilidadesTexto}. Sé breve y claro.`;
     } else if (step === '2') {
@@ -76,7 +103,7 @@ exports.procesarAudio = async (req, res) => {
     const gptRes = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
-        model: 'gpt-3.5-turbo-0125',
+        model: 'gpt-4',
         messages: [
           {
             role: 'system',
@@ -95,7 +122,6 @@ exports.procesarAudio = async (req, res) => {
     );
 
     const respuestaGPT = gptRes.data.choices[0].message.content;
-
     console.log('➡️ Paso actual:', step);
     console.log('🧠 Respuesta generada por IA:', respuestaGPT);
 
@@ -116,30 +142,52 @@ exports.procesarAudio = async (req, res) => {
       });
     }
 
-    const ttsRes = await axios.post(
-      'https://api.openai.com/v1/audio/speech',
-      {
-        model: 'tts-1',
-        input: respuestaGPT,
-        voice: 'alloy'
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        responseType: 'arraybuffer'
+    // 🎙️ Generar audio TTS con retry y texto limitado
+    let audioBase64 = null;
+    try {
+      const textoLimpio = respuestaGPT
+        .replace(/[\n\r]+/g, ' ')
+        .replace(/[^\x00-\x7F]/g, '')
+        .substring(0, 300); // Limitar a 300 caracteres
+
+      if (textoLimpio.trim().length > 0) {
+        const ttsRes = await retryAxiosTTS(
+          {
+            model: 'tts-1',
+            input: textoLimpio,
+            voice: 'nova'
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            responseType: 'arraybuffer',
+            timeout: 30000 // 30 segundos
+          }
+        );
+
+        audioBase64 = Buffer.from(ttsRes.data).toString('base64');
+        console.log('🎵 Audio generado correctamente');
+      } else {
+        console.warn('⚠️ Texto vacío, no se genera voz');
       }
-    );
+    } catch (ttsError) {
+      console.error('❌ Error al generar TTS luego de reintentos:', ttsError.response?.data || ttsError.message);
+    }
 
     res.status(200).json({
-      audio: Buffer.from(ttsRes.data).toString('base64'),
+      audio: audioBase64,
       respuestaGPT,
-      textoUsuario
+      textoUsuario,
+      hasAudio: audioBase64 !== null
     });
 
   } catch (error) {
-    console.error('Error al procesar audio:', error);
-    res.status(500).json({ error: 'Error al procesar el audio' });
+    console.error('❌ Error al procesar audio:', error);
+    res.status(500).json({
+      error: 'Error al procesar el audio',
+      detalle: error.message
+    });
   }
 };

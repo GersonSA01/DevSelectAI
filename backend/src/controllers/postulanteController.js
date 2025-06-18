@@ -181,15 +181,25 @@ const seleccionarVacante = async (req, res) => {
   }
 };
 
-// ✅ NUEVO: Obtener todos los postulantes
+
 const getAllPostulantes = async (req, res) => {
   try {
     const postulantes = await db.Postulante.findAll({
       include: [
         {
+          model: db.EstadoPostulacion,
+          as: 'estadoPostulacion', // 👈 Usa este alias
+          attributes: ['descripcion']
+        },
+        {
           model: db.DetalleHabilidad,
           as: 'habilidades',
           include: [{ model: db.Habilidad, as: 'habilidad' }]
+        },
+        {
+          model: db.PostulanteVacante,
+          as: 'selecciones',
+          include: [{ model: db.Vacante, as: 'vacante' }]
         }
       ]
     });
@@ -200,6 +210,9 @@ const getAllPostulantes = async (req, res) => {
     res.status(500).json({ error: 'Error al obtener postulantes' });
   }
 };
+
+
+
 
 const obtenerPorId = async (req, res) => {
   const id = req.params.id;
@@ -217,6 +230,28 @@ const obtenerPorId = async (req, res) => {
   }
 };
 
+// 👉 Cambiar estado de postulación (ej. Evaluado)
+const cambiarEstado = async (req, res) => {
+  const { id } = req.params;
+  const { nuevoEstado } = req.body;
+
+  try {
+    const postulante = await db.Postulante.findByPk(id);
+    if (!postulante) {
+      return res.status(404).json({ error: 'Postulante no encontrado' });
+    }
+
+    postulante.id_EstadoPostulacion = nuevoEstado;
+    await postulante.save();
+
+    res.json({ mensaje: 'Estado actualizado correctamente' });
+  } catch (error) {
+    console.error('❌ Error al actualizar estado del postulante:', error);
+    res.status(500).json({ error: 'Error al cambiar estado del postulante' });
+  }
+};
+
+
 
 module.exports = {
   crearPostulante,
@@ -224,5 +259,6 @@ module.exports = {
   obtenerPorToken,
   seleccionarVacante,
   getAllPostulantes,
-  obtenerPorId
+  obtenerPorId,
+  cambiarEstado
 };
