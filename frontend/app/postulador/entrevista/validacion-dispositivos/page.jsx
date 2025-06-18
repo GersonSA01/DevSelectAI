@@ -14,16 +14,16 @@ export default function ValidacionDispositivos() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
-  const currentCamStream = useRef(null);
-  const currentMicStream = useRef(null);
-
   const [camReady, setCamReady] = useState(false);
   const [micReady, setMicReady] = useState(false);
-
   const [camaras, setCamaras] = useState([]);
   const [microfonos, setMicrofonos] = useState([]);
   const [selectedCam, setSelectedCam] = useState('');
   const [selectedMic, setSelectedMic] = useState('');
+  const micAudioElement = useRef(null);
+
+  // 📦 Guardar la referencia para liberar el micrófono al desmontar
+  const currentMicStream = useRef(null);
 
   // 🔍 Detectar dispositivos disponibles
   useEffect(() => {
@@ -34,7 +34,6 @@ export default function ValidacionDispositivos() {
 
       setCamaras(videoInputs);
       setMicrofonos(audioInputs);
-
       if (videoInputs[0]) setSelectedCam(videoInputs[0].deviceId);
       if (audioInputs[0]) setSelectedMic(audioInputs[0].deviceId);
     };
@@ -42,23 +41,19 @@ export default function ValidacionDispositivos() {
     listarDispositivos();
   }, []);
 
-  // 🎥 Cámara
+  // 🎥 Acceder a la cámara y mantener el stream activo (NO detenerlo en cleanup)
   useEffect(() => {
     const accederCamara = async () => {
       if (!selectedCam) return;
-
-      if (currentCamStream.current) {
-        currentCamStream.current.getTracks().forEach((track) => track.stop());
-      }
 
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { deviceId: selectedCam },
         });
 
-        currentCamStream.current = stream;
         if (videoRef.current) videoRef.current.srcObject = stream;
-        setCameraStream(stream);
+        setCameraStream(stream);         // Pasar al context
+        window.copiaCamara = stream;     // Global (opcional)
         setCamReady(true);
       } catch (err) {
         console.warn('No se pudo acceder a la cámara:', err);
@@ -67,90 +62,97 @@ export default function ValidacionDispositivos() {
     };
 
     accederCamara();
-  }, [selectedCam, setCameraStream]);
+  }, [selectedCam]);
 
-  // 🎙️ Micrófono
-  useEffect(() => {
-    const accederMicrofono = async () => {
-      if (!selectedMic) return;
+  // 🎙️ Acceder al micrófono y visualizar en canvas
+// 🎙️ Acceder al micrófono y visualizar en canvas
+useEffect(() => {
+  const accederMicrofono = async () => {
+    if (!selectedMic) return;
 
-      if (currentMicStream.current) {
-        currentMicStream.current.getTracks().forEach((track) => track.stop());
-      }
+    // 🔇 Detener audio anterior si existe
+    if (micAudioElement.current) {
+      micAudioElement.current.pause();
+      micAudioElement.current.srcObject = null;
+      micAudioElement.current = null;
+    }
 
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: { deviceId: selectedMic },
-        });
+    if (currentMicStream.current) {
+      currentMicStream.current.getTracks().forEach((track) => track.stop());
+      currentMicStream.current = null;
+    }
 
-        currentMicStream.current = stream;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { deviceId: selectedMic },
+      });
 
-        // 🔊 Loopback
-        const audioElement = new Audio();
-        audioElement.srcObject = stream;
-        audioElement.play();
+      currentMicStream.current = stream;
 
-        setMicReady(true);
+      // 🔊 Loopback actualizado
+      micAudioElement.current = new Audio();
+      micAudioElement.current.srcObject = stream;
+      micAudioElement.current.play().catch(() => {}); // evitar AbortError
+      setMicReady(true);
 
-        // 🎛️ Visualización en canvas
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const source = audioContext.createMediaStreamSource(stream);
-        const analyser = audioContext.createAnalyser();
-        source.connect(analyser);
-        analyser.fftSize = 256;
+      // 🎛️ Visualización en canvas
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      source.connect(analyser);
+      analyser.fftSize = 256;
 
-        const bufferLength = analyser.fftSize;
-        const dataArray = new Uint8Array(bufferLength);
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
+      const bufferLength = analyser.fftSize;
+      const dataArray = new Uint8Array(bufferLength);
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
 
-        const draw = () => {
-          requestAnimationFrame(draw);
-          analyser.getByteTimeDomainData(dataArray);
+      const draw = () => {
+        requestAnimationFrame(draw);
+        analyser.getByteTimeDomainData(dataArray);
 
-          ctx.fillStyle = '#2B2C3F';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#2B2C3F';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#3BDCF6';
+        ctx.beginPath();
 
-          ctx.lineWidth = 2;
-          ctx.strokeStyle = '#3BDCF6';
-          ctx.beginPath();
+        const sliceWidth = canvas.width / bufferLength;
+        let x = 0;
 
-          const sliceWidth = canvas.width / bufferLength;
-          let x = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          const v = dataArray[i] / 128.0;
+          const y = (v * canvas.height) / 2;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+          x += sliceWidth;
+        }
 
-          for (let i = 0; i < bufferLength; i++) {
-            const v = dataArray[i] / 128.0;
-            const y = (v * canvas.height) / 2;
-            if (i === 0) {
-              ctx.moveTo(x, y);
-            } else {
-              ctx.lineTo(x, y);
-            }
-            x += sliceWidth;
-          }
+        ctx.lineTo(canvas.width, canvas.height / 2);
+        ctx.stroke();
+      };
 
-          ctx.lineTo(canvas.width, canvas.height / 2);
-          ctx.stroke();
-        };
+      draw();
+    } catch (err) {
+      console.warn('No se pudo acceder al micrófono:', err);
+      setMicReady(false);
+    }
+  };
 
-        draw();
-      } catch (err) {
-        console.warn('No se pudo acceder al micrófono:', err);
-        setMicReady(false);
-      }
-    };
+  accederMicrofono();
+}, [selectedMic]);
 
-    accederMicrofono();
-  }, [selectedMic]);
 
-  // 🧼 Limpieza al desmontar
+  // 🧼 Limpiar solo micrófono
   useEffect(() => {
     return () => {
-      if (currentCamStream.current) {
-        currentCamStream.current.getTracks().forEach((track) => track.stop());
-      }
       if (currentMicStream.current) {
         currentMicStream.current.getTracks().forEach((track) => track.stop());
+        currentMicStream.current = null;
+      }
+      if (micAudioElement.current) {
+        micAudioElement.current.pause();
+        micAudioElement.current.srcObject = null;
       }
     };
   }, []);
@@ -160,7 +162,6 @@ export default function ValidacionDispositivos() {
       <h2 className="text-2xl font-bold mb-8">Verifica tu cámara, micrófono y comparte pantalla</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl mb-6">
-
         {/* Cámara */}
         <div className="bg-[#1D1E33] p-6 rounded-lg shadow-md">
           <label className="block mb-2 text-sm text-gray-300">Selecciona tu cámara</label>
