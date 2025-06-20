@@ -68,7 +68,7 @@ function CalificacionEditable({ tipo, valor, maximo, onChange, confirmada, setCo
 
 export default function CalificacionPage() {
   const [calificaciones, setCalificaciones] = useState({
-    entrevista: 3,
+    entrevista: 0,
     teorico: 0,
     tecnica: 0,
     capturas: 0,
@@ -83,28 +83,52 @@ export default function CalificacionPage() {
 
   const [observacionCapturas, setObservacionCapturas] = useState('');
   const [observacionGeneral, setObservacionGeneral] = useState('');
+
   const [preguntasTeoricas, setPreguntasTeoricas] = useState([]);
+  const [preguntasOrales, setPreguntasOrales] = useState([]);
+  const [entrevista, setEntrevista] = useState(null);
+  const [preguntaTecnica, setPreguntaTecnica] = useState(null);
 
   const searchParams = useSearchParams();
   const idPostulante = searchParams.get('id');
   const router = useRouter();
 
   useEffect(() => {
-    const cargarPreguntas = async () => {
-      if (!idPostulante) return;
-      try {
-        const res = await fetch(`/api/postulante/preguntas-teoricas?id=${idPostulante}`);
-        const data = await res.json();
-        setPreguntasTeoricas(data);
+    if (!idPostulante) return;
 
-        // Calificación automática: contar las correctas
-        const puntajeTeorico = data.filter(p => p.correcta).length;
-        setCalificaciones(prev => ({ ...prev, teorico: puntajeTeorico }));
+    const cargarDatos = async () => {
+      try {
+        const [resTeoricas, resEntrevista, resOrales, resTecnica] = await Promise.all([
+          fetch(`/api/postulante/preguntas-teoricas?id=${idPostulante}`),
+          fetch(`/api/postulante/entrevista?id=${idPostulante}`),
+          fetch(`/api/postulante/preguntas-orales?id=${idPostulante}`),
+          fetch(`/api/postulante/pregunta-tecnica?id=${idPostulante}`),
+        ]);
+
+        const dataTeoricas = await resTeoricas.json();
+        const dataEntrevista = await resEntrevista.json();
+        const dataOrales = await resOrales.json();
+        const dataTecnica = await resTecnica.json();
+
+        setPreguntasTeoricas(dataTeoricas);
+        setEntrevista(dataEntrevista);
+        setPreguntasOrales(dataOrales);
+        setPreguntaTecnica(dataTecnica);
+
+        const teoricoCorrectas = dataTeoricas.filter(p => p.correcta).length;
+
+        setCalificaciones(prev => ({
+          ...prev,
+          teorico: teoricoCorrectas,
+          entrevista: 3,
+          tecnica: dataTecnica?.calificacion || 0,
+        }));
       } catch (err) {
-        console.error('Error cargando preguntas teóricas:', err);
+        console.error('❌ Error cargando datos:', err);
       }
     };
-    cargarPreguntas();
+
+    cargarDatos();
   }, [idPostulante]);
 
   const actualizarCalificacion = (tipo, nuevoValor) => {
@@ -157,6 +181,23 @@ export default function CalificacionPage() {
             />
           </div>
 
+          {id === 'entrevista' && (
+            <div className="text-sm text-gray-300 space-y-4 mt-4">
+              {preguntasOrales.map((p, i) => (
+                <div key={i}>
+                  <p className="text-[#3BDCF6]"><strong>Pregunta {i + 1}:</strong> {p.pregunta}</p>
+                  <p className="text-white ml-4"><strong>Respuesta:</strong> {p.respuesta}</p>
+                </div>
+              ))}
+              {entrevista && (
+                <>
+                  <p className="text-green-400 mt-4"><strong>Veredicto:</strong> {entrevista.veredicto}</p>
+                  <p className="italic text-gray-400">{entrevista.retroalimentacionIA}</p>
+                </>
+              )}
+            </div>
+          )}
+
           {id === 'teorico' && (
             <div className="mt-6 space-y-4 text-sm text-gray-300">
               {preguntasTeoricas.length === 0 ? (
@@ -180,6 +221,19 @@ export default function CalificacionPage() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {id === 'tecnica' && preguntaTecnica && (
+            <div className="text-sm text-gray-300 space-y-2 mt-4">
+              <p><strong>Pregunta técnica:</strong> {preguntaTecnica.pregunta}</p>
+              <pre className="bg-[#181A2F] text-white p-3 rounded whitespace-pre-wrap overflow-x-auto">
+                {preguntaTecnica.respuesta}
+              </pre>
+              {preguntaTecnica.usoIA && (
+                <p className="text-yellow-400">⚠️ El postulante solicitó ayuda de la IA</p>
+              )}
+              <p className="italic text-gray-400">{preguntaTecnica.retroalimentacion}</p>
             </div>
           )}
 

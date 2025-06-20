@@ -253,6 +253,73 @@ const cambiarEstado = async (req, res) => {
 
 
 
+// 🔹 Obtener preguntas teóricas respondidas por el postulante
+const getPreguntasTeoricas = async (req, res) => {
+  const { id } = req.query;
+  try {
+    const evaluaciones = await db.Evaluacion.findAll({
+      where: { Id_Postulante: id },
+      include: [
+        {
+          model: db.Opcion,
+          as: 'opcionSeleccionada',
+          include: [
+            { model: db.Pregunta, as: 'pregunta' }
+          ]
+        }
+      ]
+    });
+
+    const data = evaluaciones.map(ev => ({
+      pregunta: ev.opcionSeleccionada.pregunta.Pregunta,
+      respuesta: ev.opcionSeleccionada.Descripcion,
+      correcta: ev.opcionSeleccionada.EsCorrecta,
+      habilidad: ev.opcionSeleccionada.pregunta.Habilidad
+    }));
+
+    res.json(data);
+  } catch (err) {
+    console.error('Error en getPreguntasTeoricas:', err);
+    res.status(500).json({ error: 'Error interno' });
+  }
+};
+
+// 🔹 Obtener resumen de entrevista oral (veredicto + retroalimentación IA)
+const getEntrevistaOral = async (req, res) => {
+  const { id } = req.query;
+  try {
+    const entrevista = await db.EntrevistaOral.findOne({ where: { Id_Postulante: id } });
+    res.json(entrevista);
+  } catch (err) {
+    console.error('Error en getEntrevistaOral:', err);
+    res.status(500).json({ error: 'Error interno' });
+  }
+};
+
+// 🔹 Obtener preguntas orales realizadas al postulante
+const getPreguntasOrales = async (req, res) => {
+  const { id } = req.query;
+  try {
+    const preguntas = await db.PreguntaOral.findAll({ where: { Id_Postulante: id } });
+    res.json(preguntas);
+  } catch (err) {
+    console.error('Error en getPreguntasOrales:', err);
+    res.status(500).json({ error: 'Error interno' });
+  }
+};
+
+// 🔹 Obtener pregunta técnica (evaluación práctica)
+const getPreguntaTecnica = async (req, res) => {
+  const { id } = req.query;
+  try {
+    const pregunta = await db.PreguntaTecnica.findOne({ where: { Id_Postulante: id } });
+    res.json(pregunta);
+  } catch (err) {
+    console.error('Error en getPreguntaTecnica:', err);
+    res.status(500).json({ error: 'Error interno' });
+  }
+};
+
 module.exports = {
   crearPostulante,
   guardarHabilidades,
@@ -260,5 +327,9 @@ module.exports = {
   seleccionarVacante,
   getAllPostulantes,
   obtenerPorId,
-  cambiarEstado
+  cambiarEstado,
+  getPreguntasTeoricas,
+  getEntrevistaOral,
+  getPreguntasOrales,
+  getPreguntaTecnica
 };

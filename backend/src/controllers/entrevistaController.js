@@ -51,16 +51,33 @@ exports.procesarAudio = async (req, res) => {
     const habilidades = postulante.habilidades.map(h => h.habilidad.Descripcion);
     const habilidadesTexto = habilidades.join(', ');
 
-    let entrevista = await db.EntrevistaOral.findOne({
-      where: { Id_Postulante: idPostulante }
-    });
+    let entrevista;
 
-    if (!entrevista) {
-      entrevista = await db.EntrevistaOral.create({
-        Id_Postulante: idPostulante,
-        RetroalimentacionIA: null
-      });
-    }
+// Buscar la evaluación asociada al postulante
+const evaluacion = await db.Evaluacion.findOne({
+  where: { Id_postulante: idPostulante },
+  order: [['id_Evaluacion', 'DESC']]
+});
+
+if (evaluacion?.Id_Entrevista) {
+  entrevista = await db.EntrevistaOral.findByPk(evaluacion.Id_Entrevista);
+} else {
+  // Si no hay entrevista, la creamos
+  entrevista = await db.EntrevistaOral.create({
+    RetroalimentacionIA: null
+  });
+
+  // Y la asociamos creando o actualizando la evaluación
+  if (evaluacion) {
+    await evaluacion.update({ Id_Entrevista: entrevista.Id_Entrevista });
+  } else {
+    await db.Evaluacion.create({
+      Id_postulante: idPostulante,
+      Id_Entrevista: entrevista.Id_Entrevista
+    });
+  }
+}
+
 
     let textoUsuario = '';
     if (step !== '0') {

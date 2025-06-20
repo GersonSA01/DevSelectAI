@@ -42,10 +42,10 @@ const habilidadRouter = require('./routes/habilidad');
 const preguntasRoutes = require('./routes/preguntas');
 const opcionesRoutes = require("./routes/opciones");
 const generarPreguntasRouter = require('./routes/generarPreguntasIA');
-const entrevistaTeoricaRoutes = require('./routes/entrevistaTeorica');
+const evaluacion = require('./routes/evaluacion');
 const captureRoutes = require('./routes/capture');
 const ciudadRoutes = require('./routes/ciudad');
-
+const informeRoutes = require('./routes/informe');
 
 
 // ✅ USO DE RUTAS
@@ -63,11 +63,10 @@ app.use('/api/habilidades', habilidadRouter);
 app.use('/api/preguntas', preguntasRoutes);
 app.use('/api/opciones', opcionesRoutes);
 app.use('/api/generar-preguntas', generarPreguntasRouter);
-app.use('/api/postulantes', postulanteRoutes);
-app.use('/api/entrevista-teorica', entrevistaTeoricaRoutes);
+app.use('/api/evaluacion', evaluacion);
 app.use('/api/captures', captureRoutes);
 app.use('/api/ciudades', ciudadRoutes);
-
+app.use('/api/informe', informeRoutes);
 // ✅ RUTA PRINCIPAL
 app.get("/", (req, res) => {
   res.send("🚀 Bienvenido a DevSelectAI - Backend en funcionamiento");

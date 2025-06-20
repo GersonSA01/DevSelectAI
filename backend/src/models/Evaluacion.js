@@ -5,6 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     Puntaje: DataTypes.INTEGER,
     ObservacionGeneral: DataTypes.STRING,
     Id_pregunta: DataTypes.INTEGER,
+    Id_Entrevista: DataTypes.INTEGER,
     Id_postulante: DataTypes.INTEGER
   }, {
     tableName: 'DAI_T_Evaluacion',

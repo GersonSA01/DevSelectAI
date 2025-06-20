@@ -27,7 +27,8 @@ useEffect(() => {
     }
 
     try {
-      const res = await fetch(`http://localhost:5000/api/entrevista-teorica/generar-evaluacion/${idPostulante}`);
+      const res = await fetch(`http://localhost:5000/api/evaluacion/obtener-evaluacion/${idPostulante}`);
+
       const data = await res.json();
 
       if (res.ok && Array.isArray(data)) {
@@ -45,6 +46,13 @@ else {
 
   cargarPreguntas();
 }, []);
+
+useEffect(() => {
+  if (preguntas.length > 0 && preguntas[0]?.Id_Evaluacion) {
+    localStorage.setItem('id_evaluacion', preguntas[0].Id_Evaluacion);
+  }
+}, [preguntas]);
+
 
 
 
@@ -64,7 +72,7 @@ else {
     const opcionSeleccionada = pregunta.opciones[indexOpcion];
 
     try {
-      await fetch(`http://localhost:5000/api/entrevista-teorica/responder/${pregunta.Id_Evaluacion}`, {
+      await fetch(`http://localhost:5000/api/evaluacion/responder/${pregunta.Id_Evaluacion}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idOpcionSeleccionada: opcionSeleccionada.Id_Opcion })
@@ -91,7 +99,10 @@ else {
 
 
       <div className="max-w-4xl mx-auto space-y-8">
-              <ValidadorEntorno idEvaluacion={idEvaluacion} onCamVisibilityChange={setCameraVisible} />
+              {preguntas.length > 0 && idEvaluacion && (
+  <ValidadorEntorno idEvaluacion={idEvaluacion} onCamVisibilityChange={setCameraVisible} />
+)}
+
         
         {preguntas.map((pregunta, index) => (
           <div key={pregunta.Id_Pregunta} className="bg-[#1D1E33] p-6 rounded-lg shadow">

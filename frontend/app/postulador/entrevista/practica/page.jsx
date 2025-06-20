@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { StreamContext } from '../../../../context/StreamContext';
 import Temporizador from '../../../components/ui/Temporizador';
 import ValidadorEntorno from '../../../components/ValidadorEntorno';
+import { Alert } from '../../../components/alerts/Alerts';
+import { FaSpinner } from 'react-icons/fa';
 
 export default function PracticaPage() {
   const { cameraStream, reiniciarCamara } = useContext(StreamContext);
@@ -34,53 +36,76 @@ export default function PracticaPage() {
       const idPostulante = localStorage.getItem('id_postulante');
       console.log('📦 ID POSTULANTE ENVIADO:', localStorage.getItem('id_postulante'));
 
-      const res = await fetch(`http://localhost:5000/api/entrevista-teorica/pregunta-tecnica-asignada/${idPostulante}`);
+      const res = await fetch(`http://localhost:5000/api/evaluacion/pregunta-tecnica-asignada/${idPostulante}`);
       const data = await res.json();
       setPreguntaTecnica(data);
     };
     cargarPreguntaTecnica();
   }, []);
 
-  const handlePedirAyuda = async () => {
-    if (!preguntaTecnica?.Pregunta) return;
-    setCargandoAyuda(true);
-    setAyudaIA('// Cargando ayuda...');
+const handlePedirAyuda = async () => {
+  if (!preguntaTecnica?.Pregunta) return;
 
-    try {
-      const idPostulante = localStorage.getItem('id_postulante');
+  setCargandoAyuda(true);
 
-      const res = await fetch('http://localhost:5000/api/entrevista-teorica/pedir-ayuda', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idPostulante })
-      });
+  try {
+    const idPostulante = localStorage.getItem('id_postulante');
 
-      const data = await res.json();
+    const res = await fetch('http://localhost:5000/api/evaluacion/pedir-ayuda', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idPostulante })
+    });
 
-      if (!res.ok) {
-        if (res.status === 400 && data.error?.includes('ayuda')) {
-          setAyudaIA('// Ya utilizaste la ayuda de la IA para esta pregunta.');
-        } else {
-          setAyudaIA('// No se pudo obtener ayuda.');
-        }
-        return;
-      }
+    const data = await res.json();
 
-      setAyudaIA(data.sugerencia || '// No se pudo obtener ayuda.');
-    } catch (err) {
-      console.error('❌ Error al pedir ayuda a la IA:', err);
-      setAyudaIA('// Ocurrió un error al pedir ayuda.');
-    } finally {
-      setCargandoAyuda(false);
-    }
-  };
+    if (!res.ok) {
+  if (res.status === 400 && data.error?.includes('ayuda')) {
+    await Alert({
+      title: 'Ayuda ya solicitada',
+      html: 'Ya utilizaste la ayuda de la IA para esta pregunta técnica.',
+      icon: 'warning',
+      showCancelButton: false,
+      confirmButtonText: 'Entendido'
+    });
+  } else {
+    await Alert({
+      title: 'Error al obtener ayuda',
+      html: 'No se pudo obtener la sugerencia de la IA. Intenta nuevamente más tarde.',
+      icon: 'error',
+      showCancelButton: false,
+      confirmButtonText: 'Cerrar'
+    });
+  }
+
+  // ❌ NO limpies la ayuda anterior
+  // setAyudaIA(''); ❌ quita esta línea
+  return;
+}
+
+
+    setAyudaIA(data.sugerencia || '// No se pudo obtener ayuda.');
+  } catch (err) {
+    console.error('❌ Error al pedir ayuda a la IA:', err);
+    await Alert({
+      title: 'Error de conexión',
+      html: 'Hubo un problema al conectar con el servidor. Intenta más tarde.',
+      icon: 'error',
+      showCancelButton: false,
+      confirmButtonText: 'Cerrar'
+    });
+  } finally {
+    setCargandoAyuda(false);
+  }
+};
+
 
  const handleEnviar = async () => {
   const idPostulante = localStorage.getItem('id_postulante');
 
   try {
     // 1. Guardar respuesta técnica
-    await fetch('http://localhost:5000/api/entrevista-teorica/guardar-respuesta-tecnica', {
+    await fetch('http://localhost:5000/api/evaluacion/guardar-respuesta-tecnica', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -146,13 +171,21 @@ export default function PracticaPage() {
 
 
           <div className="flex flex-wrap gap-4 justify-start">
-            <button
-              onClick={handlePedirAyuda}
-              className="px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-black font-semibold rounded-lg transition"
-              disabled={cargandoAyuda}
-            >
-              {cargandoAyuda ? 'Cargando...' : 'Pedir ayuda'}
-            </button>
+           <button
+  onClick={handlePedirAyuda}
+  className="px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-black font-semibold rounded-lg transition flex items-center gap-2"
+  disabled={cargandoAyuda}
+>
+  {cargandoAyuda ? (
+    <>
+      <FaSpinner className="animate-spin" />
+      Cargando...
+    </>
+  ) : (
+    'Pedir ayuda'
+  )}
+</button>
+
 
             <button
               onClick={handleEnviar}

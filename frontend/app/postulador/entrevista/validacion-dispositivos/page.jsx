@@ -141,6 +141,48 @@ useEffect(() => {
 
   accederMicrofono();
 }, [selectedMic]);
+const yaGenerado = useRef(false);
+
+useEffect(() => {
+  const generarEvaluacion = async () => {
+    if (yaGenerado.current || !token) return;
+
+    yaGenerado.current = true;
+
+    try {
+      console.log("📌 Token detectado, buscando postulante...");
+      const resId = await fetch(`http://localhost:5000/api/postulante/token/${token}`);
+      const dataId = await resId.json();
+      console.log("✔️ Postulante encontrado:", dataId);
+
+      if (!resId.ok || !dataId?.Id_Postulante) {
+        console.warn("⛔ Postulante no encontrado correctamente:", dataId?.error || dataId);
+        return;
+      }
+
+      const idPostulante = dataId.Id_Postulante;
+
+      console.log("📤 Enviando POST a evaluación con ID:", idPostulante);
+
+      const resEval = await fetch(`http://localhost:5000/api/evaluacion/inicial/${idPostulante}`, {
+        method: 'POST'
+      });
+
+      const dataEval = await resEval.json();
+      console.log("📥 Respuesta del backend evaluación:", dataEval);
+
+      if (!resEval.ok) throw new Error(dataEval?.error || 'Error inesperado al crear evaluación');
+
+      localStorage.setItem('id_postulante', idPostulante);
+      console.log('✅ Evaluación generada exitosamente.');
+    } catch (error) {
+      console.error('❌ Error completo:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    }
+  };
+
+  generarEvaluacion();
+}, [token]);
+
 
 
   // 🧼 Limpiar solo micrófono

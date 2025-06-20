@@ -150,15 +150,17 @@ db.Postulante.hasMany(db.Evaluacion, {
   as: 'evaluaciones'
 });
 
-// EntrevistaOral - Postulante
-db.EntrevistaOral.belongsTo(db.Postulante, {
-  foreignKey: 'Id_Postulante',
-  as: 'postulante'
+// EntrevistaOral - Evaluacion
+db.Evaluacion.belongsTo(db.EntrevistaOral, {
+  foreignKey: 'Id_Entrevista',
+  as: 'entrevista'
 });
-db.Postulante.hasMany(db.EntrevistaOral, {
-  foreignKey: 'Id_Postulante',
-  as: 'entrevistas'
+
+db.EntrevistaOral.hasOne(db.Evaluacion, {
+  foreignKey: 'Id_Entrevista',
+  as: 'evaluacion'
 });
+
 
 // PreguntaOral - EntrevistaOral
 db.PreguntaOral.belongsTo(db.EntrevistaOral, {
