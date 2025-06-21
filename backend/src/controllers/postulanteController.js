@@ -256,69 +256,131 @@ const cambiarEstado = async (req, res) => {
 // 🔹 Obtener preguntas teóricas respondidas por el postulante
 const getPreguntasTeoricas = async (req, res) => {
   const { id } = req.query;
+
   try {
     const evaluaciones = await db.Evaluacion.findAll({
       where: { Id_Postulante: id },
       include: [
         {
-          model: db.Opcion,
-          as: 'opcionSeleccionada',
-          include: [
-            { model: db.Pregunta, as: 'pregunta' }
-          ]
+          model: db.Pregunta,
+          as: 'pregunta'
         }
       ]
     });
 
     const data = evaluaciones.map(ev => ({
-      pregunta: ev.opcionSeleccionada.pregunta.Pregunta,
-      respuesta: ev.opcionSeleccionada.Descripcion,
-      correcta: ev.opcionSeleccionada.EsCorrecta,
-      habilidad: ev.opcionSeleccionada.pregunta.Habilidad
+      pregunta: ev.pregunta?.Pregunta || 'No encontrada',
+      respuesta: ev.RptaPostulante || 'Sin respuesta',
+      puntaje: ev.Puntaje || 0,
+      habilidad: ev.pregunta?.Habilidad || 'General'
     }));
 
     res.json(data);
   } catch (err) {
-    console.error('Error en getPreguntasTeoricas:', err);
-    res.status(500).json({ error: 'Error interno' });
+    console.error('❌ Error en getPreguntasTeoricas:', err);
+    res.status(500).json({ error: 'Error interno al obtener preguntas teóricas' });
   }
 };
+
+
 
 // 🔹 Obtener resumen de entrevista oral (veredicto + retroalimentación IA)
 const getEntrevistaOral = async (req, res) => {
-  const { id } = req.query;
   try {
-    const entrevista = await db.EntrevistaOral.findOne({ where: { Id_Postulante: id } });
+    const id = req.query.id;
+
+    const evaluacion = await db.Evaluacion.findOne({
+      where: { Id_postulante: id }
+    });
+
+    if (!evaluacion) return res.status(404).json({ error: 'Evaluación no encontrada' });
+
+    const entrevista = await db.EntrevistaOral.findOne({
+      where: { Id_Entrevista: evaluacion.Id_Entrevista }
+    });
+
     res.json(entrevista);
-  } catch (err) {
-    console.error('Error en getEntrevistaOral:', err);
+  } catch (error) {
+    console.error('Error en getEntrevistaOral:', error);
     res.status(500).json({ error: 'Error interno' });
   }
 };
 
-// 🔹 Obtener preguntas orales realizadas al postulante
 const getPreguntasOrales = async (req, res) => {
-  const { id } = req.query;
   try {
-    const preguntas = await db.PreguntaOral.findAll({ where: { Id_Postulante: id } });
-    res.json(preguntas);
-  } catch (err) {
-    console.error('Error en getPreguntasOrales:', err);
+    const id = req.query.id;
+
+    const evaluacion = await db.Evaluacion.findOne({
+      where: { Id_postulante: id }
+    });
+
+    if (!evaluacion) return res.status(404).json({ error: 'Evaluación no encontrada' });
+
+    // 🔹 Obtener entrevista oral asociada
+    const entrevista = await db.EntrevistaOral.findOne({
+      where: { Id_Entrevista: evaluacion.Id_Entrevista }
+    });
+
+    const preguntas = await db.PreguntaOral.findAll({
+      where: { Id_Entrevista: evaluacion.Id_Entrevista }
+    });
+
+    const formateadas = preguntas.map(p => ({
+      pregunta: p.PreguntaIA,
+      respuesta: p.RespuestaPostulante,
+      calificacion: p.CalificacionIA,
+      ronda: p.Ronda,
+      tiempo: p.TiempoRptaPostulante
+    }));
+
+    // 🔹 Agregar retroalimentación como parte de la respuesta
+    res.json({
+      preguntas: formateadas,
+      retroalimentacionIA: entrevista?.RetroalimentacionIA || null
+    });
+  } catch (error) {
+    console.error('Error en getPreguntasOrales:', error);
     res.status(500).json({ error: 'Error interno' });
   }
 };
+
 
 // 🔹 Obtener pregunta técnica (evaluación práctica)
 const getPreguntaTecnica = async (req, res) => {
-  const { id } = req.query;
   try {
-    const pregunta = await db.PreguntaTecnica.findOne({ where: { Id_Postulante: id } });
-    res.json(pregunta);
-  } catch (err) {
-    console.error('Error en getPreguntaTecnica:', err);
+    const id = req.query.id;
+
+    const evaluacion = await db.Evaluacion.findOne({
+      where: { Id_postulante: id },
+      include: {
+        model: db.Pregunta,
+        as: 'pregunta'
+      }
+    });
+
+    if (!evaluacion || !evaluacion.Id_pregunta) {
+      return res.status(404).json({ error: 'Pregunta técnica no encontrada' });
+    }
+
+    const tecnica = await db.PreguntaTecnica.findOne({
+      where: { Id_Pregunta: evaluacion.Id_pregunta }
+    });
+
+    if (!tecnica) return res.status(404).json({ error: 'Pregunta técnica no registrada' });
+
+    res.json({
+      pregunta: evaluacion.pregunta?.Pregunta,
+      respuesta: tecnica.Respuesta,
+      usoIA: tecnica.UsoIA,
+      retroalimentacion: tecnica.ObservacionIA || '', // si existe
+      calificacion: evaluacion.Puntaje
+    });
+  } catch (error) {
+    console.error('Error en getPreguntaTecnica:', error);
     res.status(500).json({ error: 'Error interno' });
   }
 };
+
 
 module.exports = {
   crearPostulante,

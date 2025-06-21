@@ -26,8 +26,9 @@ export default function SeleccionHabilidades() {
   }, []);
 
   const toggleHabilidad = (habilidad) => {
-    if (habilidadesSeleccionadas.includes(habilidad)) {
-      setHabilidadesSeleccionadas(habilidadesSeleccionadas.filter((h) => h !== habilidad));
+    const yaSeleccionada = habilidadesSeleccionadas.find((h) => h.Id_Habilidad === habilidad.Id_Habilidad);
+    if (yaSeleccionada) {
+      setHabilidadesSeleccionadas(habilidadesSeleccionadas.filter((h) => h.Id_Habilidad !== habilidad.Id_Habilidad));
     } else if (habilidadesSeleccionadas.length < 3) {
       setHabilidadesSeleccionadas([...habilidadesSeleccionadas, habilidad]);
     } else {
@@ -58,7 +59,6 @@ export default function SeleccionHabilidades() {
     }
 
     try {
-      // Guardar habilidades seleccionadas
       await fetch('http://localhost:5000/api/postulante/habilidades', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,16 +68,14 @@ export default function SeleccionHabilidades() {
         })
       });
 
-      // Buscar vacantes por habilidades
-const resVacantes = await fetch('http://localhost:5000/api/vacantes/por-habilidades', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    habilidades: habilidadesSeleccionadas.map(h => h.Id_Habilidad),
-    idPostulante
-  })
-});
-
+      const resVacantes = await fetch('http://localhost:5000/api/vacantes/por-habilidades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          habilidades: habilidadesSeleccionadas.map(h => h.Id_Habilidad),
+          idPostulante
+        })
+      });
 
       const vacantesData = await resVacantes.json();
       setVacantes(vacantesData);
@@ -118,26 +116,20 @@ const resVacantes = await fetch('http://localhost:5000/api/vacantes/por-habilida
 
       if (!confirmarAsignacion.isConfirmed) return;
 
-      // ⚠️ IMPORTANTE: asegúrate de que esta ruta exista en el backend
-      const resSeleccion = await fetch('http://localhost:5000/api/postulante/seleccionar-vacante', {
+      await fetch('http://localhost:5000/api/postulante/seleccionar-vacante', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idPostulante, idVacante: vacanteSeleccionada.Id_Vacante })
       });
 
-      if (!resSeleccion.ok) throw new Error('Error al seleccionar vacante');
+      await Alert({
+        title: '¡Proceso finalizado!',
+        text: 'Tu selección ha sido registrada correctamente. Serás redirigido al inicio.',
+        icon: 'success'
+      });
 
-await Alert({
-  title: '¡Proceso finalizado!',
-  text: 'Tu selección ha sido registrada correctamente. Serás redirigido al inicio.',
-  icon: 'success'
-});
-
-// Limpiar datos si deseas (opcional)
-localStorage.removeItem('id_postulante');
-
-// Redirigir al inicio
-router.push('/');
+      localStorage.removeItem('id_postulante');
+      router.push('/');
 
     } catch (error) {
       console.error('Error en el proceso:', error);
@@ -146,26 +138,35 @@ router.push('/');
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-pageBackground p-8">
-      <h2 className="text-3xl font-bold text-white mb-8 text-center">Seleccione hasta 3 habilidades a evaluar</h2>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-pageBackground p-6 md:p-12 text-white">
+      <h2 className="text-2xl md:text-3xl font-bold mb-2 text-center">
+        Elige tus 3 mejores habilidades
+      </h2>
+      <p className="text-sm md:text-base mb-6 text-center">
+        Estas habilidades nos ayudarán a buscar vacantes adecuadas para ti.
+      </p>
 
-      <div className="flex flex-col gap-4 w-full max-w-md">
-        {habilidades.map((habilidad) => (
-          <button
-            key={habilidad.Id_Habilidad}
-            onClick={() => toggleHabilidad(habilidad)}
-            className={`py-2 rounded font-semibold transition ${
-              habilidadesSeleccionadas.includes(habilidad) ? 'bg-primaryButton text-white' : 'bg-white text-black'
-            }`}
-          >
-            {habilidad.Descripcion}
-          </button>
-        ))}
+      {/* Chips de habilidades */}
+      <div className="flex flex-wrap justify-center gap-3 max-w-3xl mb-8">
+        {habilidades.map((habilidad) => {
+          const activa = habilidadesSeleccionadas.some(h => h.Id_Habilidad === habilidad.Id_Habilidad);
+          return (
+            <button
+              key={habilidad.Id_Habilidad}
+              onClick={() => toggleHabilidad(habilidad)}
+              className={`px-4 py-2 rounded-full border transition text-sm md:text-base
+                ${activa ? 'bg-primaryButton text-white' : 'bg-white text-black hover:bg-gray-200'}`}
+            >
+              {habilidad.Descripcion}
+            </button>
+          );
+        })}
       </div>
 
+      {/* Botón de continuar */}
       <button
         onClick={handleContinuar}
-        className="mt-8 bg-primaryButton hover:bg-primaryButtonHover text-white font-semibold py-2 px-8 rounded-full transition"
+        className="bg-primaryButton hover:bg-primaryButtonHover text-white font-semibold py-2 px-6 md:px-8 rounded-full transition text-sm md:text-base"
       >
         Continuar
       </button>

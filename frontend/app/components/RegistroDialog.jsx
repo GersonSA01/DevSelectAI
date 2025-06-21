@@ -27,6 +27,14 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
       .then((data) => setCiudades(data));
   }, []);
 
+  const normalizar = (texto) =>
+  texto
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+
   const handleBuscar = async () => {
     if (!cedula) return;
 
@@ -57,16 +65,16 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
     }
   };
 
-  // Función para buscar el id_ciudad por nombre
-  const getIdCiudad = (nombreCiudad) => {
-    if (!ciudades.length) return null; // Si no hay ciudades, retorna null
-    const ciudad = ciudades.find(
-      (c) =>
-        c.Descripcion &&
-        c.Descripcion.toLowerCase().trim() === (nombreCiudad || "").toLowerCase().trim()
-    );
-    return ciudad ? ciudad.id_ciudad : null;
-  };
+ const getIdCiudad = (nombreCiudad) => {
+  if (!ciudades.length) return null;
+
+  const ciudad = ciudades.find(
+    (c) =>
+      c.Descripcion &&
+      normalizar(c.Descripcion) === normalizar(nombreCiudad || "")
+  );
+  return ciudad ? ciudad.id_ciudad : null;
+};
 
   const handleClose = () => {
     setOpen(false);

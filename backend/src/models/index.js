@@ -5,11 +5,10 @@ const dbConfig = config[env];
 
 const sequelize = new Sequelize(dbConfig);
 
-
-
 const db = {};
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
+
 // Registrar modelos
 db.PostulanteVacante = require('./PostulanteVacante')(sequelize, Sequelize);
 db.Capture = require('./Capture')(sequelize, Sequelize);
@@ -31,9 +30,14 @@ db.Vacante = require('./Vacante')(sequelize, Sequelize);
 db.VacanteHabilidad = require('./VacanteHabilidad')(sequelize, Sequelize);
 db.Opcion = require('./Opcion')(sequelize, Sequelize);
 db.PreguntaTecnica = require('./PreguntaTecnica')(sequelize, Sequelize);
+
+// Relaciones
+
 db.DetalleHabilidad.belongsTo(db.Habilidad, { foreignKey: 'Id_Habilidad' });
 db.Postulante.hasMany(db.DetalleHabilidad, { foreignKey: 'Id_Postulante' });
 db.DetalleHabilidad.belongsTo(db.Postulante, { foreignKey: 'Id_Postulante' });
+db.Evaluacion.hasMany(db.Capture, { foreignKey: 'id_Evaluacion' });
+db.Capture.belongsTo(db.Evaluacion, { foreignKey: 'id_Evaluacion' });
 
 // Postulante - Ciudad - EstadoPostulacion
 db.Postulante.belongsTo(db.Ciudad, {
@@ -54,7 +58,7 @@ db.EstadoPostulacion.hasMany(db.Postulante, {
   as: 'postulantes'
 });
 
-// Vacante - Empresa - Reclutador -  Itinerario
+// Vacante - Empresa - Reclutador - Itinerario
 db.Vacante.belongsTo(db.Empresa, {
   foreignKey: 'Id_Empresa',
   as: 'empresa'
@@ -72,7 +76,6 @@ db.Reclutador.hasMany(db.Vacante, {
   foreignKey: 'Id_reclutador',
   as: 'vacantes'
 });
-
 
 db.Vacante.belongsTo(db.Itinerario, {
   foreignKey: 'id_Itinerario',
@@ -121,7 +124,7 @@ db.Habilidad.hasMany(db.DetalleHabilidad, {
   as: 'detalles'
 });
 
-// Vacante - Pregunta (una vacante puede tener muchas preguntas)
+// Vacante - Pregunta
 db.Vacante.hasMany(db.Pregunta, {
   foreignKey: 'Id_vacante',
   as: 'preguntas'
@@ -155,12 +158,10 @@ db.Evaluacion.belongsTo(db.EntrevistaOral, {
   foreignKey: 'Id_Entrevista',
   as: 'entrevista'
 });
-
 db.EntrevistaOral.hasOne(db.Evaluacion, {
   foreignKey: 'Id_Entrevista',
   as: 'evaluacion'
 });
-
 
 // PreguntaOral - EntrevistaOral
 db.PreguntaOral.belongsTo(db.EntrevistaOral, {
@@ -191,7 +192,7 @@ db.Pais.hasMany(db.Provincia, {
   as: 'provincias'
 });
 
-// Relación uno a muchos entre Pregunta y Opcion
+// Pregunta - Opcion
 db.Pregunta.hasMany(db.Opcion, {
   foreignKey: 'Id_Pregunta',
   as: 'opciones'
@@ -201,7 +202,7 @@ db.Opcion.belongsTo(db.Pregunta, {
   as: 'pregunta'
 });
 
-// Relación uno a uno entre Pregunta y PreguntaTecnica
+// Pregunta - PreguntaTecnica
 db.Pregunta.hasOne(db.PreguntaTecnica, {
   foreignKey: 'Id_Pregunta',
   as: 'preguntaTecnica'
@@ -211,22 +212,18 @@ db.PreguntaTecnica.belongsTo(db.Pregunta, {
   as: 'pregunta'
 });
 
-
-// Asociaciones adicionales si existen
+// Asociaciones adicionales
 Object.keys(db).forEach(modelName => {
   if (db[modelName].associate) {
     db[modelName].associate(db);
   }
 });
 
-
 db.PostulanteVacante.belongsTo(db.Postulante, {
   foreignKey: 'Id_Postulante',
   as: 'postulante'
 });
 
-
-// PostulanteVacante - Vacante
 db.PostulanteVacante.belongsTo(db.Vacante, {
   foreignKey: 'Id_Vacante',
   as: 'vacante'
@@ -236,14 +233,13 @@ db.Postulante.hasMany(db.PostulanteVacante, {
   foreignKey: 'Id_Postulante',
   as: 'selecciones'
 });
-
 db.Vacante.hasMany(db.PostulanteVacante, {
   foreignKey: 'Id_Vacante',
   as: 'postulantesSeleccionados'
 });
 
+// ✅ Evaluacion - Capture SOLO UNA VEZ
 
-// Evaluacion - Capture
 db.Evaluacion.hasMany(db.Capture, {
   foreignKey: 'id_Evaluacion',
   as: 'captures'
@@ -253,7 +249,4 @@ db.Capture.belongsTo(db.Evaluacion, {
   as: 'evaluacion'
 });
 
-
-
 module.exports = db;
-

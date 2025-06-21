@@ -3,11 +3,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiEye, FiCheck, FiX } from 'react-icons/fi';
 import Swal from 'sweetalert2';
+import { FiSearch } from 'react-icons/fi';
+import TablaGeneral from '../../components/TablaGeneral';
 
 export default function PostulacionesPage() {
   const router = useRouter();
   const [filtroNombre, setFiltroNombre] = useState('');
-  const [itinerario, setItinerario] = useState('1');
+  const [itinerario, setItinerario] = useState('');
   const [postulantes, setPostulantes] = useState([]);
   const [itinerarios, setItinerarios] = useState([]);
 
@@ -15,7 +17,7 @@ useEffect(() => {
   const fetchData = async () => {
     try {
       const [resPostulantes, resItinerarios] = await Promise.all([
-        fetch('http://localhost:5000/api/postulantes'),
+        fetch('http://localhost:5000/api/postulante'),
         fetch('http://localhost:5000/api/itinerarios'),
       ]);
 
@@ -86,112 +88,106 @@ useEffect(() => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b1120] text-white p-8">
-      <h1 className="text-3xl font-bold mb-6">Postulaciones</h1>
+ <div className="min-h-screen bg-[#0b1120] text-white p-4 sm:p-6 md:p-8 overflow-x-hidden">
+  <h1 className="text-3xl font-bold mb-6">Postulaciones</h1>
 
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2">
-          <label>Postulantes:</label>
-          <div className="flex items-center bg-gray-100 rounded px-2 py-1 text-black">
-            🔍
-            <input
-              type="text"
-              placeholder="Buscar"
-              className="bg-transparent outline-none ml-2"
-              value={filtroNombre}
-              onChange={(e) => setFiltroNombre(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <label>Itinerario:</label>
-<select
-  className="text-black rounded px-2 py-1"
-  value={itinerario}
-  onChange={(e) => setItinerario(e.target.value)}
->
-  <option value="">Todos</option>
-  {itinerarios.map(it => (
-    <option key={it.id_Itinerario} value={it.id_Itinerario}>
-      {it.descripcion}
-    </option>
-  ))}
-</select>
-
-        </div>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="w-full border border-gray-700 text-center">
-          <thead className="bg-[#1e3a8a]">
-            <tr>
-              <th className="border p-2">Nombre</th>
-              <th className="border p-2">Vacante Escogida</th>
-              <th className="border p-2">Habilidades</th>
-              <th className="border p-2">Estado</th>
-              <th className="border p-2">Calificación</th>
-              <th className="border p-2">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {postulantes
-              .filter(p => `${p.Nombre} ${p.Apellido}`.toLowerCase().includes(filtroNombre.toLowerCase()))
-              .filter(p =>
-                // Filtra por itinerario solo si hay uno seleccionado
-                !itinerario || 
-                (p.selecciones?.[0]?.vacante?.id_Itinerario?.toString() === itinerario)
-              )
-              .map((p, i) => (
-                <tr key={i} className="border-t border-gray-700">
-                  <td className="p-2">{p.Nombre} {p.Apellido}</td>
-                  <td className="p-2">{p.selecciones?.[0]?.vacante?.Descripcion || '—'}</td>
-                  <td className="p-2">
-                    {(p.habilidades || []).map(h => h.habilidad?.Descripcion).join(', ') || '—'}
-                  </td>
-                  <td className="p-2">{p.estadoPostulacion?.descripcion || '—'}</td>
-                  <td className="p-2">
-                   {p.CalificacionEntrevista ? (
-  `${p.CalificacionEntrevista}/10`
-) : p.estadoPostulacion?.descripcion === 'Evaluado' ? (
-  <button
-    className="bg-green-100 text-black px-2 py-1 rounded text-sm"
-    onClick={() =>
-      router.push(`/reclutador/evaluaciones?idPostulante=${p.Id_Postulante}`)
-    }
-  >
-    Comprobar calificación
-  </button>
-) : (
-  '—'
-)}
-
-                  </td>
-                  <td className="p-2 flex justify-center gap-3">
-                    <FiEye
-                      className="text-yellow-400 cursor-pointer"
-                      onClick={() =>
-                        router.push(`/reclutador/informes?idPostulante=${p.Id_Postulante}`)
-                      }
-                    />
-                    <FiCheck
-                      className="text-green-400 cursor-pointer"
-                      title="Aprobar postulante"
-                      onClick={() =>
-                        aceptarPostulante(p.Id_Postulante, `${p.Nombre} ${p.Apellido}`, p.vacante?.Descripcion || 'vacante')
-                      }
-                    />
-                    <FiX
-                      className="text-red-500 cursor-pointer"
-                      title="Rechazar postulante"
-                      onClick={() => rechazarPostulante(p.Id_Postulante)}
-                    />
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
+  {/* Filtros */}
+<div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+    <label className="text-sm font-medium">Postulantes:</label>
+    <div className="flex items-center gap-2 bg-[#1E293B] text-white px-3 py-1 rounded-md shadow-inner">
+      <FiSearch className="text-gray-400" />
+      <input
+        type="text"
+        placeholder="Buscar por nombre"
+        className="bg-transparent focus:outline-none text-sm w-48 placeholder:text-gray-400"
+        value={filtroNombre}
+        onChange={(e) => setFiltroNombre(e.target.value)}
+      />
     </div>
+  </div>
+
+  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+    <label className="text-sm font-medium">Itinerario:</label>
+    <select
+      className="bg-[#1E293B] text-white px-3 py-1 rounded-md text-sm shadow-inner focus:outline-none"
+      value={itinerario}
+      onChange={(e) => setItinerario(e.target.value)}
+    >
+      <option value="">Todos</option>
+      {itinerarios.map(it => (
+        <option key={it.id_Itinerario} value={it.id_Itinerario}>
+          {it.descripcion}
+        </option>
+      ))}
+    </select>
+  </div>
+</div>
+
+  {/* Tabla con scroll horizontal */}
+<div className="overflow-x-auto rounded-xl border border-gray-700 shadow-md">
+<TablaGeneral
+  columnas={['Nombre', 'Vacante Escogida', 'Habilidades', 'Estado', 'Calificación', 'Acciones']}
+  filas={postulantes
+  .filter(p => `${p.Nombre} ${p.Apellido}`.toLowerCase().includes(filtroNombre.toLowerCase()))
+  .filter(p =>
+    !itinerario ||
+    (p.selecciones?.[0]?.vacante?.id_Itinerario?.toString() === itinerario)
+  )
+  .map(p => [
+    `${p.Nombre} ${p.Apellido}`,
+    p.selecciones?.[0]?.vacante?.Descripcion || '—',
+    (p.habilidades || []).length > 0
+      ? p.habilidades.map((h, idx) => (
+          <span
+            key={idx}
+            className="inline-flex items-center rounded-full bg-slate-700 px-3 py-1 text-xs font-medium text-blue-300 mr-1"
+          >
+            {h.habilidad?.Descripcion}
+          </span>
+        ))
+      : <span className="text-gray-400 text-xs">—</span>,
+    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium shadow-md ${
+      p.estadoPostulacion?.descripcion === 'Por evaluar' ? 'bg-yellow-600' :
+      p.estadoPostulacion?.descripcion === 'Evaluado' ? 'bg-blue-600' :
+      p.estadoPostulacion?.descripcion === 'Aprobado' ? 'bg-green-600' :
+      p.estadoPostulacion?.descripcion === 'Rechazado' ? 'bg-red-600' : 'bg-gray-600'
+    }`}>
+      {p.estadoPostulacion?.descripcion || '—'}
+    </span>,
+    p.CalificacionEntrevista ? (
+      <span className="text-green-400 font-bold">{p.CalificacionEntrevista}/10</span>
+    ) : p.estadoPostulacion?.descripcion === 'Evaluado' ? (
+      <button
+        className="bg-[#2e7d32] text-white font-medium px-4 py-1.5 rounded-md text-xs hover:bg-[#1b5e20] shadow-md transition duration-200"
+        onClick={() => router.push(`/reclutador/evaluaciones?id=${p.Id_Postulante}`)}
+      >
+        Comprobar calificación
+      </button>
+    ) : '—',
+    <div className="flex justify-center gap-2 text-lg">
+      <FiEye
+        className="text-yellow-400 hover:text-yellow-300 cursor-pointer"
+        onClick={() => router.push(`/reclutador/informes?idPostulante=${p.Id_Postulante}`)}
+      />
+      <FiCheck
+        className="text-green-500 hover:text-green-400 cursor-pointer"
+        title="Aprobar"
+        onClick={() => aceptarPostulante(p.Id_Postulante, `${p.Nombre} ${p.Apellido}`, p.vacante?.Descripcion || 'vacante')}
+      />
+      <FiX
+        className="text-red-500 hover:text-red-400 cursor-pointer"
+        title="Rechazar"
+        onClick={() => rechazarPostulante(p.Id_Postulante)}
+      />
+    </div>
+  ])}
+
+/>
+
+</div>
+
+</div>
+
   );
 }

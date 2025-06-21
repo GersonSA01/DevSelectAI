@@ -28,3 +28,34 @@ exports.crearCapture = async (req, res) => {
     res.status(500).json({ error: 'Error al guardar la captura' });
   }
 };
+
+exports.getCapturasPorPostulante = async (req, res) => {
+  const idPostulante = parseInt(req.params.idPostulante);
+
+  try {
+    // Busca TODAS las evaluaciones del postulante
+    const evaluaciones = await db.Evaluacion.findAll({
+      where: { Id_postulante: idPostulante },
+      attributes: ['id_Evaluacion'],
+    });
+
+    if (!evaluaciones || evaluaciones.length === 0) {
+      return res.status(404).json({ error: 'No se encontró evaluación para este postulante' });
+    }
+
+    // Extraer los ID de las evaluaciones
+    const idsEvaluacion = evaluaciones.map(e => e.id_Evaluacion);
+
+    // Buscar capturas que coincidan con cualquier evaluación del postulante
+    const capturas = await db.Capture.findAll({
+      where: {
+        id_Evaluacion: idsEvaluacion
+      }
+    });
+
+    res.json(capturas);
+  } catch (error) {
+    console.error('❌ Error al obtener capturas:', error);
+    res.status(500).json({ error: 'Error al obtener capturas' });
+  }
+};

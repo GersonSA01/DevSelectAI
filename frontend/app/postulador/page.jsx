@@ -11,8 +11,6 @@ export default function Entrevistas() {
   useEffect(() => {
     const obtenerItinerario = async () => {
       const idPostulante = localStorage.getItem('id_postulante');
-      console.log("🧾 ID del postulante:", idPostulante);
-
       if (!idPostulante) {
         await Alert({
           title: 'Error',
@@ -26,11 +24,9 @@ export default function Entrevistas() {
       try {
         const res = await fetch(`http://localhost:5000/api/postulante/${idPostulante}`);
         const data = await res.json();
-
         if (!data || !data.Itinerario) {
           throw new Error("No se pudo obtener el itinerario");
         }
-
         setItinerario(data.Itinerario);
       } catch (err) {
         console.error('Error al cargar itinerario:', err);
@@ -51,27 +47,35 @@ export default function Entrevistas() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center bg-background p-4 bg-cover bg-center"
+      className="relative min-h-screen flex items-center justify-center bg-cover bg-center p-4 md:p-8"
       style={{ backgroundImage: "url('/fondo_pantalla.png')" }}
     >
-      <h1 className="text-4xl font-bold text-secondaryText mb-6">Bienvenido a DevSelectAI</h1>
-      
-      <p className="text-lg text-secondaryText text-center mb-4 mx-32">
-        Bienvenido al sistema inteligente de entrevistas y asignación de prácticas preprofesionales.
-      </p>
+      {/* Overlay oscuro para mejorar contraste */}
+      <div className="absolute inset-0 bg-black/60 z-0"></div>
 
-      {itinerario && (
-        <p className="text-md text-white text-center mb-6">
-          Usted está por seleccionar sus habilidades y vacantes del <strong>{itinerario}</strong>
+      {/* Contenido sobre el overlay */}
+      <div className="relative z-10 flex flex-col items-center text-white text-center max-w-xl px-4">
+        <h1 className="text-2xl md:text-4xl font-bold mb-4 md:mb-6">
+          Bienvenido a DevSelectAI
+        </h1>
+
+        <p className="text-base md:text-lg mb-4">
+          Bienvenido al sistema inteligente de entrevistas y asignación de prácticas preprofesionales.
         </p>
-      )}
 
-      <button
-        onClick={handleContinuar}
-        className="bg-primaryButton hover:bg-primaryButtonHover text-white font-semibold py-2 px-6 rounded-full transition"
-      >
-        Continuar
-      </button>
+        {itinerario && (
+          <p className="text-sm md:text-md mb-6">
+            Usted está por seleccionar sus habilidades y vacantes del <strong>{itinerario}</strong>
+          </p>
+        )}
+
+        <button
+          onClick={handleContinuar}
+          className="bg-primaryButton hover:bg-primaryButtonHover text-white font-semibold py-2 px-6 rounded-full transition text-sm md:text-base"
+        >
+          Continuar
+        </button>
+      </div>
     </div>
   );
 }

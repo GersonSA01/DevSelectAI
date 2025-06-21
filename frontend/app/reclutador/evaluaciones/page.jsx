@@ -83,11 +83,11 @@ export default function CalificacionPage() {
 
   const [observacionCapturas, setObservacionCapturas] = useState('');
   const [observacionGeneral, setObservacionGeneral] = useState('');
-
   const [preguntasTeoricas, setPreguntasTeoricas] = useState([]);
   const [preguntasOrales, setPreguntasOrales] = useState([]);
   const [entrevista, setEntrevista] = useState(null);
   const [preguntaTecnica, setPreguntaTecnica] = useState(null);
+  const [capturas, setCapturas] = useState([]);
 
   const searchParams = useSearchParams();
   const idPostulante = searchParams.get('id');
@@ -98,22 +98,25 @@ export default function CalificacionPage() {
 
     const cargarDatos = async () => {
       try {
-        const [resTeoricas, resEntrevista, resOrales, resTecnica] = await Promise.all([
-          fetch(`/api/postulante/preguntas-teoricas?id=${idPostulante}`),
-          fetch(`/api/postulante/entrevista?id=${idPostulante}`),
-          fetch(`/api/postulante/preguntas-orales?id=${idPostulante}`),
-          fetch(`/api/postulante/pregunta-tecnica?id=${idPostulante}`),
+        const [resTeoricas, resEntrevista, resOrales, resTecnica, resCapturas] = await Promise.all([
+          fetch(`http://localhost:5000/api/postulante/preguntas-teoricas?id=${idPostulante}`),
+          fetch(`http://localhost:5000/api/postulante/entrevista?id=${idPostulante}`),
+          fetch(`http://localhost:5000/api/postulante/preguntas-orales?id=${idPostulante}`),
+          fetch(`http://localhost:5000/api/evaluacion/pregunta-tecnica-asignada/${idPostulante}`),
+          fetch(`http://localhost:5000/api/capturas/postulante/${idPostulante}`)
         ]);
 
         const dataTeoricas = await resTeoricas.json();
         const dataEntrevista = await resEntrevista.json();
         const dataOrales = await resOrales.json();
         const dataTecnica = await resTecnica.json();
+        const dataCapturas = await resCapturas.json();
 
         setPreguntasTeoricas(dataTeoricas);
         setEntrevista(dataEntrevista);
-        setPreguntasOrales(dataOrales);
+        setPreguntasOrales(dataOrales.preguntas);
         setPreguntaTecnica(dataTecnica);
+        setCapturas(dataCapturas);
 
         const teoricoCorrectas = dataTeoricas.filter(p => p.correcta).length;
 
@@ -122,6 +125,7 @@ export default function CalificacionPage() {
           teorico: teoricoCorrectas,
           entrevista: 3,
           tecnica: dataTecnica?.calificacion || 0,
+          capturas: dataCapturas.length, // 👈 puntuación según número de capturas
         }));
       } catch (err) {
         console.error('❌ Error cargando datos:', err);
@@ -163,7 +167,8 @@ export default function CalificacionPage() {
         </div>
       </div>
 
-      {[{ id: 'entrevista', titulo: '1. Entrevista Oral con IA', max: 3 },
+      {[
+        { id: 'entrevista', titulo: '1. Entrevista Oral con IA', max: 3 },
         { id: 'teorico', titulo: '2. Preguntas de Opción Múltiple', max: 5 },
         { id: 'tecnica', titulo: '3. Evaluación Técnica (Código)', max: 2 },
         { id: 'capturas', titulo: '4. Capturas de Cámara', max: 4 },
@@ -171,14 +176,18 @@ export default function CalificacionPage() {
         <div key={id} className="bg-[#1D1E33] p-6 rounded-lg space-y-2 mt-10">
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-xl font-semibold">{titulo}</h2>
-            <CalificacionEditable
-              tipo={id}
-              valor={calificaciones[id]}
-              maximo={max}
-              onChange={actualizarCalificacion}
-              confirmada={confirmadas}
-              setConfirmada={setConfirmadas}
-            />
+            {id === 'teorico' ? (
+              <div className="text-[#22C55E] font-semibold">{calificaciones[id]} / {max}</div>
+            ) : (
+              <CalificacionEditable
+                tipo={id}
+                valor={calificaciones[id]}
+                maximo={max}
+                onChange={actualizarCalificacion}
+                confirmada={confirmadas}
+                setConfirmada={setConfirmadas}
+              />
+            )}
           </div>
 
           {id === 'entrevista' && (
@@ -191,8 +200,8 @@ export default function CalificacionPage() {
               ))}
               {entrevista && (
                 <>
-                  <p className="text-green-400 mt-4"><strong>Veredicto:</strong> {entrevista.veredicto}</p>
-                  <p className="italic text-gray-400">{entrevista.retroalimentacionIA}</p>
+                  <p className="text-green-400 mt-4"><strong>Retroalimentación:</strong></p>
+                  <p className="italic text-gray-400 whitespace-pre-line">{entrevista.RetroalimentacionIA}</p>
                 </>
               )}
             </div>
@@ -200,27 +209,18 @@ export default function CalificacionPage() {
 
           {id === 'teorico' && (
             <div className="mt-6 space-y-4 text-sm text-gray-300">
-              {preguntasTeoricas.length === 0 ? (
-                <p className="text-yellow-400 italic">⏳ Cargando preguntas teóricas...</p>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {preguntasTeoricas.map((p, i) => (
-                    <div key={i} className="bg-[#181A2F] border border-[#2B2C3F] p-4 rounded-lg shadow">
-                      <p className="text-sm text-[#3BDCF6] mb-1">
-                        <strong>Pregunta {i + 1}</strong> <span className="text-gray-400">({p.habilidad || 'General'})</span>
-                      </p>
-                      <p className="text-white mb-2">❓ {p.pregunta}</p>
-                      <p className="text-gray-300 mb-1">
-                        <strong>Respuesta del postulante:</strong><br />
-                        <span className="text-white">{p.respuesta}</span>
-                      </p>
-                      <div className={`mt-2 font-bold ${p.correcta ? 'text-green-400' : 'text-red-400'}`}>
-                        {p.correcta ? '✔️ Respuesta Correcta' : '❌ Respuesta Incorrecta'}
-                      </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {preguntasTeoricas.map((p, i) => (
+                  <div key={i} className="bg-[#181A2F] border border-[#2B2C3F] p-4 rounded-lg shadow">
+                    <p className="text-sm text-[#3BDCF6] mb-1"><strong>Pregunta {i + 1}</strong></p>
+                    <p className="text-white mb-2">❓ {p.pregunta}</p>
+                    <p className="text-gray-300 mb-1"><strong>Respuesta del postulante:</strong><br /><span className="text-white">{p.respuesta}</span></p>
+                    <div className={`mt-2 font-bold ${p.correcta ? 'text-green-400' : 'text-red-400'}`}>
+                      {p.correcta ? '✔️ Respuesta Correcta' : '❌ Respuesta Incorrecta'}
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -233,18 +233,31 @@ export default function CalificacionPage() {
               {preguntaTecnica.usoIA && (
                 <p className="text-yellow-400">⚠️ El postulante solicitó ayuda de la IA</p>
               )}
-              <p className="italic text-gray-400">{preguntaTecnica.retroalimentacion}</p>
             </div>
           )}
 
           {id === 'capturas' && (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-gray-400 text-sm">
-                <div className="bg-[#2B2C3F] h-32 flex items-center justify-center rounded">Cámara tapada</div>
-                <div className="bg-[#2B2C3F] h-32 flex items-center justify-center rounded">Mirada fuera</div>
-                <div className="bg-[#2B2C3F] h-32 flex items-center justify-center rounded">Cámara desactivada</div>
-                <div className="bg-[#2B2C3F] h-32 flex items-center justify-center rounded">Sin incidente</div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {capturas.length === 0 ? (
+                  <p className="text-yellow-400 col-span-4">⏳ No se encontraron capturas...</p>
+                ) : (
+                  capturas.map((c, i) => (
+                    <div key={i} className="bg-[#2B2C3F] rounded overflow-hidden shadow p-2">
+                      <img
+                        src={`http://localhost:5000/uploads/${c.File}`}
+                        alt={`Captura ${i + 1}`}
+                        className="w-full h-32 object-cover mb-2"
+                      />
+                      <p className="text-sm text-gray-300">📝 {c.Observacion}</p>
+                      <p className={`text-sm font-bold ${c.Aprobado ? 'text-green-400' : 'text-yellow-400'}`}>
+                        {c.Aprobado ? '✔️ Aprobada' : '⏳ Pendiente'}
+                      </p>
+                    </div>
+                  ))
+                )}
               </div>
+
               <div className="mt-4">
                 <label className="block text-sm text-gray-400 mb-1">Observación:</label>
                 <textarea

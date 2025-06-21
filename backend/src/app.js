@@ -4,20 +4,20 @@ const cors = require("cors");
 const fileUpload = require("express-fileupload");
 const app = express();
 
+// 📦 BASE DE DATOS
 const db = require("./models");
-const cargarDatosIniciales = require("./script/cargarDatosIniciales"); // ✅ importa la nueva función
+const cargarDatosIniciales = require("./script/cargarDatosIniciales");
 
-// === 🔗 SEQUELIZE CONFIGURACIÓN ===
 db.sequelize.sync({ force: false })
   .then(async () => {
     console.log("📦 Base de datos sincronizada con Sequelize (SQLite)");
-    await cargarDatosIniciales(); // ✅ ejecuta carga inicial
+    await cargarDatosIniciales();
   })
   .catch((err) => {
     console.error("❌ Error al sincronizar la base de datos:", err);
   });
 
-// === 🔐 MIDDLEWARES ===
+// 🔐 MIDDLEWARES
 app.use(cors({
   origin: 'http://localhost:3000',
   exposedHeaders: ['X-Respuesta-GPT']
@@ -27,7 +27,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(fileUpload());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ✅ IMPORTACIÓN DE RUTAS
+// 🔗 RUTAS IMPORTADAS
 const entrevistaRoutes = require("./routes/entrevista");
 const postulanteRoutes = require("./routes/postulante");
 const reclutadorRoutes = require("./routes/reclutador");
@@ -37,42 +37,45 @@ const registroRoutes = require("./routes/registro");
 const loginRoutes = require("./routes/login");
 const itinerarioRoutes = require('./routes/itinerario');
 const vacanteRoutes = require('./routes/vacante');
-const empresaRouter = require('./routes/empresa');
-const habilidadRouter = require('./routes/habilidad');
+const empresaRoutes = require('./routes/empresa');
+const habilidadRoutes = require('./routes/habilidad');
 const preguntasRoutes = require('./routes/preguntas');
 const opcionesRoutes = require("./routes/opciones");
-const generarPreguntasRouter = require('./routes/generarPreguntasIA');
-const evaluacion = require('./routes/evaluacion');
-const captureRoutes = require('./routes/capture');
+const generarPreguntasRoutes = require('./routes/generarPreguntasIA');
+const evaluacionRoutes = require('./routes/evaluacion');
+const captureRoutes = require('./routes/captureRoutes');
 const ciudadRoutes = require('./routes/ciudad');
 const informeRoutes = require('./routes/informe');
 
-
-// ✅ USO DE RUTAS
+// 🚦 USO DE RUTAS
 app.use('/api/itinerarios', itinerarioRoutes);
-app.use("/api/entrevista", entrevistaRoutes);
-app.use("/api/postulante", postulanteRoutes);
-app.use("/api/reclutador", reclutadorRoutes);
-app.use("/api/excel", excelRoutes);
+app.use('/api/entrevista', entrevistaRoutes);
+app.use('/api/postulante', postulanteRoutes);
+app.use('/api/reclutador', reclutadorRoutes);
+app.use('/api/excel', excelRoutes);
 app.use('/api/configuracion', configuracionRoutes);
-app.use("/api/registro", registroRoutes);
+app.use('/api/registro', registroRoutes);
 app.use('/api', loginRoutes);
 app.use('/api/vacantes', vacanteRoutes);
-app.use('/api/empresas', empresaRouter);
-app.use('/api/habilidades', habilidadRouter);
+app.use('/api/empresas', empresaRoutes);
+app.use('/api/habilidades', habilidadRoutes);
 app.use('/api/preguntas', preguntasRoutes);
 app.use('/api/opciones', opcionesRoutes);
-app.use('/api/generar-preguntas', generarPreguntasRouter);
-app.use('/api/evaluacion', evaluacion);
-app.use('/api/captures', captureRoutes);
+app.use('/api/generar-preguntas', generarPreguntasRoutes);
+app.use('/api/evaluacion', evaluacionRoutes);
+app.use('/api/capturas', captureRoutes); // Ruta correcta
 app.use('/api/ciudades', ciudadRoutes);
 app.use('/api/informe', informeRoutes);
-// ✅ RUTA PRINCIPAL
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+
+
+// 🌐 RUTA PRINCIPAL
 app.get("/", (req, res) => {
   res.send("🚀 Bienvenido a DevSelectAI - Backend en funcionamiento");
 });
 
-// ✅ RUTA NO ENCONTRADA
+// ⚠️ RUTA NO ENCONTRADA
 app.use((req, res) => {
   res.status(404).json({ error: "Ruta no encontrada" });
 });

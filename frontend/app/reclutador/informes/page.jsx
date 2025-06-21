@@ -26,7 +26,7 @@ export default function InformeEvaluacionTiempo() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/api/informe/${idPostulante}`);
+        const res = await fetch(`http://localhost:5000/api/informe/${idPostulante}`);
         const json = await res.json();
         setDatos(json);
       } catch (error) {
@@ -65,8 +65,16 @@ export default function InformeEvaluacionTiempo() {
 
   if (!datos) return <p className="text-white p-10">Cargando informe...</p>;
 
-  const { nombre, itinerario, habilidades, tiempos, calificaciones, capturas, observacion } = datos;
-  const totalCapturas = capturas.length;
+const {
+  nombre = '',
+  itinerario = '',
+  habilidades = [],
+  tiempos = { entrevista: [], teorico: 0, tecnica: 0 },
+  calificaciones = { entrevista: 0, teorico: 0, tecnica: 0, capturas: 0 },
+  capturas = [],
+  observacion = ''
+} = datos;
+const totalCapturas = Array.isArray(capturas) ? capturas.length : 0;
   const puntajeEvaluacion = calificaciones.entrevista + calificaciones.teorico + calificaciones.tecnica;
   const puntajeFinal = puntajeEvaluacion + calificaciones.capturas;
 

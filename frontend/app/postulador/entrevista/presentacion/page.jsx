@@ -276,11 +276,11 @@ return (
     ) : (
       // 🔸 Pantalla completa de la entrevista una vez iniciada
       <>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-          <AnimatedCircle letter="D" isPlaying={isPlayingAudio} />
-        </div>
+        <div className="hidden sm:block absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+  <AnimatedCircle letter="D" isPlaying={isPlayingAudio} />
+</div>
+        <div className="w-full px-4 md:absolute md:right-10 md:top-1/2 md:-translate-y-1/2 max-w-sm">
 
-        <div className="absolute right-10 top-1/2 -translate-y-1/2 max-w-sm">
           {nombrePostulante && (
             <p className="text-cyan-400 text-sm font-medium mb-2">
               Postulante: {nombrePostulante}
@@ -295,9 +295,9 @@ return (
 
           <h2 className="text-2xl font-semibold mb-4">Entrevista con IA</h2>
 
-          <div className="bg-[#1C1F2E] p-4 rounded-lg mb-6 border border-[#3BDCF6] shadow w-[400px] h-[150px] overflow-y-auto">
+<div className="bg-[#1C1F2E] p-4 rounded-lg mb-6 border border-[#3BDCF6] shadow w-full max-w-sm min-h-[140px] overflow-y-auto">
             <h3 className="text-xl text-white font-semibold mb-2">Respuesta de IA</h3>
-            <p className="text-sm text-white whitespace-pre-line min-h-[40px]">
+            <p className="text-sm text-white whitespace-pre-line break-words min-h-[40px]">
               {respuestaAnimada ? (
                 <>
                   {respuestaAnimada}
@@ -318,7 +318,7 @@ return (
           </div>
 
           {step > 0 && step < 4 && (
-            <div className="flex gap-4 mb-4">
+            <div className="flex flex-col md:flex-row gap-4 mb-4 px-2">
               {!recording ? (
                 <button
                   onClick={startRecording}
@@ -371,7 +371,7 @@ return (
     <video
       ref={camRef}
       muted
-      className="absolute bottom-4 left-4 w-[320px] h-[192px] bg-black rounded-lg object-cover z-50"
+className="absolute bottom-4 left-4 w-32 md:w-[320px] aspect-video bg-black rounded-lg object-cover z-50"
     />
 
     <audio ref={audioRef} hidden controls />

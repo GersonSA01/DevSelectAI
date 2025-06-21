@@ -119,7 +119,7 @@ const handlePedirAyuda = async () => {
     await fetch(`http://localhost:5000/api/postulante/${idPostulante}/cambiar-estado`, {
   method: 'PUT',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ nuevoEstado: 3 })
+  body: JSON.stringify({ nuevoEstado: 2 })
 });
 
 

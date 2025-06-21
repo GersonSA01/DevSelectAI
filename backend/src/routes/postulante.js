@@ -19,7 +19,6 @@ router.post("/", crearPostulante);
 router.post("/habilidades", guardarHabilidades);
 router.get("/token/:token", obtenerPorToken);
 router.post('/seleccionar-vacante', seleccionarVacante);
-router.get("/:id", obtenerPorId);
 router.put('/:id/cambiar-estado', cambiarEstado);
 
 // 🔹 Nuevas rutas para evaluación
@@ -27,5 +26,6 @@ router.get("/preguntas-teoricas", getPreguntasTeoricas);
 router.get("/entrevista", getEntrevistaOral);
 router.get("/preguntas-orales", getPreguntasOrales);
 router.get("/pregunta-tecnica", getPreguntaTecnica);
+router.get("/:id", obtenerPorId);
 
 module.exports = router;
