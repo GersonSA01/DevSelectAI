@@ -1,11 +1,11 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { validarCamposRegistro } from "./validacionesRegistro";
+import { Alert } from "./alerts/Alerts";
 
 export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
   const router = useRouter();
-
-  if (!open) return null;
 
   const [cedula, setCedula] = useState("");
   const [nombres, setNombres] = useState("");
@@ -20,7 +20,6 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
   const [ciudadNombre, setCiudadNombre] = useState("");
   const [ciudades, setCiudades] = useState([]);
 
-  // Cargar ciudades al montar el componente
   useEffect(() => {
     fetch("http://localhost:5000/api/ciudades")
       .then((res) => res.json())
@@ -28,12 +27,7 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
   }, []);
 
   const normalizar = (texto) =>
-  texto
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-
+    texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
   const handleBuscar = async () => {
     if (!cedula) return;
@@ -41,14 +35,22 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
     try {
       const res = await fetch(`http://localhost:5000/api/excel/${cedula}`);
       if (!res.ok) {
-        alert("Postulante no encontrado");
+        await Alert({
+          title: "Postulante no encontrado",
+          html: "Verifica la cédula ingresada.",
+          icon: "error",
+        });
         return;
       }
 
       const data = await res.json();
 
       if (!data.Carrera || !data.Carrera.toLowerCase().includes("software")) {
-        alert("Solo se permiten registros para carreras de Software.");
+        await Alert({
+          title: "Carrera no válida",
+          html: "Solo se permiten registros para carreras de <b>Software</b>.",
+          icon: "warning",
+        });
         return;
       }
 
@@ -58,23 +60,12 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
       setRol(data.Rol);
       setCarrera(data.Carrera);
       setItinerario(data.Itinerario || "Sin Itinerario");
-      setCiudadNombre(data.Ciudad || ""); // Guarda la ciudad del Excel
+      setCiudadNombre(data.Ciudad || "");
       setTelefono("");
     } catch (error) {
       console.error("Error buscando postulante:", error);
     }
   };
-
- const getIdCiudad = (nombreCiudad) => {
-  if (!ciudades.length) return null;
-
-  const ciudad = ciudades.find(
-    (c) =>
-      c.Descripcion &&
-      normalizar(c.Descripcion) === normalizar(nombreCiudad || "")
-  );
-  return ciudad ? ciudad.id_ciudad : null;
-};
 
   const handleClose = () => {
     setOpen(false);
@@ -89,26 +80,37 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (contrasena !== confirmarContrasena) {
-      alert("Las contraseñas no coinciden");
-      return;
+    // Validación de existencia previa por cédula (solo para estudiantes)
+    if (rol.toLowerCase() === "estudiante") {
+      try {
+        const check = await fetch(`http://localhost:5000/api/postulante/cedula/${cedula}`);
+
+        if (check.ok) {
+          const existente = await check.json();
+          if (existente) {
+            await Alert({
+              title: "Ya estás registrado",
+              html: "Ya existe una cuenta asociada a esta cédula.",
+              icon: "info",
+            });
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Error al verificar existencia:", err);
+      }
     }
 
-    if (!carrera.toLowerCase().includes("software")) {
-      alert("No se puede registrar porque la carrera no es de Software.");
-      return;
-    }
+    const idCiudad = await validarCamposRegistro({
+      contrasena,
+      confirmarContrasena,
+      carrera,
+      itinerario,
+      ciudades,
+      ciudadNombre,
+    });
 
-    if (!ciudades.length) {
-      alert("Catálogo de ciudades no cargado. Intenta de nuevo en unos segundos.");
-      return;
-    }
-
-    const idCiudad = getIdCiudad(ciudadNombre);
-    if (!idCiudad) {
-      alert("No se encontró la ciudad en el catálogo. Contacta al administrador.");
-      return;
-    }
+    if (!idCiudad) return;
 
     let body = {};
     let endpoint = "";
@@ -125,7 +127,7 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
         ayuda: false,
         cant_alert: 0,
         FechPostulacion: new Date(),
-        id_ciudad: idCiudad, // Asigna el id de la ciudad aquí
+        id_ciudad: idCiudad,
         id_EstadoPostulacion: 1,
         Itinerario: itinerario,
       };
@@ -140,7 +142,11 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
         Contrasena: contrasena,
       };
     } else {
-      alert("Rol no reconocido.");
+      await Alert({
+        title: "Rol no válido",
+        html: "El rol debe ser <b>Estudiante</b> o <b>Docente</b>.",
+        icon: "error",
+      });
       return;
     }
 
@@ -152,16 +158,27 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
       });
 
       if (!res.ok) {
-        alert("Error al registrar. Verifica los datos.");
+        await Alert({
+          title: "Error al registrar",
+          html: "Verifica los datos ingresados.",
+          icon: "error",
+        });
         return;
       }
 
-      alert("Registro exitoso");
+      await Alert({
+        title: "Registro exitoso",
+        html: "Tu cuenta ha sido creada. Puedes iniciar sesión.",
+        icon: "success",
+      });
+
       handleIrALogin();
     } catch (error) {
       console.error("Error en registro:", error);
     }
   };
+
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
@@ -205,7 +222,6 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
             readOnly
             className="p-2 rounded-md bg-gray-800 text-white border border-gray-600 opacity-70 cursor-not-allowed"
           />
-
           <input
             type="text"
             placeholder="Apellidos"
@@ -213,7 +229,6 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
             readOnly
             className="p-2 rounded-md bg-gray-800 text-white border border-gray-600 opacity-70 cursor-not-allowed"
           />
-
           <input
             type="email"
             placeholder="Correo institucional"
@@ -221,7 +236,6 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
             readOnly
             className="p-2 rounded-md bg-gray-800 text-white border border-gray-600 opacity-70 cursor-not-allowed"
           />
-
           <input
             type="text"
             placeholder="Teléfono"
@@ -229,7 +243,6 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
             onChange={(e) => setTelefono(e.target.value)}
             className="p-2 rounded-md bg-gray-800 text-white placeholder-gray-400 border border-gray-600"
           />
-
           <input
             type="text"
             placeholder="Rol"
@@ -237,7 +250,6 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
             readOnly
             className="p-2 rounded-md bg-gray-800 text-white border border-gray-600 opacity-70 cursor-not-allowed"
           />
-
           <input
             type="text"
             placeholder="Ciudad"
@@ -245,7 +257,6 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
             readOnly
             className="p-2 rounded-md bg-gray-800 text-white border border-gray-600 opacity-70 cursor-not-allowed"
           />
-
           <input
             type="password"
             placeholder="Contraseña"
@@ -253,7 +264,6 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
             onChange={(e) => setContrasena(e.target.value)}
             className="p-2 rounded-md bg-gray-800 text-white placeholder-gray-400 border border-gray-600"
           />
-
           <input
             type="password"
             placeholder="Confirmar contraseña"

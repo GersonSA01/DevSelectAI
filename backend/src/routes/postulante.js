@@ -11,7 +11,8 @@ const {
   getPreguntasTeoricas,
   getEntrevistaOral,
   getPreguntasOrales,
-  getPreguntaTecnica
+  getPreguntaTecnica,
+  verificarPostulantePorCedula
 } = require("../controllers/postulanteController");
 
 router.get("/", getAllPostulantes);
@@ -20,6 +21,8 @@ router.post("/habilidades", guardarHabilidades);
 router.get("/token/:token", obtenerPorToken);
 router.post('/seleccionar-vacante', seleccionarVacante);
 router.put('/:id/cambiar-estado', cambiarEstado);
+router.get("/cedula/:cedula", verificarPostulantePorCedula);
+
 
 // 🔹 Nuevas rutas para evaluación
 router.get("/preguntas-teoricas", getPreguntasTeoricas);

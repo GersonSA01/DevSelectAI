@@ -59,3 +59,25 @@ exports.getCapturasPorPostulante = async (req, res) => {
     res.status(500).json({ error: 'Error al obtener capturas' });
   }
 };
+exports.actualizarCaptura = async (req, res) => {
+  const { id } = req.params;
+  const { Aprobado, Observacion } = req.body;
+
+  try {
+    const captura = await db.Capture.findByPk(id);
+
+    if (!captura) {
+      return res.status(404).json({ error: 'Captura no encontrada' });
+    }
+
+    captura.Aprobado = Aprobado;
+    captura.Observacion = Observacion;
+
+    await captura.save();
+
+    res.json({ mensaje: 'Captura actualizada correctamente', captura });
+  } catch (error) {
+    console.error('❌ Error actualizando captura:', error);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};

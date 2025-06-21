@@ -181,6 +181,25 @@ const seleccionarVacante = async (req, res) => {
   }
 };
 
+const verificarPostulantePorCedula = async (req, res) => {
+  const { cedula } = req.params;
+
+  try {
+    const existente = await db.Postulante.findOne({
+      where: { Cedula: cedula }
+    });
+
+    if (existente) {
+      return res.status(200).json(existente); // Existe
+    } else {
+      return res.status(404).json(null); // No existe
+    }
+  } catch (error) {
+    console.error("❌ Error al verificar postulante:", error);
+    return res.status(500).json({ error: "Error interno del servidor" });
+  }
+};
+
 
 const getAllPostulantes = async (req, res) => {
   try {
@@ -393,5 +412,6 @@ module.exports = {
   getPreguntasTeoricas,
   getEntrevistaOral,
   getPreguntasOrales,
-  getPreguntaTecnica
+  getPreguntaTecnica,
+  verificarPostulantePorCedula 
 };
