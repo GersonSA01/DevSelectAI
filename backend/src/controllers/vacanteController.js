@@ -17,13 +17,23 @@ exports.getByItinerario = async (req, res) => {
       ]
     });
 
-    console.log('📦 Vacantes encontradas:', JSON.stringify(vacantes, null, 2));
-    res.json(vacantes);
+    // 🔄 Transformar las habilidades anidadas a un array plano de habilidades
+    const resultado = vacantes.map(v => {
+      const habilidadesPlano = (v.habilidades || []).map(h => h.habilidad);
+      return {
+        ...v.toJSON(),
+        Habilidades: habilidadesPlano
+      };
+    });
+
+    console.log('📦 Vacantes mapeadas con habilidades:', resultado);
+    res.json(resultado);
   } catch (error) {
     console.error('Error al obtener vacantes:', error);
     res.status(500).json({ error: 'Error al obtener vacantes' });
   }
 };
+
 
 
 exports.crearVacante = async (req, res) => {

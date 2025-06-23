@@ -46,16 +46,22 @@ exports.crearEvaluacionInicial = async (req, res) => {
 
     // Obtener preguntas teóricas
     const preguntasTeoricas = await db.Pregunta.findAll({
-      where: { Id_vacante: idVacante },
-      include: [{ model: db.Opcion, as: 'opciones', required: true }],
-      limit: 5
-    });
+  where: { Id_vacante: idVacante },
+  include: [{ model: db.Opcion, as: 'opciones', required: true }],
+  order: db.sequelize.random(), // <- aleatoriza las preguntas
+  limit: 5
+});
 
-    // Obtener una pregunta técnica
-    const preguntaTecnica = await db.Pregunta.findOne({
-      where: { Id_vacante: idVacante },
-      include: [{ model: db.PreguntaTecnica, as: 'preguntaTecnica', required: true }]
-    });
+    // Obtener una pregunta técnica aleatoria
+const preguntasTecnicas = await db.Pregunta.findAll({
+  where: { Id_vacante: idVacante },
+  include: [{ model: db.PreguntaTecnica, as: 'preguntaTecnica', required: true }]
+});
+
+const preguntaTecnica = preguntasTecnicas.length > 0
+  ? preguntasTecnicas[Math.floor(Math.random() * preguntasTecnicas.length)]
+  : null;
+
 
     // Crear entrevista oral
     const entrevista = await db.EntrevistaOral.create({

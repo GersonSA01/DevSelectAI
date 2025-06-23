@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import SkeletonSidebar from './SkeletonSidebar';
 import {
   ChevronDown,
   ChevronUp,
@@ -19,26 +20,23 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   const [docente, setDocente] = useState(null);
   const router = useRouter();
   const { itinerarios } = useItinerarios();
+  const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  const reclutadorGuardado = localStorage.getItem('reclutador');
-  if (reclutadorGuardado) {
-    try {
-      const datos = JSON.parse(reclutadorGuardado);
-
-      const nombres = datos.nombres || datos.Nombres || '';
-      const apellidos = datos.apellidos || datos.Apellidos || '';
-      const id = datos.id || datos.Id_Reclutador || datos.Id_reclutador;
-
-      setDocente({ nombres, apellidos, id });
-
-      console.log("🧾 Docente cargado:", { nombres, apellidos, id });
-    } catch (error) {
-      console.error("⚠️ Error al leer reclutador desde localStorage:", error);
+  useEffect(() => {
+    const reclutadorGuardado = localStorage.getItem('reclutador');
+    if (reclutadorGuardado) {
+      try {
+        const datos = JSON.parse(reclutadorGuardado);
+        const nombres = datos.nombres || datos.Nombres || '';
+        const apellidos = datos.apellidos || datos.Apellidos || '';
+        const id = datos.id || datos.Id_Reclutador || datos.Id_reclutador;
+        setDocente({ nombres, apellidos, id });
+      } catch (error) {
+        console.error("⚠️ Error al leer reclutador desde localStorage:", error);
+      }
     }
-  }
-}, []);
-
+    setLoading(false);
+  }, []);
 
   const toggleSection = (section) => {
     setOpenSection(openSection === section ? null : section);
@@ -48,6 +46,11 @@ useEffect(() => {
     localStorage.removeItem('reclutador');
     router.push('/');
   };
+
+  // ✅ Mostrar skeleton mientras se carga
+  if (loading) {
+    return <SkeletonSidebar isCollapsed={isCollapsed} />;
+  }
 
   return (
     <div className={`h-screen bg-[#0f172a] text-white transition-all duration-300 fixed top-16 left-0 z-40 ${isCollapsed ? 'w-16' : 'w-64'} border-r border-neutral-700`}>

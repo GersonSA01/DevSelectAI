@@ -7,6 +7,8 @@ import Temporizador from '../../../components/ui/Temporizador';
 import ValidadorEntorno from '../../../components/ValidadorEntorno';
 import { Alert } from '../../../components/alerts/Alerts';
 import { FaSpinner } from 'react-icons/fa';
+import { HiOutlineLightBulb, HiOutlinePaperAirplane } from 'react-icons/hi';
+import { FiBookOpen, FiAlertCircle } from 'react-icons/fi';
 
 export default function PracticaPage() {
   const { cameraStream, reiniciarCamara } = useContext(StreamContext);
@@ -20,7 +22,9 @@ export default function PracticaPage() {
   const [ayudaIA, setAyudaIA] = useState('');
   const [cargandoAyuda, setCargandoAyuda] = useState(false);
   const idEvaluacion = preguntaTecnica?.Id_Evaluacion;
-
+  const [enunciadoSinPista, setEnunciadoSinPista] = useState('');
+  const [pista, setPista] = useState('');
+  
   useEffect(() => {
   if (!cameraStream) {
     reiniciarCamara(); // 🔁 si se perdió la cámara, vuelve a pedirla
@@ -43,8 +47,16 @@ export default function PracticaPage() {
     cargarPreguntaTecnica();
   }, []);
 
+    useEffect(() => {
+    if (preguntaTecnica?.pregunta) {
+      const partes = preguntaTecnica.pregunta.split('Pista:');
+      setEnunciadoSinPista(partes[0].trim());
+      setPista(partes[1]?.trim() || '');
+    }
+  }, [preguntaTecnica]);
+
 const handlePedirAyuda = async () => {
-  if (!preguntaTecnica?.Pregunta) return;
+if (!preguntaTecnica?.pregunta) return;
 
   setCargandoAyuda(true);
 
@@ -132,77 +144,92 @@ const handlePedirAyuda = async () => {
 
 
   return (
-<div className="min-h-screen w-full bg-[#0A0A23] text-white px-4 sm:px-6 lg:px-8 pt-24 pb-12 flex flex-col items-center">
-            <ValidadorEntorno idEvaluacion={idEvaluacion} onCamVisibilityChange={setCameraVisible} />
-      
-      <div className="w-full max-w-7xl flex items-center justify-between mb-6">
-        <h2 className="text-3xl font-bold text-white">Evaluación Técnica</h2>
-        <Temporizador duracion={900} onFinalizar={handleEnviar} />
+<div className="min-h-screen w-full bg-gradient-to-br from-[#0A0A23] to-[#1A1B40] text-white px-4 sm:px-6 lg:px-8 pt-24 pb-12 flex flex-col items-center">
+  <ValidadorEntorno idEvaluacion={idEvaluacion} onCamVisibilityChange={setCameraVisible} />
+
+  <div className="w-full max-w-7xl flex items-center justify-between mb-8">
+    <h2 className="text-3xl font-bold tracking-wide flex items-center gap-2">
+      <FiBookOpen className="text-cyan-400" size={28} />
+      Evaluación Técnica
+    </h2>
+    <Temporizador duracion={900} onFinalizar={handleEnviar} />
+  </div>
+
+  <div className="flex flex-col lg:flex-row w-full max-w-7xl gap-8">
+    {/* ENUNCIADO + CÁMARA */}
+    <div className="w-full lg:w-1/2 bg-[#1D1E33] rounded-2xl p-6 space-y-6 shadow-2xl transition hover:shadow-cyan-500/20">
+      <div className="space-y-3">
+        <p className="text-sm uppercase tracking-wide text-cyan-400 font-semibold">Enunciado</p>
+        <p className="text-base leading-relaxed text-gray-200 whitespace-pre-wrap">
+          {enunciadoSinPista || 'Cargando pregunta técnica...'}
+        </p>
       </div>
 
-      <div className="flex flex-col lg:flex-row w-full max-w-7xl gap-8">
-        <div className="w-full lg:w-1/2 bg-[#1D1E33] rounded-2xl p-6 space-y-6 shadow-lg">
-          <p className="text-sm text-gray-300 mb-1 font-semibold uppercase">Enunciado</p>
-          <p className="text-base text-gray-200 whitespace-pre-wrap">
-            {preguntaTecnica?.Pregunta || 'Cargando pregunta técnica...'}
+      {pista && (
+        <div className="bg-[#2B2C3F] border-l-4 border-yellow-400 text-yellow-200 p-4 rounded-lg shadow-md">
+          <p className="text-sm font-semibold mb-1 flex items-center gap-2">
+            <FiAlertCircle className="text-yellow-300" />
+            Pista:
           </p>
-
-          {[preguntaTecnica?.ejemplo1, preguntaTecnica?.ejemplo2].map((ej, i) => (
-            ej && (
-              <div key={i} className="bg-[#2B2C3F] p-4 rounded-xl">
-                <p className="font-semibold text-cyan-400 mb-2">EJEMPLO {i + 1}</p>
-                <pre className="text-sm text-white whitespace-pre-wrap">{ej}</pre>
-              </div>
-            )
-          ))}
-
-          <div className="w-full aspect-video bg-black rounded-lg overflow-hidden">
-            <video ref={camRef} autoPlay muted className="w-full h-full object-cover" />
-          </div>
+          <p className="text-sm whitespace-pre-wrap">{pista}</p>
         </div>
+      )}
 
-        <div className="w-full lg:w-1/2 bg-[#1D1E33] rounded-2xl p-6 space-y-6 shadow-lg">
-          <textarea
-  value={codigo}
-  onChange={(e) => setCodigo(e.target.value)}
-  placeholder="// Escribe tu código aquí..."
-  className="w-full min-h-[200px] sm:min-h-[250px] lg:min-h-[300px] bg-[#2B2C3F] text-white text-sm p-4 rounded-xl font-mono resize-y border border-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-400"
-/>
-
-
-          <div className="flex flex-wrap gap-4 justify-start">
-           <button
-  onClick={handlePedirAyuda}
-  className="px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-black font-semibold rounded-lg transition flex items-center gap-2"
-  disabled={cargandoAyuda}
->
-  {cargandoAyuda ? (
-    <>
-      <FaSpinner className="animate-spin" />
-      Cargando...
-    </>
-  ) : (
-    'Pedir ayuda'
-  )}
-</button>
-
-
-            <button
-              onClick={handleEnviar}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition"
-            >
-              Enviar código
-            </button>
-          </div>
-
-          {ayudaIA && (
-            <div className="mt-4 p-4 bg-[#0F172A] border border-cyan-400 rounded-lg text-sm text-white">
-              <p className="font-semibold mb-2 text-cyan-400">Sugerencia IA:</p>
-              <pre className="whitespace-pre-wrap">{ayudaIA}</pre>
-            </div>
-          )}
-        </div>
+      <div className="w-full aspect-video bg-black rounded-xl overflow-hidden border border-gray-700">
+        <video ref={camRef} autoPlay muted className="w-full h-full object-cover rounded-xl" />
       </div>
     </div>
+
+    {/* RESPUESTA */}
+    <div className="w-full lg:w-1/2 bg-[#1D1E33] rounded-2xl p-6 space-y-6 shadow-2xl transition hover:shadow-green-400/10">
+      <textarea
+        value={codigo}
+        onChange={(e) => setCodigo(e.target.value)}
+        placeholder="// Escribe tu código aquí..."
+        className="w-full min-h-[250px] bg-[#2B2C3F] text-white text-sm p-4 rounded-xl font-mono resize-y border border-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+      />
+
+      <div className="flex flex-wrap gap-4 justify-start">
+        <button
+          onClick={handlePedirAyuda}
+          className="px-5 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black font-semibold rounded-lg shadow-md transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={cargandoAyuda}
+        >
+          {cargandoAyuda ? (
+            <>
+              <FaSpinner className="animate-spin" />
+              Cargando...
+            </>
+          ) : (
+            <>
+              <HiOutlineLightBulb size={18} />
+              Pedir ayuda
+            </>
+          )}
+        </button>
+
+        <button
+          onClick={handleEnviar}
+          className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg shadow-md transition-all duration-200 flex items-center gap-2"
+        >
+          <HiOutlinePaperAirplane size={18} />
+          Enviar código
+        </button>
+      </div>
+
+      {ayudaIA && (
+        <div className="mt-4 p-4 bg-[#0F172A] border border-cyan-500 rounded-lg text-sm text-white shadow-inner">
+          <p className="font-semibold mb-2 text-cyan-300 flex items-center gap-2">
+            <HiOutlineLightBulb size={16} />
+            Sugerencia IA:
+          </p>
+          <pre className="whitespace-pre-wrap text-sm text-gray-100">{ayudaIA}</pre>
+        </div>
+      )}
+    </div>
+  </div>
+</div>
+
+
   );
 }

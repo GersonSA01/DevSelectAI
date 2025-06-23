@@ -257,7 +257,6 @@ return (
             <li>Quédate en el entorno de entrevista.</li>
             <li>No abandones ni cambies de pestaña.</li>
             <li>Mantén contacto visual general con la pantalla.</li>
-            <li>Si tienes dudas, puedes expresarlas en voz alta durante la entrevista.</li>
           </ul>
 
           <button

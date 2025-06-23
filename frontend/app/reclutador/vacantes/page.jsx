@@ -79,8 +79,9 @@ const fetchVacantes = async () => {
         VACANTES ITINERARIO {idItinerario}
       </h1>
       <p className="text-center text-gray-300 mb-6">
-        Análisis de entorno para el desarrollo aplicado a la agropecuaria, turismo y agroindustria
-      </p>
+  {descripcionItinerario || 'Sin descripción disponible para el itinerario.'}
+</p>
+
 
       <button
         onClick={() =>

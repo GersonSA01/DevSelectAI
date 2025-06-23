@@ -23,7 +23,7 @@ const crearPostulante = async (req, res) => {
           <h1 style="color: white; text-align: center; margin: 0;">DevSelectAI</h1>
         </div>
 
-        <p>¡Hola ${nuevoPostulante.nombres}!</p>
+        <p>¡Hola!</p>
 
         <p>Tu registro ha sido exitoso. Ya puedes iniciar sesión para continuar con tu proceso.</p>
 
@@ -32,11 +32,6 @@ const crearPostulante = async (req, res) => {
           <a href="${baseUrl}/login" style="color: #0f172a;">${baseUrl}/login</a>
         </p>
 
-        <p style="margin: 20px 0;">
-          🎤 Cuando estés listo para iniciar la entrevista, accede al siguiente enlace único:<br>
-          <a href="${baseUrl}/invitacion?token=${token}" style="color: #0f172a;">
-            ${baseUrl}/invitacion?token=${token}
-          </a>
         </p>
 
         <p>Si tienes algún inconveniente, no dudes en contactarnos.</p>
@@ -282,24 +277,34 @@ const getPreguntasTeoricas = async (req, res) => {
       include: [
         {
           model: db.Pregunta,
-          as: 'pregunta'
+          as: 'pregunta',
+          include: [
+            {
+              model: db.PreguntaTecnica,
+              as: 'preguntaTecnica',
+              required: false // Esto es clave: LEFT JOIN
+            }
+          ]
         }
       ]
     });
 
-    const data = evaluaciones.map(ev => ({
-      pregunta: ev.pregunta?.Pregunta || 'No encontrada',
-      respuesta: ev.RptaPostulante || 'Sin respuesta',
-      puntaje: ev.Puntaje || 0,
-      habilidad: ev.pregunta?.Habilidad || 'General'
-    }));
+    // Solo dejar preguntas sin técnica
+    const teoricas = evaluaciones
+      .filter(ev => !ev.pregunta?.preguntaTecnica)
+      .map(ev => ({
+        pregunta: ev.pregunta?.Pregunta || 'No encontrada',
+        respuesta: ev.RptaPostulante || 'Sin respuesta',
+        Puntaje: ev.Puntaje || 0,
+      }));
 
-    res.json(data);
+    res.json(teoricas);
   } catch (err) {
     console.error('❌ Error en getPreguntasTeoricas:', err);
     res.status(500).json({ error: 'Error interno al obtener preguntas teóricas' });
   }
 };
+
 
 
 
