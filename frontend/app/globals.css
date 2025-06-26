@@ -2,12 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Estilos raíz para tema claro */
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
 }
 
+/* Tema oscuro */
 @media (prefers-color-scheme: dark) {
   :root {
     --foreground-rgb: 255, 255, 255;
@@ -16,6 +18,7 @@
   }
 }
 
+/* Colores base en capas */
 @layer base {
   :root {
     --background: 10 10 35;
@@ -81,26 +84,19 @@
   }
 }
 
-.swal2-radio label {
-  color: black !important;
-  white-space: normal !important;
-  display: block !important;
-  background: 10 10 35;
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-size: 15px;
-  line-height: 1.5;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  width: 100%;
-}
+/* ==== SweetAlert Personalizado ==== */
 .swal2-radio {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 12px !important;
-  align-items: flex-start;
+  @apply flex flex-col gap-3 items-start;
 }
 
+.swal2-radio label {
+  @apply block w-full rounded-lg p-3 text-[15px] leading-[1.5] shadow cursor-pointer;
+  background: rgb(10, 10, 35);
+  color: black !important;
+  white-space: normal !important;
+}
+
+/* ==== Botones personalizados ==== */
 .custom-swal-btn {
   @apply py-2 px-5 rounded-full font-medium transition-colors duration-200;
   margin: 0 6px;
@@ -114,6 +110,7 @@
   @apply bg-gray-600 hover:bg-gray-700 text-white;
 }
 
+/* ==== Etiquetas de habilidades ==== */
 .badge-habilidad {
   @apply px-4 py-2 rounded-full text-sm md:text-base font-medium border shadow transition-all bg-cyan-500 text-white border-cyan-400 hover:bg-cyan-400;
 }
@@ -122,17 +119,13 @@
   @apply px-4 py-2 rounded-full text-sm md:text-base font-medium border shadow transition-all bg-white text-gray-800 border-gray-300 hover:bg-gray-100;
 }
 
-
-
+/* ==== Animación de entrada/salida ==== */
 @keyframes slideInOut {
   0% {
     transform: translateX(100%);
     opacity: 0;
   }
-  10% {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  10%,
   90% {
     transform: translateX(0);
     opacity: 1;
@@ -147,14 +140,14 @@
   animation: slideInOut 5s ease-in-out forwards;
 }
 
-/* Barra de progreso inferior */
+/* ==== Barra de progreso para notificaciones ==== */
 [data-sonner-toast]::after {
   content: '';
   position: absolute;
   bottom: 0;
   left: 0;
   height: 4px;
-  background-color: #3BDCF6; /* color personalizado de tu sistema */
+  background-color: #3BDCF6;
   animation: progressBar 5s linear forwards;
 }
 

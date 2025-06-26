@@ -40,13 +40,53 @@ export default function CalificacionPage() {
 
   const cerrarZoom = () => setZoomImagen(null);
 
+
+
   useEffect(() => {
   if (!idPostulante) return;
 
   const cargarDatos = async () => {
     setLoading(true);
     try {
-      // ... tus fetch existentes
+      const [
+        resTeoricas,
+        resEntrevista,
+        resOrales,
+        resTecnica,
+        resCapturas,
+      ] = await Promise.all([
+        fetch(`http://localhost:5000/api/postulante/preguntas-teoricas?id=${idPostulante}`),
+        fetch(`http://localhost:5000/api/postulante/entrevista?id=${idPostulante}`),
+        fetch(`http://localhost:5000/api/postulante/preguntas-orales?id=${idPostulante}`),
+        fetch(`http://localhost:5000/api/evaluacion/pregunta-tecnica-asignada/${idPostulante}`),
+        fetch(`http://localhost:5000/api/capturas/postulante/${idPostulante}`),
+      ]);
+
+      const dataTeoricas = await resTeoricas.json();
+      const dataEntrevista = await resEntrevista.json();
+      const dataOrales = await resOrales.json();
+      const dataTecnica = await resTecnica.json();
+      const dataCapturas = await resCapturas.json();
+
+      setPreguntasTeoricas(Array.isArray(dataTeoricas) ? dataTeoricas : []);
+      setEntrevista(dataEntrevista);
+      setPreguntasOrales(dataOrales.preguntas);
+      setPreguntaTecnica(dataTecnica);
+      setCapturas(dataCapturas);
+
+      const teoricoCorrectas = dataTeoricas.filter(p => p.Puntaje === 1).length;
+
+      const entrevistaCalificada = Array.isArray(dataOrales.preguntas)
+  ? dataOrales.preguntas.reduce((acc, p) => acc + (p.calificacion || 0), 0)
+  : 0;
+
+setCalificaciones({
+  teorico: teoricoCorrectas,
+  entrevista: entrevistaCalificada,
+  tecnica: dataTecnica?.calificacion || 0,
+  capturas: dataCapturas.length,
+});
+
     } catch (err) {
       console.error("❌ Error cargando datos:", err);
     } finally {
@@ -56,54 +96,6 @@ export default function CalificacionPage() {
 
   cargarDatos();
 }, [idPostulante]);
-
-
-  useEffect(() => {
-    if (!idPostulante) return;
-
-    const cargarDatos = async () => {
-      try {
-        const [
-          resTeoricas,
-          resEntrevista,
-          resOrales,
-          resTecnica,
-          resCapturas,
-        ] = await Promise.all([
-          fetch(`http://localhost:5000/api/postulante/preguntas-teoricas?id=${idPostulante}`),
-          fetch(`http://localhost:5000/api/postulante/entrevista?id=${idPostulante}`),
-          fetch(`http://localhost:5000/api/postulante/preguntas-orales?id=${idPostulante}`),
-          fetch(`http://localhost:5000/api/evaluacion/pregunta-tecnica-asignada/${idPostulante}`),
-          fetch(`http://localhost:5000/api/capturas/postulante/${idPostulante}`),
-        ]);
-
-        const dataTeoricas = await resTeoricas.json();
-        const dataEntrevista = await resEntrevista.json();
-        const dataOrales = await resOrales.json();
-        const dataTecnica = await resTecnica.json();
-        const dataCapturas = await resCapturas.json();
-
-        setPreguntasTeoricas(dataTeoricas);
-        setEntrevista(dataEntrevista);
-        setPreguntasOrales(dataOrales.preguntas);
-        setPreguntaTecnica(dataTecnica);
-        setCapturas(dataCapturas);
-
-        const teoricoCorrectas = dataTeoricas.filter(p => p.Puntaje === 1).length;
-
-        setCalificaciones({
-          teorico: teoricoCorrectas,
-          entrevista: dataEntrevista?.CalificacionIA || 0,
-          tecnica: dataTecnica?.calificacion || 0,
-          capturas: dataCapturas.length,
-        });
-      } catch (err) {
-        console.error("❌ Error cargando datos:", err);
-      }
-    };
-
-    cargarDatos();
-  }, [idPostulante]);
 
   const actualizarCalificacion = (tipo, nuevoValor) => {
     setCalificaciones(prev => ({ ...prev, [tipo]: nuevoValor }));

@@ -114,8 +114,27 @@ if (evaluacion?.Id_Entrevista) {
     } else if (step === '2') {
       prompt = `El postulante respondió: "${textoUsuario}". Formula una tercera y última pregunta técnica relacionada con las habilidades: ${habilidadesTexto}.`;
     } else if (step === '3') {
-      prompt = `Respuestas del postulante:\n1) ${respuestas[0]}\n2) ${respuestas[1]}\n3) ${textoUsuario}.\nDi en una sola frase si el postulante AVANZA o NO AVANZA. Luego, en una segunda frase muy breve, justifica tu decisión como retroalimentación profesional y empática.`;
-    }
+  // 🔍 Obtener calificación total de las preguntas orales
+  const preguntas = await db.PreguntaOral.findAll({
+    where: { Id_Entrevista: entrevista.Id_Entrevista }
+  });
+
+  const totalCalificacion = preguntas.reduce((acc, p) => acc + (p.CalificacionIA || 0), 0);
+
+  prompt = `
+El postulante ha obtenido un total de ${totalCalificacion} puntos sobre 6 posibles en la entrevista oral.
+
+Con base en ese puntaje:
+1. Inicia tu respuesta indicando la calificación que obtuvo: "Tu calificación en la entrevista oral fue de X/6."
+2. Luego, en una nueva frase, indica si el postulante AVANZA o NO AVANZA.
+3. Finaliza con una breve justificación profesional y empática.
+
+Ejemplo esperado:
+"Tu calificación en la entrevista oral fue de 5/6. AVANZAS. Has demostrado un sólido dominio de tus habilidades técnicas."
+`;
+}
+
+
 
     const gptRes = await axios.post(
       'https://api.openai.com/v1/chat/completions',
@@ -143,21 +162,71 @@ if (evaluacion?.Id_Entrevista) {
     console.log('🧠 Respuesta generada por IA:', respuestaGPT);
 
     if (['1', '2', '3'].includes(step)) {
-      await db.PreguntaOral.create({
-        Ronda: parseInt(step),
-        PreguntaIA: respuestaGPT,
-        RespuestaPostulante: textoUsuario,
-        CalificacionIA: null,
-        Id_Entrevista: entrevista.Id_Entrevista,
-        TiempoRptaPostulante: tiempoRespuesta
-      });
-    }
+  // 🧠 Evaluar con GPT si respondió bien y si usó lenguaje técnico
+  const evalPrompt = `
+Evalúa esta respuesta del postulante con base en dos criterios:
+1. ¿Responde correctamente o de forma adecuada a una pregunta técnica?
+2. ¿Utiliza lenguaje técnico específico en su explicación?
 
-    if (parseInt(step) === 3) {
-      await entrevista.update({
-        RetroalimentacionIA: respuestaGPT
-      });
-    }
+Responde ÚNICAMENTE este JSON:
+{
+  "respuestaBien": true/false,
+  "usoLenguajeTecnico": true/false
+}
+
+Respuesta del postulante: "${textoUsuario}"
+`;
+
+  let calificacionIA = 0;
+  try {
+    const evalRes = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'Eres un evaluador técnico objetivo. Evalúa si una respuesta es adecuada y si se usó lenguaje técnico. Devuelve solo el JSON solicitado.'
+          },
+          { role: 'user', content: evalPrompt }
+        ]
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    const evalData = evalRes.data.choices[0].message.content;
+    const parsed = JSON.parse(evalData);
+
+    if (parsed.respuestaBien) calificacionIA = 1;
+    if (parsed.respuestaBien && parsed.usoLenguajeTecnico) calificacionIA = 2;
+  } catch (err) {
+    console.warn('⚠️ No se pudo interpretar la calificación IA. Se asigna 0.', err.message);
+  }
+
+  // Guardar todo en PreguntaOral
+  await db.PreguntaOral.create({
+    Ronda: parseInt(step),
+    PreguntaIA: respuestaGPT,
+    RespuestaPostulante: textoUsuario,
+    CalificacionIA: calificacionIA,
+    Id_Entrevista: entrevista.Id_Entrevista,
+    TiempoRptaPostulante: tiempoRespuesta
+  });
+}
+
+
+ if (parseInt(step) === 3) {
+  await entrevista.update({
+    RetroalimentacionIA: respuestaGPT.trim()
+  });
+}
+
 
     // 🎙️ Generar audio TTS con retry y texto limitado
     let audioBase64 = null;
@@ -206,5 +275,38 @@ if (evaluacion?.Id_Entrevista) {
       error: 'Error al procesar el audio',
       detalle: error.message
     });
+  }
+};
+// GET /api/getPreguntasOrales/:idEntrevista
+exports.getPreguntasOrales = async (req, res) => {
+  const idEntrevista = parseInt(req.params.idEntrevista);
+
+  try {
+    const preguntas = await db.PreguntaOral.findAll({
+      where: { Id_Entrevista: idEntrevista },
+      order: [['Ronda', 'ASC']],
+      attributes: [
+        'Id_Pregunta_oral',
+        'Ronda',
+        'PreguntaIA',
+        'RespuestaPostulante',
+        'CalificacionIA',
+        'TiempoRptaPostulante'
+      ]
+    });
+
+    const resultado = preguntas.map(p => ({
+      id: p.Id_Pregunta_oral,
+      ronda: p.Ronda,
+      pregunta: p.PreguntaIA,
+      respuesta: p.RespuestaPostulante,
+      calificacionIA: p.CalificacionIA,
+      tiempo: p.TiempoRptaPostulante
+    }));
+
+    res.json(resultado);
+  } catch (error) {
+    console.error('❌ Error al obtener preguntas orales:', error.message);
+    res.status(500).json({ error: error.message });
   }
 };

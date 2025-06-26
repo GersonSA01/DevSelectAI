@@ -202,19 +202,17 @@ exports.getVacantesPorHabilidades = async (req, res) => {
   }
 
   try {
-    // Obtener el itinerario como texto plano desde el postulante
-    const postulante = await db.Postulante.findByPk(idPostulante);
-    if (!postulante || !postulante.Itinerario) {
-      return res.status(404).json({ error: 'Postulante no encontrado o sin itinerario.' });
+    // Obtener la relación con el itinerario del postulante
+    const relacion = await db.ItinerarioPostulante.findOne({
+      where: { Id_Postulante: idPostulante },
+      include: [{ model: db.Itinerario, as: 'itinerario' }]
+    });
+
+    if (!relacion || !relacion.itinerario) {
+      return res.status(404).json({ error: 'Postulante no tiene un itinerario asignado.' });
     }
 
-    // Extraer número desde "Itinerario 2" → 2
-    const match = postulante.Itinerario.match(/Itinerario\s*(\d+)/i);
-    const idItinerario = match ? parseInt(match[1]) : null;
-
-    if (!idItinerario) {
-      return res.status(400).json({ error: 'No se pudo interpretar el itinerario.' });
-    }
+    const idItinerario = relacion.itinerario.id_Itinerario;
 
     // Buscar vacantes con coincidencia de habilidades + itinerario
     const vacantes = await db.Vacante.findAll({

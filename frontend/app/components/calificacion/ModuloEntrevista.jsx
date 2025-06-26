@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 
 export default function ModuloEntrevista({
@@ -10,20 +11,60 @@ export default function ModuloEntrevista({
   actualizarCalificacion,
 }) {
   const [editando, setEditando] = useState(false);
-  const [subNotas, setSubNotas] = useState([
-    { respuesta: 0, lenguaje: 0 },
-    { respuesta: 0, lenguaje: 0 },
-    { respuesta: 0, lenguaje: 0 },
-  ]);
+
+  const [subNotas, setSubNotas] = useState(
+    preguntasOrales.map((p) => {
+      const nota = p.calificacion || 0;
+      return {
+        respuesta: nota >= 1 ? 1 : 0,
+        lenguaje: nota === 2 ? 1 : 0,
+      };
+    })
+  );
 
   useEffect(() => {
     if (editando) {
-      const suma = subNotas.reduce((acc, nota) => acc + nota.respuesta + nota.lenguaje, 0);
+      const suma = subNotas.reduce(
+        (acc, nota) => acc + nota.respuesta + nota.lenguaje,
+        0
+      );
       actualizarCalificacion("entrevista", suma);
     }
   }, [subNotas]);
 
-  const puntajeTemporal = subNotas.reduce((acc, nota) => acc + nota.respuesta + nota.lenguaje, 0);
+  const puntajeTemporal = subNotas.reduce(
+    (acc, nota) => acc + nota.respuesta + nota.lenguaje,
+    0
+  );
+
+  const guardarCalificacion = async () => {
+    actualizarCalificacion("entrevista", puntajeTemporal);
+    setConfirmadas((prev) => ({ ...prev, entrevista: true }));
+    setEditando(false);
+
+    try {
+      const calificaciones = preguntasOrales.map((p, i) => ({
+        idPregunta: p.Id_Pregunta_oral, // ⚠️ Asegúrate de que este campo venga desde backend
+        calificacion: subNotas[i].respuesta + subNotas[i].lenguaje,
+      }));
+
+      const res = await fetch("http://localhost:5000/api/calificar/entrevista-oral", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          idEntrevista: entrevista.Id_Entrevista,
+          calificaciones,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Error al actualizar la calificación");
+
+      alert("✅ Calificación de entrevista actualizada exitosamente");
+    } catch (error) {
+      console.error("❌ Error al guardar:", error);
+      alert("❌ Hubo un error al guardar la calificación");
+    }
+  };
 
   return (
     <div className="bg-[#1D1E33] p-6 rounded-lg space-y-2 mt-10">
@@ -42,7 +83,9 @@ export default function ModuloEntrevista({
               <span className="text-sm text-gray-400">/ 6</span>
               {confirmadas.entrevista ? (
                 <button
-                  onClick={() => setConfirmadas(prev => ({ ...prev, entrevista: false }))}
+                  onClick={() =>
+                    setConfirmadas((prev) => ({ ...prev, entrevista: false }))
+                  }
                   className="text-xs bg-red-500 text-white px-2 py-1 rounded"
                 >
                   Cancelar
@@ -50,7 +93,9 @@ export default function ModuloEntrevista({
               ) : (
                 <>
                   <button
-                    onClick={() => setConfirmadas(prev => ({ ...prev, entrevista: true }))}
+                    onClick={() =>
+                      setConfirmadas((prev) => ({ ...prev, entrevista: true }))
+                    }
                     className="text-xs bg-green-500 text-white px-2 py-1 rounded"
                   >
                     Confirmar IA
@@ -58,7 +103,7 @@ export default function ModuloEntrevista({
                   <button
                     onClick={() => {
                       setEditando(true);
-                      setConfirmadas(prev => ({ ...prev, entrevista: false }));
+                      setConfirmadas((prev) => ({ ...prev, entrevista: false }));
                     }}
                     className="text-xs bg-yellow-400 text-black px-2 py-1 rounded"
                   >
@@ -69,11 +114,7 @@ export default function ModuloEntrevista({
             </>
           ) : (
             <button
-              onClick={() => {
-                actualizarCalificacion("entrevista", puntajeTemporal);
-                setConfirmadas(prev => ({ ...prev, entrevista: true }));
-                setEditando(false);
-              }}
+              onClick={guardarCalificacion}
               className="text-xs bg-blue-500 text-white px-2 py-1 rounded"
             >
               Guardar
@@ -90,6 +131,12 @@ export default function ModuloEntrevista({
             </p>
             <p className="text-white ml-4">
               <strong>Respuesta:</strong> {p.respuesta}
+            </p>
+            <p className="text-yellow-300 ml-4">
+              <strong>Nota IA:</strong>{" "}
+              {p.calificacion !== null && p.calificacion !== undefined
+                ? p.calificacion
+                : "Sin calificación"}
             </p>
 
             {editando && (

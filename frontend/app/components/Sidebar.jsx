@@ -22,6 +22,22 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   const { itinerarios } = useItinerarios();
   const [loading, setLoading] = useState(true);
 
+  // ✅ Detectar tamaño de pantalla al cargar y colapsar si es móvil
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setIsCollapsed(true);
+      } else {
+        setIsCollapsed(false);
+      }
+    };
+
+    handleResize(); // Ejecuta al montar
+    window.addEventListener('resize', handleResize); // Reacciona a cambios
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, [setIsCollapsed]);
+
   useEffect(() => {
     const reclutadorGuardado = localStorage.getItem('reclutador');
     if (reclutadorGuardado) {
@@ -47,7 +63,6 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
     router.push('/');
   };
 
-  // ✅ Mostrar skeleton mientras se carga
   if (loading) {
     return <SkeletonSidebar isCollapsed={isCollapsed} />;
   }

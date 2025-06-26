@@ -14,7 +14,7 @@ export default function ReclutadorLayout({ children }) {
 
         <div className="flex">
           <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
-          <main className={`mt-[64px] ${isCollapsed ? 'ml-16' : 'ml-64'} transition-all duration-300 bg-gray-50 min-h-screen w-full`}>
+          <main className={`mt-[64px] ${isCollapsed ? 'ml-16' : 'ml-64'} transition-all duration-300 bg[#0b1120] min-h-screen w-full`}>
             {children}
           </main>
         </div>

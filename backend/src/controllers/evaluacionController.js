@@ -7,7 +7,7 @@ exports.crearEvaluacionInicial = async (req, res) => {
     const idPostulante = parseInt(req.params.idPostulante);
     console.log('▶️ ID Postulante recibido:', idPostulante);
 
-    // Buscar la vacante y su itinerario
+    // Buscar la vacante asignada
     const relacion = await db.PostulanteVacante.findOne({
       where: { Id_Postulante: idPostulante },
       include: {
@@ -25,71 +25,108 @@ exports.crearEvaluacionInicial = async (req, res) => {
     const itinerarioVacante = relacion.vacante.id_Itinerario;
     console.log('✅ Vacante:', idVacante, '| Itinerario:', itinerarioVacante);
 
-    // Verificar si ya tiene evaluaciones de ese mismo itinerario
+    // Evitar evaluaciones duplicadas por itinerario
     const evaluacionesPrevias = await db.Evaluacion.findAll({
       where: { Id_postulante: idPostulante },
       include: {
-        model: db.Pregunta,
-        as: 'pregunta',
+        model: db.PreguntaEvaluacion,
+        as: 'respuestas', // ✅ CORREGIDO: coincide con alias real
         include: {
-          model: db.Vacante,
-          as: 'vacante',
-          where: { id_Itinerario: itinerarioVacante }
+          model: db.Pregunta,
+          as: 'pregunta',
+          include: {
+            model: db.Vacante,
+            as: 'vacante',
+            where: { id_Itinerario: itinerarioVacante }
+          }
         }
       }
     });
 
+
     if (evaluacionesPrevias.length > 0) {
-      console.warn('⛔ Evaluación ya existe para este itinerario');
       return res.status(409).json({ error: 'Ya existe una evaluación para este itinerario' });
     }
 
-    // Obtener preguntas teóricas
+    // Seleccionar preguntas teóricas (5)
     const preguntasTeoricas = await db.Pregunta.findAll({
-  where: { Id_vacante: idVacante },
-  include: [{ model: db.Opcion, as: 'opciones', required: true }],
-  order: db.sequelize.random(), // <- aleatoriza las preguntas
-  limit: 5
-});
-
-    // Obtener una pregunta técnica aleatoria
-const preguntasTecnicas = await db.Pregunta.findAll({
-  where: { Id_vacante: idVacante },
-  include: [{ model: db.PreguntaTecnica, as: 'preguntaTecnica', required: true }]
-});
-
-const preguntaTecnica = preguntasTecnicas.length > 0
-  ? preguntasTecnicas[Math.floor(Math.random() * preguntasTecnicas.length)]
-  : null;
-
-
-    // Crear entrevista oral
-    const entrevista = await db.EntrevistaOral.create({
-      RetroalimentacionIA: null
+      where: { Id_vacante: idVacante },
+      include: [{ model: db.Opcion, as: 'opciones', required: true }],
+      order: db.sequelize.random(),
+      limit: 5
     });
 
-    // Crear evaluaciones teóricas
+    // Seleccionar una pregunta técnica
+    const preguntasTecnicas = await db.Pregunta.findAll({
+      where: { Id_vacante: idVacante },
+      include: [{ model: db.PreguntaTecnica, as: 'preguntaTecnica', required: true }]
+    });
+
+    const preguntaTecnica = preguntasTecnicas.length > 0
+      ? preguntasTecnicas[Math.floor(Math.random() * preguntasTecnicas.length)]
+      : null;
+
+    console.log('📋 Preguntas teóricas:', preguntasTeoricas.map(p => p.Id_Pregunta));
+    console.log('🧠 Pregunta técnica:', preguntaTecnica?.Id_Pregunta || 'Ninguna');
+
+    // Crear entrevista vacía
+    const entrevista = await db.EntrevistaOral.create({ RetroalimentacionIA: null });
+
+    // Crear evaluación principal
+    const evaluacion = await db.Evaluacion.create({
+      Id_postulante: idPostulante,
+      Id_Entrevista: entrevista.Id_Entrevista,
+      PuntajeTotal: 0,
+      ObservacionGeneral: '',
+      RptaPostulante: ''
+    });
+
+    // Insertar preguntas teóricas en PreguntaEvaluacion
+    const insertadas = [];
+
     for (const pregunta of preguntasTeoricas) {
-      await db.Evaluacion.create({
-        Id_postulante: idPostulante,
-        Id_pregunta: pregunta.Id_Pregunta,
-        Id_Entrevista: entrevista.Id_Entrevista
-      });
+      try {
+        const insert = await db.PreguntaEvaluacion.create({
+          id_Evaluacion: evaluacion.id_Evaluacion,
+          Id_Pregunta: pregunta.Id_Pregunta,
+          UsoIA: 0,
+          TiempoRptaPostulante: 0,
+          RptaPostulante: '',
+          Puntaje: 0
+        });
+        insertadas.push(insert);
+        console.log(`✅ Insertada pregunta teórica ${pregunta.Id_Pregunta}`);
+      } catch (err) {
+        console.error(`❌ Error al insertar pregunta teórica ${pregunta.Id_Pregunta}:`, err.message);
+      }
     }
 
-    // Crear evaluación técnica
+    // Insertar pregunta técnica si existe
     if (preguntaTecnica) {
-      await db.Evaluacion.create({
-        Id_postulante: idPostulante,
-        Id_pregunta: preguntaTecnica.Id_Pregunta,
-        Id_Entrevista: entrevista.Id_Entrevista
-      });
+      try {
+        const insert = await db.PreguntaEvaluacion.create({
+          id_Evaluacion: evaluacion.id_Evaluacion,
+          Id_Pregunta: preguntaTecnica.Id_Pregunta,
+          UsoIA: 0,
+          TiempoRptaPostulante: 0,
+          RptaPostulante: '',
+          Puntaje: 0
+        });
+        insertadas.push(insert);
+        console.log(`✅ Insertada pregunta técnica ${preguntaTecnica.Id_Pregunta}`);
+      } catch (err) {
+        console.error(`❌ Error al insertar pregunta técnica ${preguntaTecnica.Id_Pregunta}:`, err.message);
+      }
     }
 
-    res.json({ message: 'Evaluación y entrevista creadas exitosamente' });
+    res.json({
+      message: '✅ Evaluación y entrevista creadas exitosamente',
+      evaluacionId: evaluacion.id_Evaluacion,
+      preguntasInsertadas: insertadas.map(p => p.Id_Pregunta)
+    });
 
   } catch (error) {
-    console.error('❌ Error al generar evaluación:', error.message);
+    console.error('❌ Error al crear evaluación inicial:', error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -99,8 +136,18 @@ exports.obtenerEvaluacionTeorica = async (req, res) => {
   try {
     const idPostulante = parseInt(req.params.idPostulante);
 
-    const evaluaciones = await db.Evaluacion.findAll({
+    // Buscar la evaluación del postulante
+    const evaluacion = await db.Evaluacion.findOne({
       where: { Id_postulante: idPostulante },
+    });
+
+    if (!evaluacion) {
+      return res.status(404).json({ error: 'Evaluación no encontrada.' });
+    }
+
+    // Obtener preguntas con opciones
+    const preguntasEvaluacion = await db.PreguntaEvaluacion.findAll({
+      where: { id_Evaluacion: evaluacion.id_Evaluacion },
       include: {
         model: db.Pregunta,
         as: 'pregunta',
@@ -108,17 +155,18 @@ exports.obtenerEvaluacionTeorica = async (req, res) => {
       }
     });
 
-    const teoricas = evaluaciones.filter(ev => ev.pregunta?.opciones?.length > 0);
+    const teoricas = preguntasEvaluacion.filter(pe => pe.pregunta?.opciones?.length > 0);
 
-    const resultado = teoricas.map(ev => ({
-      Id_Evaluacion: ev.id_Evaluacion,
-      Id_Pregunta: ev.Id_pregunta,
-      Pregunta: ev.pregunta.Pregunta,
-      opciones: ev.pregunta.opciones.map(o => ({
+    const resultado = teoricas.map(pe => ({
+      Id_Pregunta: pe.Id_Pregunta,
+      Id_PreguntaEvaluacion: pe.id_PreguntaEvaluacion,
+      Id_Evaluacion: pe.id_Evaluacion, // ✅ AÑADIDO AQUÍ
+      Pregunta: pe.pregunta.Pregunta,
+      opciones: pe.pregunta.opciones.map(o => ({
         Id_Opcion: o.Id_Opcion,
         Opcion: o.Opcion
-      }))
-    }));
+    }))
+}));
 
     res.json(resultado);
   } catch (error) {
@@ -128,16 +176,17 @@ exports.obtenerEvaluacionTeorica = async (req, res) => {
 };
 
 
+
 exports.responderPregunta = async (req, res) => {
   try {
     const idEvaluacion = parseInt(req.params.idEvaluacion);
-    const { idOpcionSeleccionada } = req.body;
+    const { idOpcionSeleccionada, idPregunta, tiempo } = req.body;
 
-    if (!idEvaluacion || !idOpcionSeleccionada) {
+    if (!idEvaluacion || !idOpcionSeleccionada || !idPregunta) {
       return res.status(400).json({ error: 'Faltan datos obligatorios.' });
     }
 
-    // Verifica que la evaluación exista
+    // Verifica que exista la evaluación
     const evaluacion = await db.Evaluacion.findByPk(idEvaluacion);
     if (!evaluacion) {
       return res.status(404).json({ error: 'Evaluación no encontrada.' });
@@ -149,19 +198,47 @@ exports.responderPregunta = async (req, res) => {
       return res.status(400).json({ error: 'Opción seleccionada inválida.' });
     }
 
-    // Actualiza la evaluación con la respuesta del postulante
-    await db.Evaluacion.update(
+    // Actualiza la pregunta respondida con su opción y puntaje
+    const [actualizado] = await db.PreguntaEvaluacion.update(
       {
         RptaPostulante: opcion.Opcion,
-        Puntaje: opcion.Correcta ? 1 : 0
+        Puntaje: opcion.Correcta ? 1 : 0,
+        TiempoRptaPostulante: tiempo || 0
       },
-      { where: { id_Evaluacion: idEvaluacion } }
+      {
+        where: {
+          id_Evaluacion: idEvaluacion,
+          Id_Pregunta: idPregunta
+        }
+      }
+    );
+
+    if (!actualizado) {
+      await db.PreguntaEvaluacion.create({
+        id_Evaluacion: idEvaluacion,
+        Id_Pregunta: idPregunta,
+        RptaPostulante: opcion.Opcion,
+        Puntaje: opcion.Correcta ? 1 : 0,
+        TiempoRptaPostulante: tiempo || 0,
+        UsoIA: 0
+      });
+    }
+
+    // ⏱️ Actualizar el tiempo en TODAS las preguntas teóricas de la evaluación (solo si aún no tienen tiempo)
+    await db.PreguntaEvaluacion.update(
+      { TiempoRptaPostulante: tiempo || 0 },
+      {
+        where: {
+          id_Evaluacion: idEvaluacion,
+          TiempoRptaPostulante: 0
+        }
+      }
     );
 
     return res.json({
-      mensaje: '✅ Respuesta registrada correctamente.',
-      RptaPostulante: opcion.Opcion,
-      Puntaje: opcion.Correcta ? 1 : 0
+      mensaje: '✅ Tiempo actualizado en todas las preguntas.',
+      idPregunta,
+      tiempo: tiempo || 0
     });
 
   } catch (error) {
@@ -172,40 +249,49 @@ exports.responderPregunta = async (req, res) => {
 
 
 
-
 exports.obtenerPreguntaTecnicaAsignada = async (req, res) => {
   try {
     const idPostulante = parseInt(req.params.idPostulante);
 
-    const evaluaciones = await db.Evaluacion.findAll({
+    // Buscar la evaluación del postulante con sus respuestas
+    const evaluacion = await db.Evaluacion.findOne({
       where: { Id_postulante: idPostulante },
       include: {
-        model: db.Pregunta,
-        as: 'pregunta',
-        required: true,
-        include: [{
-          model: db.PreguntaTecnica,
-          as: 'preguntaTecnica',
-          required: true
-        }]
+        model: db.PreguntaEvaluacion,
+        as: 'respuestas',
+        include: {
+          model: db.Pregunta,
+          as: 'pregunta',
+          include: {
+            model: db.PreguntaTecnica,
+            as: 'preguntaTecnica'
+          }
+        }
       }
     });
 
-    const evaluacionTecnica = evaluaciones.find(ev => ev.pregunta?.preguntaTecnica);
+    if (!evaluacion) {
+      return res.status(404).json({ error: 'Evaluación no encontrada.' });
+    }
 
-    if (!evaluacionTecnica) {
-      return res.status(404).json({ error: 'No se encontró una pregunta técnica asignada' });
+    // Encontrar la pregunta que tenga preguntaTecnica asociada
+    const respuestaTecnica = evaluacion.respuestas.find(
+      r => r.pregunta?.preguntaTecnica
+    );
+
+    if (!respuestaTecnica) {
+      return res.status(404).json({ error: 'No se encontró pregunta técnica asignada.' });
     }
 
     res.json({
-    Id_Evaluacion: evaluacionTecnica.id_Evaluacion,
-    Id_Pregunta: evaluacionTecnica.Id_pregunta,
-    pregunta: evaluacionTecnica.pregunta.Pregunta,
-    respuesta: evaluacionTecnica.RptaPostulante || '',
-    usoIA: evaluacionTecnica.pregunta.preguntaTecnica.UsoIA || false,
-    ejemplo1: evaluacionTecnica.pregunta.preguntaTecnica.Ejemplo1 || null,
-    ejemplo2: evaluacionTecnica.pregunta.preguntaTecnica.Ejemplo2 || null
-  });
+      Id_Evaluacion: evaluacion.id_Evaluacion,
+      Id_Pregunta: respuestaTecnica.Id_Pregunta,
+      pregunta: respuestaTecnica.pregunta.Pregunta,
+      respuesta: respuestaTecnica.RptaPostulante || '',
+      usoIA: respuestaTecnica.pregunta.preguntaTecnica.UsoIA || false,
+      ejemplo1: respuestaTecnica.pregunta.preguntaTecnica.Ejemplo1 || null,
+      ejemplo2: respuestaTecnica.pregunta.preguntaTecnica.Ejemplo2 || null
+    });
 
   } catch (error) {
     console.error('❌ Error al obtener pregunta técnica:', error);
@@ -214,41 +300,48 @@ exports.obtenerPreguntaTecnicaAsignada = async (req, res) => {
 };
 
 
+
 exports.guardarRespuestaTecnica = async (req, res) => {
   try {
-    const { idPostulante, idPregunta, respuesta } = req.body;
+    const { idPostulante, idPregunta, respuesta, tiempo } = req.body;
 
     if (!idPostulante || !idPregunta || !respuesta) {
       return res.status(400).json({ error: 'Faltan datos obligatorios.' });
     }
 
     const evaluacion = await db.Evaluacion.findOne({
-      where: {
-        Id_postulante: idPostulante,
-        Id_pregunta: idPregunta
-      }
+      where: { Id_postulante: idPostulante }
     });
 
     if (!evaluacion) {
-      return res.status(404).json({ error: 'Evaluación técnica no encontrada.' });
+      return res.status(404).json({ error: 'Evaluación no encontrada.' });
     }
 
-    await db.Evaluacion.update(
-      {
-        RptaPostulante: respuesta,
-        Puntaje: null // Se califica luego
-      },
-      {
-        where: { id_Evaluacion: evaluacion.id_Evaluacion }
+    const registro = await db.PreguntaEvaluacion.findOne({
+      where: {
+        id_Evaluacion: evaluacion.id_Evaluacion,
+        Id_Pregunta: idPregunta
       }
-    );
+    });
+
+    if (!registro) {
+      return res.status(404).json({ error: 'Relación Evaluación-Pregunta no encontrada.' });
+    }
+
+    await registro.update({
+      RptaPostulante: respuesta,
+      Puntaje: null,
+      TiempoRptaPostulante: tiempo ?? null
+    });
 
     res.json({ mensaje: '✅ Respuesta técnica guardada correctamente.' });
+
   } catch (error) {
     console.error('❌ Error al guardar respuesta técnica:', error);
     res.status(500).json({ error: 'Error al guardar la respuesta técnica.' });
   }
 };
+
 
 
 
@@ -264,33 +357,48 @@ exports.pedirAyudaIA = async (req, res) => {
       return res.status(400).json({ error: 'ID del postulante no proporcionado' });
     }
 
-    // Buscar evaluación técnica
     const evaluacion = await db.Evaluacion.findOne({
       where: { Id_postulante: idPostulante },
       include: {
-        model: db.Pregunta,
-        as: 'pregunta',
-        required: true,
-        include: [{
-          model: db.PreguntaTecnica,
-          as: 'preguntaTecnica',
-          required: true
-        }]
+        model: db.PreguntaEvaluacion,
+        as: 'respuestas',
+        include: {
+          model: db.Pregunta,
+          as: 'pregunta',
+          include: {
+            model: db.PreguntaTecnica,
+            as: 'preguntaTecnica'
+          }
+        }
       }
     });
 
-    if (!evaluacion || !evaluacion.pregunta?.preguntaTecnica) {
-      return res.status(404).json({ error: 'Pregunta técnica no encontrada para el postulante' });
+    if (!evaluacion) {
+      return res.status(404).json({ error: 'Evaluación no encontrada.' });
     }
 
-    if (evaluacion.pregunta.preguntaTecnica.UsoIA) {
-      return res.status(400).json({ error: 'La ayuda de IA ya fue utilizada para esta pregunta.' });
+    // Buscar la pregunta técnica entre las respuestas
+    const respuestaTecnica = evaluacion.respuestas.find(
+      r => r.pregunta?.preguntaTecnica
+    );
+
+    if (!respuestaTecnica) {
+      return res.status(404).json({ error: 'No se encontró pregunta técnica asignada.' });
     }
 
-    const prompt = `Eres un entrevistador técnico. Da al postulante una pista muy breve y útil: una idea clave, una línea de código orientativa o un enfoque inicial. Sé amable y no reveles la solución.
+    if (respuestaTecnica.UsoIA === 1) {
+      return res.status(400).json({ error: 'Ya se ha solicitado ayuda de IA para esta pregunta.' });
+    }
+
+    const prompt = `Actúa como un entrevistador técnico. El postulante está resolviendo una pregunta de programación. Tu tarea es **dar solo una pista breve**, como una idea clave, una orientación general o una sugerencia inicial. No expliques la solución completa, no muestres código detallado ni reveles la lógica completa.
+    ❌ No des la solución.
+    ❌ No expliques cómo resolverlo paso a paso.
+    ❌ No incluyas código funcional completo.
+    ✅ Solo ofrece una orientación conceptual que pueda ayudarle a pensar mejor. 
+    Aquí está la pregunta:
 
 Pregunta:
-${evaluacion.pregunta.Pregunta}`;
+${respuestaTecnica.pregunta.Pregunta}`;
 
     const completion = await openai.chat.completions.create({
       messages: [{ role: 'user', content: prompt }],
@@ -300,18 +408,26 @@ ${evaluacion.pregunta.Pregunta}`;
 
     const sugerencia = completion.choices[0].message.content;
 
-    // Marcar la pregunta como ya asistida por IA
-    await db.PreguntaTecnica.update(
-      { UsoIA: true },
-      { where: { Id_Pregunta: evaluacion.pregunta.Id_Pregunta } }
-    );
+    // ✅ Marcar la ayuda como utilizada tanto en PreguntaEvaluacion como en PreguntaTecnica
+    await Promise.all([
+      db.PreguntaEvaluacion.update(
+        { UsoIA: 1 },
+        { where: { id_PreguntaEvaluacion: respuestaTecnica.id_PreguntaEvaluacion } }
+      ),
+      db.PreguntaTecnica.update(
+        { UsoIA: true },
+        { where: { Id_Pregunta: respuestaTecnica.pregunta.Id_Pregunta } }
+      )
+    ]);
 
     res.json({ sugerencia });
+
   } catch (error) {
     console.error('❌ Error al pedir ayuda IA:', error);
     res.status(500).json({ error: 'Error interno al solicitar ayuda' });
   }
 };
+
 
 
 

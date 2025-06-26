@@ -30,42 +30,45 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
     texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
   const handleBuscar = async () => {
-    if (!cedula) return;
+  if (!cedula) return;
 
-    try {
-      const res = await fetch(`http://localhost:5000/api/excel/${cedula}`);
-      if (!res.ok) {
-        await Alert({
-          title: "Postulante no encontrado",
-          html: "Verifica la cédula ingresada.",
-          icon: "error",
-        });
-        return;
-      }
-
-      const data = await res.json();
-
-      if (!data.Carrera || !data.Carrera.toLowerCase().includes("software")) {
-        await Alert({
-          title: "Carrera no válida",
-          html: "Solo se permiten registros para carreras de <b>Software</b>.",
-          icon: "warning",
-        });
-        return;
-      }
-
-      setNombres(data.Nombre);
-      setApellidos(data.Apellido);
-      setCorreo(data.Correo);
-      setRol(data.Rol);
-      setCarrera(data.Carrera);
-      setItinerario(data.Itinerario || "Sin Itinerario");
-      setCiudadNombre(data.Ciudad || "");
-      setTelefono("");
-    } catch (error) {
-      console.error("Error buscando postulante:", error);
+  try {
+    const res = await fetch(`http://localhost:5000/api/excel/${cedula}`);
+    if (!res.ok) {
+      await Alert({
+        title: "Postulante no encontrado",
+        html: "Verifica la cédula ingresada.",
+        icon: "error",
+      });
+      return;
     }
-  };
+
+    const data = await res.json();
+
+    console.log("✅ Datos obtenidos desde Excel:", data); // 👉 Aquí verás todos los campos
+
+    if (!data.Carrera || !data.Carrera.toLowerCase().includes("software")) {
+      await Alert({
+        title: "Carrera no válida",
+        html: "Solo se permiten registros para carreras de <b>Software</b>.",
+        icon: "warning",
+      });
+      return;
+    }
+
+    setNombres(data.Nombre);
+    setApellidos(data.Apellido);
+    setCorreo(data.Correo);
+    setRol(data.Rol);
+    setCarrera(data.Carrera);
+    setItinerario(data.Itinerario || "Sin Itinerario");
+    setCiudadNombre(data.Ciudad || "");
+    setTelefono("");
+  } catch (error) {
+    console.error("Error buscando postulante:", error);
+  }
+};
+
 
   const handleClose = () => {
     setOpen(false);
@@ -129,7 +132,9 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
         FechPostulacion: new Date(),
         id_ciudad: idCiudad,
         id_EstadoPostulacion: 1,
-        Itinerario: itinerario,
+        ItinerarioExcel: itinerario,
+
+
       };
     } else if (rol.toLowerCase() === "docente") {
       endpoint = "http://localhost:5000/api/reclutador";

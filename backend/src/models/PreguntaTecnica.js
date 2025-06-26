@@ -7,10 +7,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     Respuesta: {
       type: DataTypes.TEXT // Para código, se recomienda usar TEXT
-    },
-    UsoIA: {
-      type: DataTypes.BOOLEAN
-    },
+    },    
     Id_Pregunta: {
       type: DataTypes.INTEGER
     }

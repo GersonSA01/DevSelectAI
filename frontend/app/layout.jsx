@@ -18,7 +18,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="es">
-      <body className="min-h-screen bg-background font-sans text-white">
+      <body className="min-h-screen bg-[#0A0A23] font-sans text-white">
         <ToasterAlert />
         {children}
       </body>

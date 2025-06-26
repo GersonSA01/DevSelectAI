@@ -30,6 +30,9 @@ db.Vacante = require('./Vacante')(sequelize, Sequelize);
 db.VacanteHabilidad = require('./VacanteHabilidad')(sequelize, Sequelize);
 db.Opcion = require('./Opcion')(sequelize, Sequelize);
 db.PreguntaTecnica = require('./PreguntaTecnica')(sequelize, Sequelize);
+db.PreguntaEvaluacion = require('./PreguntaEvaluacion')(sequelize, Sequelize);
+db.ItinerarioPostulante = require('./ItinerarioPostulante')(sequelize, Sequelize);
+db.Estadoltinerario = require('./Estadoltinerario')(sequelize, Sequelize);
 
 // Relaciones
 
@@ -134,15 +137,70 @@ db.Pregunta.belongsTo(db.Vacante, {
   as: 'vacante'
 });
 
-// Evaluacion - Pregunta - Postulante
-db.Evaluacion.belongsTo(db.Pregunta, {
-  foreignKey: 'Id_pregunta',
-  as: 'pregunta'
-});
-db.Pregunta.hasMany(db.Evaluacion, {
-  foreignKey: 'Id_pregunta',
+// Evaluacion - Pregunta a través de PreguntaEvaluacion
+db.Pregunta.belongsToMany(db.Evaluacion, {
+  through: db.PreguntaEvaluacion,
+  foreignKey: 'Id_Pregunta',
+  otherKey: 'id_Evaluacion',
   as: 'evaluaciones'
 });
+
+db.Evaluacion.belongsToMany(db.Pregunta, {
+  through: db.PreguntaEvaluacion,
+  foreignKey: 'id_Evaluacion',
+  otherKey: 'Id_Pregunta',
+  as: 'preguntas'
+});
+
+db.PreguntaEvaluacion.belongsTo(db.Evaluacion, {
+  foreignKey: 'id_Evaluacion',
+  as: 'evaluacion'
+});
+db.Evaluacion.hasMany(db.PreguntaEvaluacion, {
+  foreignKey: 'id_Evaluacion',
+  as: 'respuestas'
+});
+
+db.PreguntaEvaluacion.belongsTo(db.Pregunta, {
+  foreignKey: 'Id_Pregunta',
+  as: 'pregunta'
+});
+db.Pregunta.hasMany(db.PreguntaEvaluacion, {
+  foreignKey: 'Id_Pregunta',
+  as: 'respuestas'
+});
+
+// ItinerarioPostulante -> Postulante
+db.ItinerarioPostulante.belongsTo(db.Postulante, {
+  foreignKey: 'Id_Postulante',
+  as: 'postulante'
+});
+db.Postulante.hasMany(db.ItinerarioPostulante, {
+  foreignKey: 'Id_Postulante',
+  as: 'itinerarios'
+});
+
+// ItinerarioPostulante -> Itinerario
+db.ItinerarioPostulante.belongsTo(db.Itinerario, {
+  foreignKey: 'id_Itinerario',
+  as: 'itinerario'
+});
+db.Itinerario.hasMany(db.ItinerarioPostulante, {
+  foreignKey: 'id_Itinerario',
+  as: 'postulantes'
+});
+
+// ItinerarioPostulante -> EstadoItinerario
+db.ItinerarioPostulante.belongsTo(db.Estadoltinerario, {
+  foreignKey: 'Id_EstadoItinerario',
+  as: 'estado'
+});
+db.Estadoltinerario.hasMany(db.ItinerarioPostulante, {
+  foreignKey: 'Id_EstadoItinerario',
+  as: 'itinerarios'
+});
+
+
 
 db.Evaluacion.belongsTo(db.Postulante, {
   foreignKey: 'Id_postulante',

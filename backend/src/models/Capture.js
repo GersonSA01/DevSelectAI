@@ -19,7 +19,11 @@ module.exports = (sequelize, DataTypes) => {
     Observacion: {
       type: DataTypes.STRING(500),
       allowNull: true
-    }
+    },
+     Calificacion: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true
+    },
   }, {
     tableName: 'DAI_T_Capture',
     timestamps: false

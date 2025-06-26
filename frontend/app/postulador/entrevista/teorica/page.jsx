@@ -3,7 +3,7 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { StreamContext } from '../../../../context/StreamContext';
-import Temporizador from '../../../components/ui/Temporizador'; // Asegúrate de que esta ruta sea la correcta
+import Temporizador from '../../../components/ui/Temporizador';
 import ValidadorEntorno from '../../../components/ValidadorEntorno';
 
 export default function TeoricaPage() {
@@ -12,49 +12,53 @@ export default function TeoricaPage() {
   const camRef = useRef(null);
   const [cameraVisible, setCameraVisible] = useState(true);
   const [respuestas, setRespuestas] = useState({});
-  const [todoRespondido, setTodoRespondido] = useState(false);
   const [preguntas, setPreguntas] = useState([]);
+  const [tiemposInicio, setTiemposInicio] = useState({});
+  const [todoRespondido, setTodoRespondido] = useState(false);
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const idEvaluacion = preguntas[0]?.Id_Evaluacion || null;
 
-useEffect(() => {
-  const cargarPreguntas = async () => {
-    const idPostulante = localStorage.getItem('id_postulante');
-    if (!idPostulante) {
-      console.error("ID de postulante no encontrado en localStorage");
-      return;
-    }
-
-    try {
-      const res = await fetch(`http://localhost:5000/api/evaluacion/obtener-evaluacion/${idPostulante}`);
-
-      const data = await res.json();
-
-      if (res.ok && Array.isArray(data)) {
-  const teoricas = data.filter(p => Array.isArray(p.opciones) && p.opciones.length > 0);
-  setPreguntas(teoricas);
-}
-else {
-        console.warn("⚠️ Error al recibir preguntas:", data?.error || data);
-        setPreguntas([]);
+  useEffect(() => {
+    const cargarPreguntas = async () => {
+      const idPostulante = localStorage.getItem('id_postulante');
+      if (!idPostulante) {
+        console.error("ID de postulante no encontrado en localStorage");
+        return;
       }
-    } catch (error) {
-      console.error('❌ Error al cargar preguntas teóricas:', error);
+
+      try {
+        const res = await fetch(`http://localhost:5000/api/evaluacion/obtener-evaluacion/${idPostulante}`);
+        const data = await res.json();
+
+        if (res.ok && Array.isArray(data)) {
+          const teoricas = data.filter(p => Array.isArray(p.opciones) && p.opciones.length > 0);
+          setPreguntas(teoricas);
+
+          // ⏱️ Guardar el tiempo de inicio de cada pregunta
+          const ahora = Date.now();
+          const tiempos = {};
+          teoricas.forEach(p => {
+            tiempos[p.Id_Pregunta] = ahora;
+          });
+          setTiemposInicio(tiempos);
+        } else {
+          console.warn("⚠️ Error al recibir preguntas:", data?.error || data);
+          setPreguntas([]);
+        }
+      } catch (error) {
+        console.error('❌ Error al cargar preguntas teóricas:', error);
+      }
+    };
+
+    cargarPreguntas();
+  }, []);
+
+  useEffect(() => {
+    if (preguntas.length > 0 && preguntas[0]?.Id_Evaluacion) {
+      localStorage.setItem('id_evaluacion', preguntas[0].Id_Evaluacion);
     }
-  };
-
-  cargarPreguntas();
-}, []);
-
-useEffect(() => {
-  if (preguntas.length > 0 && preguntas[0]?.Id_Evaluacion) {
-    localStorage.setItem('id_evaluacion', preguntas[0].Id_Evaluacion);
-  }
-}, [preguntas]);
-
-
-
+  }, [preguntas]);
 
   useEffect(() => {
     if (cameraStream && camRef.current) {
@@ -70,12 +74,23 @@ useEffect(() => {
   const manejarSeleccion = async (idPregunta, indexOpcion) => {
     const pregunta = preguntas.find(p => p.Id_Pregunta === idPregunta);
     const opcionSeleccionada = pregunta.opciones[indexOpcion];
+    const tiempoInicio = tiemposInicio[idPregunta];
+    const tiempoRespuesta = tiempoInicio ? Math.floor((Date.now() - tiempoInicio) / 1000) : 0;
+
+    if (!pregunta?.Id_Evaluacion) {
+      console.error('❌ Id_Evaluacion no está definido para esta pregunta');
+      return;
+    }
 
     try {
       await fetch(`http://localhost:5000/api/evaluacion/responder/${pregunta.Id_Evaluacion}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idOpcionSeleccionada: opcionSeleccionada.Id_Opcion })
+        body: JSON.stringify({
+          idOpcionSeleccionada: opcionSeleccionada.Id_Opcion,
+          idPregunta: idPregunta,
+          tiempo: tiempoRespuesta // ⏱️ Enviar tiempo de respuesta
+        })
       });
 
       setRespuestas(prev => ({
@@ -90,20 +105,19 @@ useEffect(() => {
   return (
     <div className="min-h-screen bg-[#0A0A23] text-white p-8">
       <h2 className="text-2xl font-bold mb-2 text-center">Entrevista Teórica</h2>
-<Temporizador
-  duracion={300}
-  onFinalizar={() => {
-    router.push(`/postulador/entrevista/practica?token=${token}`);
-  }}
-/>
 
+      <Temporizador
+        duracion={300}
+        onFinalizar={() => {
+          router.push(`/postulador/entrevista/practica?token=${token}`);
+        }}
+      />
 
       <div className="max-w-4xl mx-auto space-y-8">
-              {preguntas.length > 0 && idEvaluacion && (
-  <ValidadorEntorno idEvaluacion={idEvaluacion} onCamVisibilityChange={setCameraVisible} />
-)}
+        {preguntas.length > 0 && idEvaluacion && (
+          <ValidadorEntorno idEvaluacion={idEvaluacion} onCamVisibilityChange={setCameraVisible} />
+        )}
 
-        
         {preguntas.map((pregunta, index) => (
           <div key={pregunta.Id_Pregunta} className="bg-[#1D1E33] p-6 rounded-lg shadow">
             <p className="text-sm text-[#3BDCF6] font-medium mb-1">

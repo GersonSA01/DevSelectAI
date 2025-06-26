@@ -12,44 +12,93 @@ const crearPostulante = async (req, res) => {
   try {
     const token = crypto.randomBytes(24).toString("hex");
 
-    const nuevoPostulante = await db.Postulante.create({
-      ...datos,
-      token_entrevista: token
-    });
+    // 👉 Crear postulante
+   await db.Postulante.create({
+  ...datos,
+  token_entrevista: token
+});
 
+// Recuperar el postulante insertado (por ejemplo, con su cédula)
+const nuevoPostulante = await db.Postulante.findOne({
+  where: { Cedula: datos.Cedula }
+});
+
+if (!nuevoPostulante) {
+  throw new Error("No se pudo recuperar el postulante después de crear.");
+}
+
+
+    console.log("✅ Postulante creado:", nuevoPostulante.toJSON());
+
+    // 👉 Detectar número de itinerario (ej. de "Itinerario 2" o solo "2")
+    const textoItinerario = datos.Itinerario || datos.ItinerarioExcel || "";
+    const match = textoItinerario.match(/\d+/);
+    const numeroItinerario = match ? parseInt(match[0]) : null;
+
+    console.log("🔍 Texto de itinerario:", textoItinerario);
+    console.log("🔢 Número detectado:", numeroItinerario);
+
+    if (numeroItinerario) {
+      // 👉 Buscar descripción que contenga "Itinerario X"
+      const itinerario = await db.Itinerario.findOne({
+        where: {
+          descripcion: {
+            [db.Sequelize.Op.like]: `%Itinerario ${numeroItinerario}%`
+          }
+        }
+      });
+
+      if (itinerario) {
+        console.log("📌 Itinerario encontrado:", itinerario.toJSON());
+
+        const relacion = await db.ItinerarioPostulante.create({
+  Id_Postulante: nuevoPostulante.Id_Postulante,
+  id_Itinerario: itinerario.id_Itinerario,
+  Id_EstadoItinerario: 1,
+  FechInicio: new Date(),
+  FechFin: null
+});
+
+
+        console.log("✅ Relación ItinerarioPostulante creada:", relacion.toJSON());
+      } else {
+        console.warn(`⚠️ No se encontró un itinerario con número ${numeroItinerario}`);
+      }
+    } else {
+      console.warn("⚠️ No se detectó número válido en el texto del itinerario.");
+    }
+
+    // 👉 Enviar correo
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd;">
-        <div style="background-color: #0f172a; padding: 20px;">
-          <h1 style="color: white; text-align: center; margin: 0;">DevSelectAI</h1>
-        </div>
+  <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ddd; border-radius: 10px;">
+    <div style="background-color: #0f172a; padding: 20px; text-align: center; border-top-left-radius: 10px; border-top-right-radius: 10px;">
+      <h1 style="color: white; margin: 0;">DevSelectAI</h1>
+    </div>
 
-        <p>¡Hola!</p>
+    <div style="padding: 30px;">
+      <h2 style="color: #0f172a;">🎓 Bienvenido/a a DevSelectAI</h2>
+      <p>Hola</strong>,</p>
+      <p>Has sido registrado exitosamente en nuestro sistema de entrevistas inteligentes para prácticas preprofesionales.</p>
 
-        <p>Tu registro ha sido exitoso. Ya puedes iniciar sesión para continuar con tu proceso.</p>
+      <p>Si tienes algún inconveniente para acceder, por favor contacta con soporte.</p>
+    </div>
 
-        <p style="margin: 20px 0;">
-          👉 Inicia sesión aquí: 
-          <a href="${baseUrl}/login" style="color: #0f172a;">${baseUrl}/login</a>
-        </p>
-
-        </p>
-
-        <p>Si tienes algún inconveniente, no dudes en contactarnos.</p>
-
-        <div style="background-color: #0f172a; color: white; text-align: center; font-size: 12px; padding: 10px; margin-top: 40px;">
-          ¿Necesitas ayuda? Visita <a href="http://soporte.com" style="color: #93c5fd;">soporte.com</a>
-        </div>
-      </div>
-    `;
+    <div style="background-color: #0f172a; color: white; text-align: center; font-size: 12px; padding: 15px; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
+      ¿Necesitas ayuda? Visita <a href="http://soporte.com" style="color: #93c5fd;">soporte.com</a> o escribe a <a href="mailto:devselectai@gmail.com" style="color: #93c5fd;">devselectai@gmail.com</a>
+    </div>
+  </div>
+`;
 
     await sendEmail(nuevoPostulante.Correo, "✅ Registro exitoso - DevSelectAI", html);
 
     res.status(201).json({ mensaje: 'Postulante registrado y correo enviado con éxito.' });
   } catch (error) {
-    console.error('Error al crear postulante:', error);
+    console.error('❌ Error al crear postulante:', error);
     res.status(500).json({ error: 'Error al crear postulante' });
   }
 };
+
+
 
 // 👉 Guardar hasta 3 habilidades seleccionadas por el postulante
 const guardarHabilidades = async (req, res) => {
@@ -226,23 +275,37 @@ const getAllPostulantes = async (req, res) => {
 };
 
 
-
-
 const obtenerPorId = async (req, res) => {
   const id = req.params.id;
 
   try {
     const postulante = await db.Postulante.findByPk(id);
+
     if (!postulante) {
       return res.status(404).json({ error: "Postulante no encontrado" });
     }
 
-    res.json(postulante);
+    const relacion = await db.ItinerarioPostulante.findOne({
+      where: { Id_Postulante: id },
+      include: [
+        { model: db.Itinerario, as: 'itinerario' },
+        { model: db.Estadoltinerario, as: 'estado' }
+      ]
+    });
+
+    res.json({
+      ...postulante.toJSON(),
+      Itinerario: relacion?.itinerario?.descripcion || null,
+      EstadoItinerario: relacion?.estado?.Descripcion || null,
+      FechInicio: relacion?.FechInicio || null,
+      FechFin: relacion?.FechFin || null
+    });
   } catch (error) {
     console.error("❌ Error al obtener postulante por ID:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 };
+
 
 // 👉 Cambiar estado de postulación (ej. Evaluado)
 const cambiarEstado = async (req, res) => {

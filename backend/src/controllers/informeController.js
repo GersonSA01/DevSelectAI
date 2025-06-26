@@ -4,29 +4,46 @@ exports.obtenerInformePostulante = async (req, res) => {
   const idPostulante = req.params.idPostulante;
 
   try {
-    // 1. Buscar postulante con relaciones necesarias
     const postulante = await db.Postulante.findByPk(idPostulante, {
       include: [
         {
           model: db.DetalleHabilidad,
           as: 'habilidades',
-          include: [
-            { model: db.Habilidad, as: 'habilidad' }
-          ]
+          include: [{ model: db.Habilidad, as: 'habilidad' }]
         },
         {
           model: db.Evaluacion,
           as: 'evaluaciones',
           include: [
             {
-              model: db.Pregunta,
-              as: 'pregunta',
+              model: db.PreguntaEvaluacion,
+              as: 'respuestas',
               include: [
-                { model: db.PreguntaTecnica, as: 'preguntaTecnica' }
+                {
+                  model: db.Pregunta,
+                  as: 'pregunta',
+                  include: [
+                    { model: db.PreguntaTecnica, as: 'preguntaTecnica' },
+                    { model: db.Opcion, as: 'opciones' }
+                  ]
+                }
               ]
             },
             { model: db.EntrevistaOral, as: 'entrevista' },
             { model: db.Capture, as: 'captures' }
+          ]
+        },
+        {
+          model: db.PostulanteVacante,
+          as: 'selecciones',
+          include: [
+            {
+              model: db.Vacante,
+              as: 'vacante',
+              include: [
+                { model: db.Itinerario, as: 'itinerario' }
+              ]
+            }
           ]
         }
       ]
@@ -34,40 +51,74 @@ exports.obtenerInformePostulante = async (req, res) => {
 
     if (!postulante) return res.status(404).json({ error: 'Postulante no encontrado' });
 
-    // 2. Obtener la entrevista oral completa
-    const entrevista = await db.EntrevistaOral.findByPk(
-      postulante.evaluaciones[0]?.Id_Entrevista,
-      {
-        include: [
-          { model: db.PreguntaOral, as: 'preguntasOrales' }
-        ]
-      }
-    );
+    const evaluacion = postulante.evaluaciones[0];
+    const entrevista = await db.EntrevistaOral.findByPk(evaluacion?.Id_Entrevista, {
+      include: [{ model: db.PreguntaOral, as: 'preguntasOrales' }]
+    });
 
-    // 3. Armar los datos
+    // Habilidades
     const habilidades = postulante.habilidades.map(h => h.habilidad.Descripcion);
 
-    const tiemposOrales = entrevista?.preguntasOrales.map(p => p.TiempoRptaPostulante || 0) || [0, 0, 0];
-    const calificacionOral = entrevista?.preguntasOrales.reduce((acc, p) => acc + (p.CalificacionIA || 0), 0);
+    // Oral
+    const tiemposOrales = entrevista?.preguntasOrales.map(p => p.TiempoRptaPostulante || 0) || [];
+    const calificacionOral = entrevista?.preguntasOrales.reduce((acc, p) => acc + (p.CalificacionIA || 0), 0) || 0;
 
-    const teoricas = postulante.evaluaciones.filter(e => e.pregunta && !e.pregunta.preguntaTecnica);
-    const tecnica = postulante.evaluaciones.find(e => e.pregunta?.preguntaTecnica);
+    // Teóricas
+    const teoricas = evaluacion?.respuestas?.filter(r => !r.pregunta?.preguntaTecnica) || [];
+    const tiempoTeorico = teoricas.reduce((acc, r) => acc + (r.TiempoRptaPostulante || 0), 0);
+    const calificacionTeorico = teoricas.reduce((acc, r) => acc + (r.Puntaje || 0), 0);
 
-    const tiempoTeorico = teoricas.reduce((acc, e) => acc + (e.TiempoRptaPostulante || 0), 0);
-    const calificacionTeorico = teoricas.reduce((acc, e) => acc + (e.Puntaje || 0), 0);
+    const preguntasTeoricas = teoricas.map(r => ({
+      pregunta: r.pregunta?.Pregunta || '',
+      respuesta: r.RptaPostulante,
+      Puntaje: r.Puntaje || 0,
+      TiempoRpta: r.TiempoRptaPostulante || 0
+    }));
 
+    // Técnica
+    const tecnica = evaluacion?.respuestas?.find(r => r.pregunta?.preguntaTecnica);
     const tiempoTecnica = tecnica?.TiempoRptaPostulante || 0;
     const calificacionTecnica = tecnica?.Puntaje || 0;
 
-    const capturas = postulante.evaluaciones.flatMap(e => e.captures || []);
-    const calificacionCapturas = capturas.filter(c => c.Aprobado).length;
+    const preguntaTecnica = tecnica
+      ? {
+          pregunta: tecnica.pregunta?.Pregunta || '',
+          respuesta: tecnica.RptaPostulante,
+          Puntaje: tecnica.Puntaje || 0,
+          TiempoRpta: tecnica.TiempoRptaPostulante || 0,
+          UsoIA: tecnica.UsoIA === 1
+        }
+      : null;
 
-    const observacion = postulante.evaluaciones[0]?.ObservacionGeneral || '';
+    // Capturas
+    // Capturas
+const capturas = (evaluacion?.captures || []).filter(c => c.Aprobado === true || c.Aprobado === 1);
+const totalCapturas = capturas.length;
+const capturasPenalizadas = capturas.filter(c => c.Aprobado === true || c.Aprobado === 1).length;
 
-    // 4. Enviar respuesta final
+// Regla: 2 - (n penalizadas * 0.5)
+let puntajeCapturas = 2 - (capturasPenalizadas * 0.5);
+if (puntajeCapturas < 0) puntajeCapturas = 0;
+
+    // Vacante e Itinerario
+    const seleccion = postulante.selecciones?.[0];
+    const vacante = seleccion?.vacante;
+    const itinerarioDescripcion = vacante?.itinerario?.descripcion || 'No asignado';
+    const vacanteDescripcion = vacante?.Descripcion || 'Sin descripción';
+
+    const observacion = evaluacion?.ObservacionGeneral || '';
+
+    // Cálculo final
+    const puntajeEvaluacion = calificacionOral + calificacionTeorico + calificacionTecnica;
+    const puntajeFinal = puntajeEvaluacion + puntajeCapturas;
+
+    // Actualizar base
+    await evaluacion.update({ PuntajeTotal: puntajeFinal });
+
     res.json({
       nombre: `${postulante.Nombre} ${postulante.Apellido}`,
-      itinerario: postulante.Itinerario,
+      itinerario: itinerarioDescripcion,
+      vacante: vacanteDescripcion,
       habilidades,
       tiempos: {
         entrevista: tiemposOrales,
@@ -78,8 +129,12 @@ exports.obtenerInformePostulante = async (req, res) => {
         entrevista: calificacionOral,
         teorico: calificacionTeorico,
         tecnica: calificacionTecnica,
-        capturas: calificacionCapturas
+        capturas: puntajeCapturas // ← nota sobre 2, no cantidad
       },
+      puntajeEvaluacion,
+      puntajeFinal,
+      preguntasTeoricas,
+      preguntaTecnica,
       capturas,
       observacion
     });

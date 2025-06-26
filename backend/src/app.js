@@ -46,7 +46,7 @@ const evaluacionRoutes = require('./routes/evaluacion');
 const captureRoutes = require('./routes/captureRoutes');
 const ciudadRoutes = require('./routes/ciudad');
 const informeRoutes = require('./routes/informe');
-
+const calificarRoutes = require('./routes/calificar');
 // 🚦 USO DE RUTAS
 app.use('/api/itinerarios', itinerarioRoutes);
 app.use('/api/entrevista', entrevistaRoutes);
@@ -66,6 +66,7 @@ app.use('/api/evaluacion', evaluacionRoutes);
 app.use('/api/capturas', captureRoutes); // Ruta correcta
 app.use('/api/ciudades', ciudadRoutes);
 app.use('/api/informe', informeRoutes);
+app.use("/api/calificar", calificarRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 

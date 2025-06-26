@@ -10,7 +10,6 @@ module.exports = (sequelize, DataTypes) => {
     FechPostulacion: DataTypes.DATE,
     id_ciudad: DataTypes.INTEGER,
     id_EstadoPostulacion: DataTypes.INTEGER,
-    Itinerario: DataTypes.STRING(300),
     token_entrevista: DataTypes.STRING
   }, {
     tableName: 'DAI_M_Postulante',

@@ -59,6 +59,32 @@ async function cargarDatosIniciales() {
       console.log('✅ Provincias y ciudades de Ecuador insertadas.');
     }
 
+        // Habilidades
+    const habilidades = await db.Habilidad.findAll();
+    if (habilidades.length === 0) {
+      await db.Habilidad.bulkCreate([
+        { Id_Habilidad: 1, Descripcion: 'SQL' },
+        { Id_Habilidad: 2, Descripcion: 'Machine Learning' },
+        { Id_Habilidad: 3, Descripcion: 'Python' },
+        { Id_Habilidad: 4, Descripcion: 'NodeJS' },
+        { Id_Habilidad: 5, Descripcion: 'NextJS' },
+        { Id_Habilidad: 6, Descripcion: 'React' }
+      ]);
+      console.log('✅ Habilidades insertadas.');
+    }
+
+    // Estados de Itinerario
+    const estadosItinerario = await db.Estadoltinerario.findAll();
+    if (estadosItinerario.length === 0) {
+      await db.Estadoltinerario.bulkCreate([
+        { Id_EstadoItinerario: 1, Descripcion: 'Pendiente' },
+        { Id_EstadoItinerario: 2, Descripcion: 'En curso' },
+        { Id_EstadoItinerario: 3, Descripcion: 'Finalizado' }
+      ]);
+      console.log('✅ Estados de itinerario insertados.');
+    }
+
+
     console.log('🚀 Carga de datos iniciales completada.');
   } catch (err) {
     console.error('❌ Error al cargar datos iniciales:', err.message);
