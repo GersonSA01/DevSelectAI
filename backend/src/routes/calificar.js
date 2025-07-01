@@ -1,10 +1,16 @@
+// routes/calificacion.js
 const express = require("express");
 const router = express.Router();
-const { calificarEntrevistaOral } = require("../controllers/calificarController");
+const {
+  calificarEntrevistaOral,
+  getEntrevistaOral,
+  calificarTecnico,
+  actualizarEvaluacionGeneral,
+} = require("../controllers/calificarController");
 
 router.put("/entrevista-oral", calificarEntrevistaOral);
-// router.put("/teorico", calificarTeorico);
-// router.put("/tecnica", calificarTecnico);
-// router.put("/capturas", calificarCapturas);
+router.get("/entrevista-oral/:idEntrevista", getEntrevistaOral);
+router.put("/tecnica", calificarTecnico);  // ← Nueva ruta
+router.put("/general", actualizarEvaluacionGeneral);
 
 module.exports = router;

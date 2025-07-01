@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 export default function ModuloEntrevista({
   preguntasOrales,
@@ -11,6 +12,11 @@ export default function ModuloEntrevista({
   actualizarCalificacion,
 }) {
   const [editando, setEditando] = useState(false);
+  const [preguntas, setPreguntas] = useState(preguntasOrales);
+
+  useEffect(() => {
+    setPreguntas(preguntasOrales);
+  }, [preguntasOrales]);
 
   const [subNotas, setSubNotas] = useState(
     preguntasOrales.map((p) => {
@@ -43,75 +49,86 @@ export default function ModuloEntrevista({
     setEditando(false);
 
     try {
-      const calificaciones = preguntasOrales.map((p, i) => ({
-        idPregunta: p.Id_Pregunta_oral, // ⚠️ Asegúrate de que este campo venga desde backend
+      const calificaciones = preguntas.map((p, i) => ({
+        idPregunta: p.idPregunta,
         calificacion: subNotas[i].respuesta + subNotas[i].lenguaje,
       }));
 
-      const res = await fetch("http://localhost:5000/api/calificar/entrevista-oral", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          idEntrevista: entrevista.Id_Entrevista,
-          calificaciones,
-        }),
-      });
+      const res = await fetch(
+        "http://localhost:5000/api/calificar/entrevista-oral",
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            idEntrevista: entrevista.Id_Entrevista,
+            calificaciones,
+          }),
+        }
+      );
 
-      if (!res.ok) throw new Error("Error al actualizar la calificación");
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Error del servidor:", res.status, text);
+        throw new Error("Error al actualizar la calificación");
+      }
 
-      alert("✅ Calificación de entrevista actualizada exitosamente");
+      setPreguntas((prev) =>
+        prev.map((p, i) => ({
+          ...p,
+          calificacion: subNotas[i].respuesta + subNotas[i].lenguaje,
+        }))
+      );
+
+      toast.success("✅ Calificación de entrevista actualizada exitosamente");
     } catch (error) {
       console.error("❌ Error al guardar:", error);
-      alert("❌ Hubo un error al guardar la calificación");
+      toast.error("❌ Hubo un error al guardar la calificación");
     }
   };
 
   return (
-    <div className="bg-[#1D1E33] p-6 rounded-lg space-y-2 mt-10">
-      <div className="flex justify-between items-center mb-2">
+    <div className="bg-[#1D1E33] p-4 md:p-6 rounded-lg space-y-4 mt-10">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
         <h2 className="text-xl font-semibold">1. Entrevista Oral con IA</h2>
-
         <div className="flex items-center gap-2">
-          <input
-            type="number"
-            value={editando ? puntajeTemporal : calificacion}
-            readOnly
-            className="bg-gray-200 text-black px-2 py-1 w-16 rounded text-center"
-          />
+          <span className="text-[#22C55E] font-semibold">
+            {editando ? puntajeTemporal : calificacion} / 6
+          </span>
+
           {!editando ? (
-            <>
-              <span className="text-sm text-gray-400">/ 6</span>
-              {confirmadas.entrevista ? (
+            confirmadas.entrevista ? (
+              <button
+                onClick={() =>
+                  setConfirmadas((prev) => ({ ...prev, entrevista: false }))
+                }
+                className="text-xs bg-red-500 text-white px-2 py-1 rounded"
+              >
+                Cancelar
+              </button>
+            ) : (
+              <>
                 <button
                   onClick={() =>
-                    setConfirmadas((prev) => ({ ...prev, entrevista: false }))
+                    setConfirmadas((prev) => ({ ...prev, entrevista: true }))
                   }
-                  className="text-xs bg-red-500 text-white px-2 py-1 rounded"
+                  className="text-xs bg-green-500 text-white px-2 py-1 rounded"
                 >
-                  Cancelar
+                  Confirmar IA
                 </button>
-              ) : (
-                <>
-                  <button
-                    onClick={() =>
-                      setConfirmadas((prev) => ({ ...prev, entrevista: true }))
-                    }
-                    className="text-xs bg-green-500 text-white px-2 py-1 rounded"
-                  >
-                    Confirmar IA
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditando(true);
-                      setConfirmadas((prev) => ({ ...prev, entrevista: false }));
-                    }}
-                    className="text-xs bg-yellow-400 text-black px-2 py-1 rounded"
-                  >
-                    Editar
-                  </button>
-                </>
-              )}
-            </>
+                <button
+                  onClick={() => {
+                    setEditando(true);
+                    setConfirmadas((prev) => ({
+                      ...prev,
+                      entrevista: false,
+                    }));
+                  }}
+                  className="text-xs bg-yellow-400 text-black px-2 py-1 rounded"
+                >
+                  Editar
+                </button>
+              </>
+            )
           ) : (
             <button
               onClick={guardarCalificacion}
@@ -124,24 +141,22 @@ export default function ModuloEntrevista({
       </div>
 
       <div className="text-sm text-gray-300 space-y-4 mt-4">
-        {preguntasOrales.map((p, i) => (
+        {preguntas.map((p, i) => (
           <div key={i}>
-            <p className="text-[#3BDCF6]">
+            <p className="text-[#3BDCF6] text-sm md:text-base">
               <strong>Pregunta {i + 1}:</strong> {p.pregunta}
             </p>
-            <p className="text-white ml-4">
+            <p className="text-white ml-4 text-sm md:text-base">
               <strong>Respuesta:</strong> {p.respuesta}
             </p>
-            <p className="text-yellow-300 ml-4">
+            <p className="text-yellow-300 ml-4 text-sm md:text-base">
               <strong>Nota IA:</strong>{" "}
-              {p.calificacion !== null && p.calificacion !== undefined
-                ? p.calificacion
-                : "Sin calificación"}
+              {p.calificacion ?? "Sin calificación"}
             </p>
 
             {editando && (
               <div className="ml-6 mt-2 space-y-1">
-                <label className="flex items-center gap-2">
+                <label className="flex items-center gap-2 text-sm md:text-base">
                   <input
                     type="checkbox"
                     checked={subNotas[i].respuesta === 1}
@@ -153,7 +168,7 @@ export default function ModuloEntrevista({
                   />
                   +1 Responde bien
                 </label>
-                <label className="flex items-center gap-2">
+                <label className="flex items-center gap-2 text-sm md:text-base">
                   <input
                     type="checkbox"
                     checked={subNotas[i].lenguaje === 1}
@@ -170,12 +185,12 @@ export default function ModuloEntrevista({
           </div>
         ))}
 
-        {entrevista && (
+        {entrevista?.RetroalimentacionIA && (
           <>
-            <p className="text-green-400 mt-4">
+            <p className="text-green-400 mt-4 text-sm md:text-base">
               <strong>Retroalimentación:</strong>
             </p>
-            <p className="italic text-gray-400 whitespace-pre-line">
+            <p className="italic text-gray-400 whitespace-pre-line text-sm md:text-base">
               {entrevista.RetroalimentacionIA}
             </p>
           </>

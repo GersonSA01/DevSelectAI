@@ -251,9 +251,9 @@ exports.responderPregunta = async (req, res) => {
 
 exports.obtenerPreguntaTecnicaAsignada = async (req, res) => {
   try {
-    const idPostulante = parseInt(req.params.idPostulante);
+    const idPostulante = parseInt(req.params.idPostulante, 10);
 
-    // Buscar la evaluación del postulante con sus respuestas
+    // 1️⃣ Buscar la evaluación del postulante con sus respuestas y asociación técnica
     const evaluacion = await db.Evaluacion.findOne({
       where: { Id_postulante: idPostulante },
       include: {
@@ -274,7 +274,7 @@ exports.obtenerPreguntaTecnicaAsignada = async (req, res) => {
       return res.status(404).json({ error: 'Evaluación no encontrada.' });
     }
 
-    // Encontrar la pregunta que tenga preguntaTecnica asociada
+    // 2️⃣ Encontrar la respuesta que tenga asociada una pregunta técnica
     const respuestaTecnica = evaluacion.respuestas.find(
       r => r.pregunta?.preguntaTecnica
     );
@@ -283,19 +283,17 @@ exports.obtenerPreguntaTecnicaAsignada = async (req, res) => {
       return res.status(404).json({ error: 'No se encontró pregunta técnica asignada.' });
     }
 
+    // 3️⃣ Serializar la respuesta usando directamente el campo UsoIA de la evaluación
     res.json({
       Id_Evaluacion: evaluacion.id_Evaluacion,
       Id_Pregunta: respuestaTecnica.Id_Pregunta,
       pregunta: respuestaTecnica.pregunta.Pregunta,
       respuesta: respuestaTecnica.RptaPostulante || '',
-      usoIA: respuestaTecnica.pregunta.preguntaTecnica.UsoIA || false,
-      ejemplo1: respuestaTecnica.pregunta.preguntaTecnica.Ejemplo1 || null,
-      ejemplo2: respuestaTecnica.pregunta.preguntaTecnica.Ejemplo2 || null
+      usoIA: respuestaTecnica.UsoIA  // ahora toma el valor 0 o 1 desde la BD
     });
-
   } catch (error) {
     console.error('❌ Error al obtener pregunta técnica:', error);
-    res.status(500).json({ error: 'Error interno al obtener la pregunta técnica' });
+    res.status(500).json({ error: 'Error interno al obtener la pregunta técnica.' });
   }
 };
 

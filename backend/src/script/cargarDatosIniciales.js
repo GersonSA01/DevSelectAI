@@ -12,7 +12,8 @@ async function cargarDatosIniciales() {
         { id_EstadoPostulacion: 1, descripcion: 'Por evaluar' },
         { id_EstadoPostulacion: 2, descripcion: 'Evaluado' },
         { id_EstadoPostulacion: 3, descripcion: 'Aprobado' },
-        { id_EstadoPostulacion: 4, descripcion: 'Rechazado' }
+        { id_EstadoPostulacion: 4, descripcion: 'Rechazado' },
+        { id_EstadoPostulacion: 5, descripcion: 'Calificado' }
       ]);
       console.log('✅ Estados de postulación insertados.');
     }

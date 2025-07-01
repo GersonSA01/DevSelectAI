@@ -251,7 +251,7 @@ const getAllPostulantes = async (req, res) => {
       include: [
         {
           model: db.EstadoPostulacion,
-          as: 'estadoPostulacion', // 👈 Usa este alias
+          as: 'estadoPostulacion',
           attributes: ['descripcion']
         },
         {
@@ -263,6 +263,11 @@ const getAllPostulantes = async (req, res) => {
           model: db.PostulanteVacante,
           as: 'selecciones',
           include: [{ model: db.Vacante, as: 'vacante' }]
+        },
+        {
+          model: db.Evaluacion,
+          as: 'evaluaciones', // 👈 Este alias lo definiste en las relaciones
+          attributes: ['id_Evaluacion', 'PuntajeTotal', 'ObservacionGeneral']
         }
       ]
     });
@@ -335,8 +340,7 @@ const getPreguntasTeoricas = async (req, res) => {
   const { id } = req.query;
 
   try {
-    const evaluaciones = await db.Evaluacion.findAll({
-      where: { Id_Postulante: id },
+    const respuestas = await db.PreguntaEvaluacion.findAll({
       include: [
         {
           model: db.Pregunta,
@@ -345,20 +349,24 @@ const getPreguntasTeoricas = async (req, res) => {
             {
               model: db.PreguntaTecnica,
               as: 'preguntaTecnica',
-              required: false // Esto es clave: LEFT JOIN
+              required: false // <-- si no existe, es pregunta teórica
             }
           ]
+        },
+        {
+          model: db.Evaluacion,
+          as: 'evaluacion',
+          where: { Id_postulante: id }
         }
       ]
     });
 
-    // Solo dejar preguntas sin técnica
-    const teoricas = evaluaciones
-      .filter(ev => !ev.pregunta?.preguntaTecnica)
-      .map(ev => ({
-        pregunta: ev.pregunta?.Pregunta || 'No encontrada',
-        respuesta: ev.RptaPostulante || 'Sin respuesta',
-        Puntaje: ev.Puntaje || 0,
+    const teoricas = respuestas
+      .filter(r => !r.pregunta?.preguntaTecnica) // excluir técnicas
+      .map(r => ({
+        pregunta: r.pregunta?.Pregunta || 'No encontrada',
+        respuesta: r.RptaPostulante || 'Sin respuesta',
+        puntaje: r.Puntaje || 0
       }));
 
     res.json(teoricas);
@@ -400,10 +408,8 @@ const getPreguntasOrales = async (req, res) => {
     const evaluacion = await db.Evaluacion.findOne({
       where: { Id_postulante: id }
     });
-
     if (!evaluacion) return res.status(404).json({ error: 'Evaluación no encontrada' });
 
-    // 🔹 Obtener entrevista oral asociada
     const entrevista = await db.EntrevistaOral.findOne({
       where: { Id_Entrevista: evaluacion.Id_Entrevista }
     });
@@ -412,15 +418,16 @@ const getPreguntasOrales = async (req, res) => {
       where: { Id_Entrevista: evaluacion.Id_Entrevista }
     });
 
+    // 🔹 Ahora incluimos el Id_Pregunta_oral en la respuesta
     const formateadas = preguntas.map(p => ({
-      pregunta: p.PreguntaIA,
-      respuesta: p.RespuestaPostulante,
-      calificacion: p.CalificacionIA,
-      ronda: p.Ronda,
-      tiempo: p.TiempoRptaPostulante
+      idPregunta:    p.Id_Pregunta_oral,      // <-- aquí
+      pregunta:      p.PreguntaIA,
+      respuesta:     p.RespuestaPostulante,
+      calificacion:  p.CalificacionIA,
+      ronda:         p.Ronda,
+      tiempo:        p.TiempoRptaPostulante
     }));
 
-    // 🔹 Agregar retroalimentación como parte de la respuesta
     res.json({
       preguntas: formateadas,
       retroalimentacionIA: entrevista?.RetroalimentacionIA || null
