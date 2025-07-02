@@ -90,6 +90,47 @@ export default function PostulacionesPage() {
     <div className="min-h-screen bg-[#0b1120] text-white p-4 sm:p-6 md:p-8 overflow-x-hidden">
       <h1 className="text-3xl font-bold mb-6">Postulaciones</h1>
 
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+  {/* Total postulantes */}
+  <div className="flex items-center bg-green-100/10 border border-green-500 rounded-xl p-4 shadow-md">
+    <div className="bg-green-600 p-3 rounded-full text-white text-2xl">
+      <FiSearch />
+    </div>
+    <div className="ml-4">
+      <p className="text-sm text-gray-300 uppercase">Total Postulantes</p>
+      <h3 className="text-2xl font-bold text-white">{postulantes.length}</h3>
+    </div>
+  </div>
+
+  {/* Aprobados */}
+  <div className="flex items-center bg-blue-100/10 border border-blue-500 rounded-xl p-4 shadow-md">
+    <div className="bg-blue-600 p-3 rounded-full text-white text-2xl">
+      <FiCheck />
+    </div>
+    <div className="ml-4">
+      <p className="text-sm text-gray-300 uppercase">Aprobados</p>
+      <h3 className="text-2xl font-bold text-white">
+        {postulantes.filter(p => p.estadoPostulacion?.descripcion === 'Aprobado').length}
+      </h3>
+    </div>
+  </div>
+
+  {/* Rechazados */}
+  <div className="flex items-center bg-red-100/10 border border-red-500 rounded-xl p-4 shadow-md">
+    <div className="bg-red-600 p-3 rounded-full text-white text-2xl">
+      <FiX />
+    </div>
+    <div className="ml-4">
+      <p className="text-sm text-gray-300 uppercase">Rechazados</p>
+      <h3 className="text-2xl font-bold text-white">
+        {postulantes.filter(p => p.estadoPostulacion?.descripcion === 'Rechazado').length}
+      </h3>
+    </div>
+  </div>
+</div>
+
+
       {/* Filtros */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
@@ -105,6 +146,8 @@ export default function PostulacionesPage() {
             />
           </div>
         </div>
+
+
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
           <label className="text-sm font-medium">Itinerario:</label>

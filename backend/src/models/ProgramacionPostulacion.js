@@ -1,28 +1,30 @@
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('PostulanteVacante', {
-    Id_PostulanteVacante: {
+  return sequelize.define('ProgramacionPostulacion', {
+    id_ProgramacionPostulacion: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
-    },
-    Id_Postulante: {
-      type: DataTypes.INTEGER,
-      allowNull: false
     },
     Id_Vacante: {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    id_ProgramacionPostulacion: {       // ✅ NUEVO CAMPO AGREGADO
+    id_Programacion: {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    FechaSeleccion: {
-      type: DataTypes.DATE,
-      allowNull: true
+    CantAprobados: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0
+    },
+    CantRechazados: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0
     }
   }, {
-    tableName: 'DAI_T_PostulanteVacante',
+    tableName: 'ProgramacionPostulacion',
     timestamps: false
   });
 };

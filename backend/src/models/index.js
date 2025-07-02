@@ -33,6 +33,8 @@ db.PreguntaTecnica = require('./PreguntaTecnica')(sequelize, Sequelize);
 db.PreguntaEvaluacion = require('./PreguntaEvaluacion')(sequelize, Sequelize);
 db.ItinerarioPostulante = require('./ItinerarioPostulante')(sequelize, Sequelize);
 db.Estadoltinerario = require('./Estadoltinerario')(sequelize, Sequelize);
+db.Programacion = require('./Programacion')(sequelize, Sequelize);
+db.ProgramacionPostulacion = require('./ProgramacionPostulacion')(sequelize, Sequelize);
 
 // Relaciones
 
@@ -306,5 +308,43 @@ db.Capture.belongsTo(db.Evaluacion, {
   foreignKey: 'id_Evaluacion',
   as: 'evaluacion'
 });
+
+
+// Programacion - ProgramacionPostulacion
+db.ProgramacionPostulacion.belongsTo(db.Programacion, {
+  foreignKey: 'id_Programacion',
+  as: 'programacion'
+});
+
+db.Programacion.hasMany(db.ProgramacionPostulacion, {
+  foreignKey: 'id_Programacion',
+  as: 'programacionesPostulacion'
+});
+
+
+// ProgramacionPostulacion - Vacante
+db.ProgramacionPostulacion.belongsTo(db.Vacante, {
+  foreignKey: 'Id_Vacante',
+  as: 'vacante'
+});
+
+db.Vacante.hasMany(db.ProgramacionPostulacion, {
+  foreignKey: 'Id_Vacante',
+  as: 'programacionesPostulacion'
+});
+
+
+// PostulanteVacante - ProgramacionPostulacion
+db.PostulanteVacante.belongsTo(db.ProgramacionPostulacion, {
+  foreignKey: 'id_ProgramacionPostulacion',
+  as: 'programacionPostulacion'
+});
+
+db.ProgramacionPostulacion.hasMany(db.PostulanteVacante, {
+  foreignKey: 'id_ProgramacionPostulacion',
+  as: 'postulantes'
+});
+
+
 
 module.exports = db;
