@@ -75,6 +75,7 @@ export default function SeleccionHabilidades() {
     }
 
     try {
+      // Guardar habilidades seleccionadas
       await fetch('http://localhost:5000/api/postulante/habilidades', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -84,6 +85,7 @@ export default function SeleccionHabilidades() {
         })
       });
 
+      // Buscar vacantes compatibles
       const resVacantes = await fetch('http://localhost:5000/api/vacantes/por-habilidades', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -103,23 +105,11 @@ export default function SeleccionHabilidades() {
         return;
       }
 
-     
+      // Seleccionar vacante desde el modal
       const vacanteSeleccionada = await mostrarVacantesModal({ vacantesData });
+      if (!vacanteSeleccionada) return;
 
-if (!vacanteSeleccionada) return;
-
-
-      const confirmarAsignacion = await Alert({
-        title: vacanteSeleccionada.Descripcion,
-        html: `<div class="text-white text-sm">${vacanteSeleccionada.Contexto}</div>`,
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonText: 'Seleccionar esta vacante',
-        cancelButtonText: 'Volver'
-      });
-
-      if (!confirmarAsignacion.isConfirmed) return;
-
+      // Asignar vacante
       await fetch('http://localhost:5000/api/postulante/seleccionar-vacante', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

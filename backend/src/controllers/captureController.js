@@ -6,18 +6,30 @@ exports.crearCapture = async (req, res) => {
   const { id_Evaluacion, File, Aprobado, Observacion } = req.body;
 
   try {
+    if (!id_Evaluacion || !File) {
+      return res.status(400).json({ error: 'id_Evaluacion y File son obligatorios' });
+    }
+
+    const evaluacion = await db.Evaluacion.findByPk(id_Evaluacion);
+
+    if (!evaluacion) {
+      return res.status(404).json({ error: 'La evaluación no existe' });
+    }
+
     // Extraer base64 sin el prefijo
     const base64Data = File.replace(/^data:image\/jpeg;base64,/, '');
     const fileName = `captura_${id_Evaluacion}_${Date.now()}.jpg`;
-    const filePath = path.join(__dirname, '..', 'uploads', fileName); // crea carpeta /uploads si no existe
+    const filePath = path.join(__dirname, '..', 'uploads', fileName);
+
+    // Asegura que el directorio existe
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
 
     // Guardar archivo como imagen
     fs.writeFileSync(filePath, base64Data, 'base64');
 
-    // Registrar solo la ruta relativa o nombre en la BD
     const nuevaCaptura = await db.Capture.create({
       id_Evaluacion,
-      File: fileName, // o guarda `filePath` si prefieres ruta completa
+      File: fileName,
       Aprobado,
       Observacion,
     });
@@ -28,6 +40,7 @@ exports.crearCapture = async (req, res) => {
     res.status(500).json({ error: 'Error al guardar la captura' });
   }
 };
+
 
 exports.getCapturasPorPostulante = async (req, res) => {
   const idPostulante = parseInt(req.params.idPostulante);

@@ -1,12 +1,12 @@
-const {  Empresa, Habilidad, Itinerario } = require('../models');
+const { Empresa, Habilidad, Itinerario, Programacion } = require('../models');
 
 // Mapeo de entidades a modelos
 const modelos = {
   empresa: Empresa,
   habilidad: Habilidad,
   itinerario: Itinerario,
-};
-
+  programacion: Programacion,
+}
 // 🔍 Validar entidad y retornar modelo
 function obtenerModelo(entidad) {
   const nombre = entidad?.toLowerCase();

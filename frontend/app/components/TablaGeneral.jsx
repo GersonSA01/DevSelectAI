@@ -14,13 +14,33 @@ export default function TablaGeneral({ columnas, filas }) {
         </thead>
         <tbody className="bg-[#0f172a] divide-y divide-gray-700 text-white">
           {filas.length > 0 ? (
-            filas.map((fila, i) => (
-              <tr key={i} className="hover:bg-[#1e293b] transition">
-                {fila.map((celda, j) => (
-                  <td key={j} className="px-6 py-4">{celda}</td>
-                ))}
-              </tr>
-            ))
+            filas.map((fila, i) => {
+              // Soporte para filas expandidas (objeto con colspan y content)
+              if (
+                typeof fila === 'object' &&
+                !Array.isArray(fila) &&
+                'colspan' in fila &&
+                'content' in fila
+              ) {
+                return (
+                  <tr key={i} className="bg-[#1e293b]">
+                    <td colSpan={fila.colspan}>{fila.content}</td>
+                  </tr>
+                );
+              }
+              // Fila normal (array)
+              if (Array.isArray(fila)) {
+                return (
+                  <tr key={i} className="hover:bg-[#1e293b] transition">
+                    {fila.map((celda, j) => (
+                      <td key={j} className="px-6 py-4">{celda}</td>
+                    ))}
+                  </tr>
+                );
+              }
+              // Si no es ni objeto especial ni array, ignora
+              return null;
+            })
           ) : (
             <tr>
               <td colSpan={columnas.length} className="text-center py-6 text-gray-400">

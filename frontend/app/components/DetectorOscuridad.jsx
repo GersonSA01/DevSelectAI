@@ -77,8 +77,8 @@ export default function DetectorOscuridad({ onVisibilityChange, idEvaluacion }) 
 
         toast.warning(
           !isBrightEnough
-            ? '📷 Cámara muy oscura o bloqueada. Se realizará una captura.'
-            : '📷 No se detecta tu rostro. Se realizará una captura.'
+            ? 'Cámara muy oscura o bloqueada. Se realizará una captura.'
+            : 'No se detecta tu rostro. Se realizará una captura.'
         );
 
         setTimeout(async () => {

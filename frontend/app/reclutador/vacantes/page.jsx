@@ -14,6 +14,20 @@ export default function VacantesPage() {
   const [vacantes, setVacantes] = useState([]);
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [preguntasPorVacante, setPreguntasPorVacante] = useState({});
+  const [programaciones, setProgramaciones] = useState([]);
+  const [programacionSeleccionada, setProgramacionSeleccionada] = useState('');
+
+
+  const formatearFecha = (fechaStr) => {
+  if (!fechaStr) return '';
+  const fecha = new Date(fechaStr);
+  return fecha.toLocaleDateString('es-ES', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+};
+
 
   useEffect(() => {
     if (!idItinerario) return;
@@ -73,6 +87,20 @@ const fetchVacantes = async () => {
     setExpandedRows(newExpandedRows);
   };
 
+  // Cargar todas las programaciones al montar el componente
+  useEffect(() => {
+    const fetchProgramaciones = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/programaciones');
+        const data = await res.json();
+        setProgramaciones(data);
+      } catch (err) {
+        console.error('Error al obtener programaciones:', err);
+      }
+    };
+    fetchProgramaciones();
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#0b1120] text-white p-6">
       <h1 className="text-3xl font-bold text-center mb-2">
@@ -94,11 +122,44 @@ const fetchVacantes = async () => {
         + Añadir vacante
       </button>
 
+      <div className="mb-4 flex items-center gap-3">
+  <label className="text-white">Filtrar por programación:</label>
+  <select
+    value={programacionSeleccionada}
+    onChange={e => setProgramacionSeleccionada(e.target.value)}
+    className="text-black px-2 py-1 rounded"
+  >
+    <option value="">Todas</option>
+   {programaciones.map(p => (
+<option key={p.id_Programacion} value={p.id_Programacion}>
+  Postulación: {formatearFecha(p.FechIniPostulacion)} → {formatearFecha(p.FechFinPostulacion)} /
+  Aprobación: {formatearFecha(p.FechIniAprobacion)} → {formatearFecha(p.FechFinAprobacion)}
+</option>
+
+))}
+
+  </select>
+</div>
+
       <div className="overflow-x-auto">
-       <TablaGeneral
-  columnas={['Empresa', 'Nombre de vacante', 'Vacantes disponibles', 'Habilidades', 'Acciones']}
-  filas={vacantes.map((v, i) => [
+<TablaGeneral
+  columnas={[
+    'Empresa',
+    'Nombre de vacante',
+    'Vacantes disponibles',
+    'Rango Postulación',
+    'Rango Aprobación',
+    'Habilidades',
+    'Acciones'
+  ]}
+  filas={vacantes
+  .filter(v => 
+    !programacionSeleccionada || 
+    (v.Programacion && v.Programacion.id_Programacion == programacionSeleccionada)
+  )
+  .map((v, i) => [
     v.empresa?.Descripcion || 'Sin empresa',
+
     <div className="flex items-center justify-between" key={i}>
       <span>{v.Descripcion}</span>
       <button
@@ -112,11 +173,23 @@ const fetchVacantes = async () => {
         )}
       </button>
     </div>,
+
     v.Cantidad,
-    v.habilidades?.length > 0
-      ? v.habilidades.map(h => h.habilidad?.Descripcion).join(', ')
-      : <span className="text-gray-400 italic">Sin habilidades</span>,
-    <div className="flex gap-2" key={i}>
+
+v.Programacion
+  ? `${formatearFecha(v.Programacion.FechIniPostulacion)} - ${formatearFecha(v.Programacion.FechFinPostulacion)}`
+  : <span className="text-gray-400 italic">Sin programación</span>,
+
+v.Programacion
+  ? `${formatearFecha(v.Programacion.FechIniAprobacion)} - ${formatearFecha(v.Programacion.FechFinAprobacion)}`
+  : <span className="text-gray-400 italic">Sin programación</span>,
+
+   v.Habilidades?.length > 0
+  ? v.Habilidades.map(h => h.Descripcion).join(', ')
+  : <span className="text-gray-400 italic">Sin habilidades</span>
+,
+
+    <div className="flex gap-3" key={i}>
       <FiEdit 
         className="text-yellow-400 cursor-pointer hover:text-yellow-300" 
         size={18}
@@ -172,13 +245,10 @@ const fetchVacantes = async () => {
           }
         }}
       />
-      <FiCheck 
-        className="text-green-400 cursor-pointer hover:text-green-300" 
-        size={18}
-      />
     </div>
   ])}
 />
+
 {Array.from(expandedRows).map((id) => {
   const v = vacantes.find(vac => vac.Id_Vacante === id);
   return (

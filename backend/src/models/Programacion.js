@@ -6,19 +6,19 @@ module.exports = (sequelize, DataTypes) => {
       autoIncrement: true
     },
     FechIniPostulacion: {
-      type: DataTypes.DATE,
+      type: DataTypes.DATEONLY,
       allowNull: false
     },
     FechFinPostulacion: {
-      type: DataTypes.DATE,
+      type: DataTypes.DATEONLY,
       allowNull: false
     },
     FechIniAprobacion: {
-      type: DataTypes.DATE,
+      type: DataTypes.DATEONLY,
       allowNull: false
     },
     FechFinAprobacion: {
-      type: DataTypes.DATE,
+      type: DataTypes.DATEONLY,
       allowNull: false
     }
   }, {

@@ -2,14 +2,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useStream } from '../../../../context/StreamContext';
-import { Alert } from '../../../components/alerts/Alerts';
 
 export default function InicioEntrevista() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
-  const { setScreenStream } = useStream();
 
   const [nombrePostulante, setNombrePostulante] = useState('');
 

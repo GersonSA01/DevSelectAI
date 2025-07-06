@@ -243,35 +243,39 @@ return (
 
     {!presentacionIniciada ? (
       // 🔹 Pantalla de bienvenida antes de iniciar
-      <div className="flex flex-col items-center justify-center h-full px-6 text-center">
-        <div className="max-w-md">
-          <h1 className="text-2xl font-bold text-white mb-4">Antes de iniciar la entrevista</h1>
+<div className="flex flex-col items-center justify-center h-full px-6 text-center">
+  <div className="max-w-md">
+    <h1 className="text-2xl font-bold text-white mb-4">Antes de iniciar la entrevista</h1>
 
-          {nombrePostulante && (
-            <p className="text-cyan-400 text-base font-semibold mb-4">
-              Postulante: {nombrePostulante}
-            </p>
-          )}
+    {nombrePostulante && (
+      <p className="text-cyan-400 text-base font-semibold mb-4">
+        Postulante: {nombrePostulante}
+      </p>
+    )}
 
-          <ul className="list-decimal list-inside text-sm text-secondaryText text-left mb-6 space-y-2">
-            <li>Quédate en el entorno de entrevista.</li>
-            <li>No abandones ni cambies de pestaña.</li>
-            <li>Mantén contacto visual general con la pantalla.</li>
-          </ul>
+    <ul className="list-decimal list-inside text-sm text-secondaryText text-left mb-6 space-y-2">
+      <li>Quédate en el entorno de entrevista.</li>
+      <li>No abandones ni cambies de pestaña.</li>
+      <li>Mantén contacto visual general con la pantalla.</li>
+      <li>Dispondrás de <span className="text-yellow-400 font-medium">15 segundos</span> para responder cada pregunta.</li>
+      <li>La grabación comenzará tan pronto presiones el botón <span className="text-yellow-400 font-medium">Iniciar Entrevista</span>.</li>
+      <li>El tiempo total que permanezcas dentro de la entrevista también será tomado en cuenta.</li>
+    </ul>
 
-          <button
-            onClick={reproducirPresentacion}
-            disabled={!cameraVisible || !screenStream}
-            className={`px-6 py-3 rounded-md w-full ${
-              cameraVisible && screenStream
-                ? 'bg-yellow-600 hover:bg-yellow-700'
-                : 'bg-gray-500 cursor-not-allowed'
-            }`}
-          >
-            Iniciar Entrevista
-          </button>
-        </div>
-      </div>
+    <button
+      onClick={reproducirPresentacion}
+      disabled={!cameraVisible || !screenStream}
+      className={`px-6 py-3 rounded-md w-full ${
+        cameraVisible && screenStream
+          ? 'bg-yellow-600 hover:bg-yellow-700'
+          : 'bg-gray-500 cursor-not-allowed'
+      }`}
+    >
+      Iniciar Entrevista
+    </button>
+  </div>
+</div>
+
     ) : (
       // 🔸 Pantalla completa de la entrevista una vez iniciada
       <>

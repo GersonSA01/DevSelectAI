@@ -5,102 +5,67 @@ require('dotenv').config();
 
 const baseUrl = process.env.URL_FRONTEND || "http://localhost:3000";
 
-// 👉 Crear postulante y enviar correo con link de entrevista
+// 👉 Crear postulante y enviar correo
 const crearPostulante = async (req, res) => {
   const datos = req.body;
 
   try {
     const token = crypto.randomBytes(24).toString("hex");
 
-    // 👉 Crear postulante
-   await db.Postulante.create({
-  ...datos,
-  token_entrevista: token
-});
+    await db.Postulante.create({
+      ...datos,
+      token_entrevista: token
+    });
 
-// Recuperar el postulante insertado (por ejemplo, con su cédula)
-const nuevoPostulante = await db.Postulante.findOne({
-  where: { Cedula: datos.Cedula }
-});
+    const nuevoPostulante = await db.Postulante.findOne({
+      where: { Cedula: datos.Cedula }
+    });
 
-if (!nuevoPostulante) {
-  throw new Error("No se pudo recuperar el postulante después de crear.");
-}
+    if (!nuevoPostulante) throw new Error("No se pudo recuperar el postulante.");
 
-
-    console.log("✅ Postulante creado:", nuevoPostulante.toJSON());
-
-    // 👉 Detectar número de itinerario (ej. de "Itinerario 2" o solo "2")
     const textoItinerario = datos.Itinerario || datos.ItinerarioExcel || "";
     const match = textoItinerario.match(/\d+/);
     const numeroItinerario = match ? parseInt(match[0]) : null;
 
-    console.log("🔍 Texto de itinerario:", textoItinerario);
-    console.log("🔢 Número detectado:", numeroItinerario);
-
     if (numeroItinerario) {
-      // 👉 Buscar descripción que contenga "Itinerario X"
       const itinerario = await db.Itinerario.findOne({
         where: {
-          descripcion: {
-            [db.Sequelize.Op.like]: `%Itinerario ${numeroItinerario}%`
-          }
+          descripcion: { [db.Sequelize.Op.like]: `%Itinerario ${numeroItinerario}%` }
         }
       });
 
       if (itinerario) {
-        console.log("📌 Itinerario encontrado:", itinerario.toJSON());
-
-        const relacion = await db.ItinerarioPostulante.create({
-  Id_Postulante: nuevoPostulante.Id_Postulante,
-  id_Itinerario: itinerario.id_Itinerario,
-  Id_EstadoItinerario: 1,
-  FechInicio: new Date(),
-  FechFin: null
-});
-
-
-        console.log("✅ Relación ItinerarioPostulante creada:", relacion.toJSON());
-      } else {
-        console.warn(`⚠️ No se encontró un itinerario con número ${numeroItinerario}`);
+        await db.ItinerarioPostulante.create({
+          Id_Postulante: nuevoPostulante.Id_Postulante,
+          id_Itinerario: itinerario.id_Itinerario,
+          Id_EstadoItinerario: 1,
+          FechInicio: new Date(),
+          FechFin: null
+        });
       }
-    } else {
-      console.warn("⚠️ No se detectó número válido en el texto del itinerario.");
     }
 
-    // 👉 Enviar correo
     const html = `
-  <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ddd; border-radius: 10px;">
-    <div style="background-color: #0f172a; padding: 20px; text-align: center; border-top-left-radius: 10px; border-top-right-radius: 10px;">
-      <h1 style="color: white; margin: 0;">DevSelectAI</h1>
-    </div>
-
-    <div style="padding: 30px;">
-      <h2 style="color: #0f172a;">🎓 Bienvenido/a a DevSelectAI</h2>
-      <p>Hola</strong>,</p>
-      <p>Has sido registrado exitosamente en nuestro sistema de entrevistas inteligentes para prácticas preprofesionales.</p>
-
-      <p>Si tienes algún inconveniente para acceder, por favor contacta con soporte.</p>
-    </div>
-
-    <div style="background-color: #0f172a; color: white; text-align: center; font-size: 12px; padding: 15px; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
-      ¿Necesitas ayuda? Visita <a href="http://soporte.com" style="color: #93c5fd;">soporte.com</a> o escribe a <a href="mailto:devselectai@gmail.com" style="color: #93c5fd;">devselectai@gmail.com</a>
-    </div>
-  </div>
-`;
+      <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto;">
+        <div style="background-color: #0f172a; padding: 20px; text-align: center;">
+          <h1 style="color: white;">DevSelectAI</h1>
+        </div>
+        <div style="padding: 30px;">
+          <h2>🎓 Bienvenido/a a DevSelectAI</h2>
+          <p>Has sido registrado exitosamente en nuestro sistema de entrevistas inteligentes para prácticas preprofesionales.</p>
+        </div>
+      </div>
+    `;
 
     await sendEmail(nuevoPostulante.Correo, "✅ Registro exitoso - DevSelectAI", html);
 
-    res.status(201).json({ mensaje: 'Postulante registrado y correo enviado con éxito.' });
+    res.status(201).json({ mensaje: 'Postulante registrado y correo enviado.' });
   } catch (error) {
     console.error('❌ Error al crear postulante:', error);
     res.status(500).json({ error: 'Error al crear postulante' });
   }
 };
 
-
-
-// 👉 Guardar hasta 3 habilidades seleccionadas por el postulante
 const guardarHabilidades = async (req, res) => {
   const { idPostulante, habilidades } = req.body;
 
@@ -125,9 +90,8 @@ const guardarHabilidades = async (req, res) => {
   }
 };
 
-// 👉 Buscar postulante por token (para entrevista)
 const obtenerPorToken = async (req, res) => {
-const { token } = req.params;
+  const { token } = req.params;
 
   try {
     const postulante = await db.Postulante.findOne({
@@ -145,12 +109,11 @@ const { token } = req.params;
   }
 };
 
-// 👉 Asignar vacante a postulante y enviar correo con botón de entrevista
 const seleccionarVacante = async (req, res) => {
   const { idPostulante, idVacante } = req.body;
 
   if (!idPostulante || !idVacante) {
-    return res.status(400).json({ error: 'Faltan datos requeridos: idPostulante o idVacante' });
+    return res.status(400).json({ error: 'Faltan datos requeridos.' });
   }
 
   try {
@@ -165,63 +128,45 @@ const seleccionarVacante = async (req, res) => {
       });
     }
 
+    const vacante = await db.Vacante.findByPk(idVacante, {
+      include: [{ model: db.ProgramacionPostulacion, as: 'programacionesPostulacion' }]
+    });
+
+    if (!vacante) return res.status(404).json({ error: 'Vacante no encontrada.' });
+
+    const programacion = vacante.programacionesPostulacion[0];
+    if (!programacion) return res.status(400).json({ error: 'Vacante sin programación.' });
+
     await db.PostulanteVacante.create({
       Id_Postulante: idPostulante,
       Id_Vacante: idVacante,
+      id_ProgramacionPostulacion: programacion.id_ProgramacionPostulacion,
       FechaSeleccion: new Date()
     });
 
     const postulante = await db.Postulante.findByPk(idPostulante);
-    const vacante = await db.Vacante.findByPk(idVacante);
-
-    const habilidades = await db.DetalleHabilidad.findAll({
-      where: { Id_Postulante: idPostulante },
-      include: [{ model: db.Habilidad, as: 'habilidad' }]
-    });
-
-    const habilidadesTexto = habilidades.map(h => `• ${h.habilidad.Descripcion}`).join('<br>');
-
-    if (!postulante || !vacante) {
-      return res.status(404).json({ error: 'Datos de postulante o vacante no encontrados.' });
-    }
 
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ddd;">
-        <div style="background-color: #0f172a; padding: 20px;">
-          <h1 style="color: white; text-align: center;">DevSelectAI</h1>
+      <div style="font-family: Arial; max-width: 700px; margin: auto;">
+        <div style="background-color: #0f172a; padding: 20px; text-align: center;">
+          <h1 style="color: white;">DevSelectAI</h1>
         </div>
-
         <div style="padding: 20px;">
           <p>Hola ${postulante.Nombre} ${postulante.Apellido},</p>
-          <p>¡Felicidades! Has sido asignado a la vacante:</p>
-          <p><strong>${vacante.Descripcion}</strong></p>
-          <p>${vacante.Contexto}</p>
-
-          <p><strong>✅ Tus habilidades seleccionadas:</strong><br>${habilidadesTexto}</p>
-
-         <p style="margin-top: 30px; text-align: center;">
-  <a href="${baseUrl}/postulador/entrevista/inicio?token=${postulante.token_entrevista}"
-     style="background-color: #0f172a; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
-     🎤 Iniciar entrevista
-  </a>
-</p>
-
-
-          <p style="margin-top: 20px;">Revisa tu panel para continuar con el proceso.</p>
-        </div>
-
-        <div style="background-color: #0f172a; color: white; text-align: center; font-size: 12px; padding: 10px;">
-          ¿Tienes dudas? Visítanos en <a href="http://soporte.com" style="color: #93c5fd;">soporte.com</a>
+          <p>¡Felicidades! Has sido asignado a la vacante: <strong>${vacante.Descripcion}</strong></p>
+          <p><a href="${baseUrl}/postulador/entrevista/inicio?token=${postulante.token_entrevista}" 
+          style="background: #0f172a; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">
+          🎤 Iniciar entrevista</a></p>
         </div>
       </div>
     `;
 
     await sendEmail(postulante.Correo, "📌 Vacante asignada - DevSelectAI", html);
 
-    res.status(200).json({ message: 'Vacante asignada y correo enviado.' });
+    res.json({ message: 'Vacante asignada y correo enviado.' });
   } catch (error) {
-    console.error('❌ Error al asignar vacante:', error.message);
-    res.status(500).json({ error: error.message });
+    console.error('❌ Error al asignar vacante:', error);
+    res.status(500).json({ error: 'Error interno.' });
   }
 };
 
@@ -229,56 +174,31 @@ const verificarPostulantePorCedula = async (req, res) => {
   const { cedula } = req.params;
 
   try {
-    const existente = await db.Postulante.findOne({
-      where: { Cedula: cedula }
-    });
-
-    if (existente) {
-      return res.status(200).json(existente); // Existe
-    } else {
-      return res.status(404).json(null); // No existe
-    }
+    const existente = await db.Postulante.findOne({ where: { Cedula: cedula } });
+    if (existente) return res.json(existente);
+    else return res.status(404).json(null);
   } catch (error) {
     console.error("❌ Error al verificar postulante:", error);
-    return res.status(500).json({ error: "Error interno del servidor" });
+    return res.status(500).json({ error: "Error interno" });
   }
 };
-
 
 const getAllPostulantes = async (req, res) => {
   try {
     const postulantes = await db.Postulante.findAll({
       include: [
-        {
-          model: db.EstadoPostulacion,
-          as: 'estadoPostulacion',
-          attributes: ['descripcion']
-        },
-        {
-          model: db.DetalleHabilidad,
-          as: 'habilidades',
-          include: [{ model: db.Habilidad, as: 'habilidad' }]
-        },
-        {
-          model: db.PostulanteVacante,
-          as: 'selecciones',
-          include: [{ model: db.Vacante, as: 'vacante' }]
-        },
-        {
-          model: db.Evaluacion,
-          as: 'evaluaciones', // 👈 Este alias lo definiste en las relaciones
-          attributes: ['id_Evaluacion', 'PuntajeTotal', 'ObservacionGeneral']
-        }
+        { model: db.EstadoPostulacion, as: 'estadoPostulacion' },
+        { model: db.DetalleHabilidad, as: 'habilidades', include: [{ model: db.Habilidad, as: 'habilidad' }] },
+        { model: db.PostulanteVacante, as: 'selecciones', include: [{ model: db.Vacante, as: 'vacante' }] },
+        { model: db.Evaluacion, as: 'evaluaciones' }
       ]
     });
-
     res.json(postulantes);
   } catch (error) {
     console.error('❌ Error al obtener postulantes:', error);
-    res.status(500).json({ error: 'Error al obtener postulantes' });
+    res.status(500).json({ error: 'Error interno' });
   }
 };
-
 
 const obtenerPorId = async (req, res) => {
   const id = req.params.id;
@@ -307,35 +227,68 @@ const obtenerPorId = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Error al obtener postulante por ID:", error);
-    res.status(500).json({ error: "Error interno del servidor" });
+    res.status(500).json({ error: "Error interno" });
   }
 };
 
-
-// 👉 Cambiar estado de postulación (ej. Evaluado)
 const cambiarEstado = async (req, res) => {
   const { id } = req.params;
   const { nuevoEstado } = req.body;
 
   try {
     const postulante = await db.Postulante.findByPk(id);
-    if (!postulante) {
-      return res.status(404).json({ error: 'Postulante no encontrado' });
-    }
+    if (!postulante) return res.status(404).json({ error: 'No encontrado' });
 
     postulante.id_EstadoPostulacion = nuevoEstado;
     await postulante.save();
 
     res.json({ mensaje: 'Estado actualizado correctamente' });
   } catch (error) {
-    console.error('❌ Error al actualizar estado del postulante:', error);
-    res.status(500).json({ error: 'Error al cambiar estado del postulante' });
+    console.error('❌ Error al actualizar estado:', error);
+    res.status(500).json({ error: 'Error interno' });
   }
 };
 
+const verificarEstadoPostulacion = async (req, res) => {
+  const idPostulante = req.params.id;
 
+  try {
+    const registro = await db.PostulanteVacante.findOne({
+      where: { Id_Postulante: idPostulante },
+      include: [
+        {
+          model: db.ProgramacionPostulacion,
+          as: 'programacionPostulacion',
+          include: [
+            { model: db.Programacion, as: 'programacion' }
+          ]
+        }
+      ]
+    });
 
-// 🔹 Obtener preguntas teóricas respondidas por el postulante
+    if (!registro) {
+      // No hay registro, puede continuar con el proceso
+      return res.json({ estado: 'proceso' });
+    }
+
+    // Si ya tiene registro, ya no puede repetir
+    const { FechIniAprobacion, FechFinAprobacion } = registro.programacionPostulacion.programacion;
+
+    return res.json({
+      estado: 'ya_asignado',
+      mensaje: 'Ya completaste tus entrevistas y exámenes y tienes una vacante asignada. Por favor, revisa tu correo para más detalles.',
+      fechas: {
+        inicio: FechIniAprobacion,
+        fin: FechFinAprobacion
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error en verificarEstadoPostulacion:', error);
+    res.status(500).json({ error: 'Error interno' });
+  }
+};
+
 const getPreguntasTeoricas = async (req, res) => {
   const { id } = req.query;
 
@@ -349,7 +302,7 @@ const getPreguntasTeoricas = async (req, res) => {
             {
               model: db.PreguntaTecnica,
               as: 'preguntaTecnica',
-              required: false // <-- si no existe, es pregunta teórica
+              required: false
             }
           ]
         },
@@ -362,7 +315,7 @@ const getPreguntasTeoricas = async (req, res) => {
     });
 
     const teoricas = respuestas
-      .filter(r => !r.pregunta?.preguntaTecnica) // excluir técnicas
+      .filter(r => !r.pregunta?.preguntaTecnica)
       .map(r => ({
         pregunta: r.pregunta?.Pregunta || 'No encontrada',
         respuesta: r.RptaPostulante || 'Sin respuesta',
@@ -376,23 +329,15 @@ const getPreguntasTeoricas = async (req, res) => {
   }
 };
 
-
-
-
-// 🔹 Obtener resumen de entrevista oral (veredicto + retroalimentación IA)
 const getEntrevistaOral = async (req, res) => {
   try {
     const id = req.query.id;
 
-    const evaluacion = await db.Evaluacion.findOne({
-      where: { Id_postulante: id }
-    });
+    const evaluacion = await db.Evaluacion.findOne({ where: { Id_postulante: id } });
 
     if (!evaluacion) return res.status(404).json({ error: 'Evaluación no encontrada' });
 
-    const entrevista = await db.EntrevistaOral.findOne({
-      where: { Id_Entrevista: evaluacion.Id_Entrevista }
-    });
+    const entrevista = await db.EntrevistaOral.findOne({ where: { Id_Entrevista: evaluacion.Id_Entrevista } });
 
     res.json(entrevista);
   } catch (error) {
@@ -405,27 +350,20 @@ const getPreguntasOrales = async (req, res) => {
   try {
     const id = req.query.id;
 
-    const evaluacion = await db.Evaluacion.findOne({
-      where: { Id_postulante: id }
-    });
+    const evaluacion = await db.Evaluacion.findOne({ where: { Id_postulante: id } });
     if (!evaluacion) return res.status(404).json({ error: 'Evaluación no encontrada' });
 
-    const entrevista = await db.EntrevistaOral.findOne({
-      where: { Id_Entrevista: evaluacion.Id_Entrevista }
-    });
+    const entrevista = await db.EntrevistaOral.findOne({ where: { Id_Entrevista: evaluacion.Id_Entrevista } });
 
-    const preguntas = await db.PreguntaOral.findAll({
-      where: { Id_Entrevista: evaluacion.Id_Entrevista }
-    });
+    const preguntas = await db.PreguntaOral.findAll({ where: { Id_Entrevista: evaluacion.Id_Entrevista } });
 
-    // 🔹 Ahora incluimos el Id_Pregunta_oral en la respuesta
     const formateadas = preguntas.map(p => ({
-      idPregunta:    p.Id_Pregunta_oral,      // <-- aquí
-      pregunta:      p.PreguntaIA,
-      respuesta:     p.RespuestaPostulante,
-      calificacion:  p.CalificacionIA,
-      ronda:         p.Ronda,
-      tiempo:        p.TiempoRptaPostulante
+      idPregunta: p.Id_Pregunta_oral,
+      pregunta: p.PreguntaIA,
+      respuesta: p.RespuestaPostulante,
+      calificacion: p.CalificacionIA,
+      ronda: p.Ronda,
+      tiempo: p.TiempoRptaPostulante
     }));
 
     res.json({
@@ -438,18 +376,13 @@ const getPreguntasOrales = async (req, res) => {
   }
 };
 
-
-// 🔹 Obtener pregunta técnica (evaluación práctica)
 const getPreguntaTecnica = async (req, res) => {
   try {
     const id = req.query.id;
 
     const evaluacion = await db.Evaluacion.findOne({
       where: { Id_postulante: id },
-      include: {
-        model: db.Pregunta,
-        as: 'pregunta'
-      }
+      include: { model: db.Pregunta, as: 'pregunta' }
     });
 
     if (!evaluacion || !evaluacion.Id_pregunta) {
@@ -466,7 +399,7 @@ const getPreguntaTecnica = async (req, res) => {
       pregunta: evaluacion.pregunta?.Pregunta,
       respuesta: tecnica.Respuesta,
       usoIA: tecnica.UsoIA,
-      retroalimentacion: tecnica.ObservacionIA || '', // si existe
+      retroalimentacion: tecnica.ObservacionIA || '',
       calificacion: evaluacion.Puntaje
     });
   } catch (error) {
@@ -474,6 +407,7 @@ const getPreguntaTecnica = async (req, res) => {
     res.status(500).json({ error: 'Error interno' });
   }
 };
+
 
 
 module.exports = {
@@ -488,5 +422,6 @@ module.exports = {
   getEntrevistaOral,
   getPreguntasOrales,
   getPreguntaTecnica,
-  verificarPostulantePorCedula 
+  verificarPostulantePorCedula,
+  verificarEstadoPostulacion
 };

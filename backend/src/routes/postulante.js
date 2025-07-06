@@ -14,7 +14,7 @@ const {
   getPreguntaTecnica,
   verificarPostulantePorCedula
 } = require("../controllers/postulanteController");
-
+const postulanteController = require('../controllers/postulanteController');
 router.get("/", getAllPostulantes);
 router.post("/", crearPostulante);
 router.post("/habilidades", guardarHabilidades);
@@ -30,5 +30,5 @@ router.get("/entrevista", getEntrevistaOral);
 router.get("/preguntas-orales", getPreguntasOrales);
 router.get("/pregunta-tecnica", getPreguntaTecnica);
 router.get("/:id", obtenerPorId);
-
+router.get('/estado/:id', postulanteController.verificarEstadoPostulacion);
 module.exports = router;

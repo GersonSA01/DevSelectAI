@@ -1,20 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Swal from 'sweetalert2';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Alert } from '../../../components/alerts/Alerts';
+
+// Función auxiliar para formatear fechas
+function formatearFecha(fecha) {
+  if (!fecha) return '';
+  return new Date(fecha).toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' });
+}
 
 export default function RegistrarVacante() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const idItinerario = searchParams.get('id');
   const descripcion = searchParams.get('descripcion');
-const [idVacante, setIdVacante] = useState(null);
-
-useEffect(() => {
-  const nuevaId = searchParams.get('idVacante');
-  setIdVacante(nuevaId);
-}, [searchParams]);
+  const idVacante = searchParams.get('idVacante');
   const esEdicion = Boolean(idVacante);
 
   const [nombre, setNombre] = useState('');
@@ -25,96 +26,83 @@ useEffect(() => {
   const [habilidades, setHabilidades] = useState([]);
   const [habilidadesSeleccionadas, setHabilidadesSeleccionadas] = useState([]);
   const [idReclutador, setIdReclutador] = useState(null);
+  const [programaciones, setProgramaciones] = useState([]);
+  const [programacion, setProgramacion] = useState('');
 
-  // Obtener ID del reclutador desde localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const reclutadorGuardado = localStorage.getItem('reclutador');
-      if (reclutadorGuardado) {
-        try {
-          const datos = JSON.parse(reclutadorGuardado);
-          const id = parseInt(datos.Id_Reclutador ?? datos.id ?? datos.Id_reclutador ?? NaN);
-          if (!isNaN(id)) {
-            setIdReclutador(id);
-          } else {
-            console.warn('⚠️ No se encontró el Id del reclutador en:', datos);
-          }
-        } catch (error) {
-          console.error('⚠️ Error al extraer ID del reclutador:', error);
-        }
-      }
-    }
-  }, []);
-
-  // Cargar habilidades disponibles
+  // Unificar fetch de habilidades, empresas y programaciones
   useEffect(() => {
     const fetchData = async () => {
-      const resHabilidades = await fetch('http://localhost:5000/api/habilidades');
-      const dataHabilidades = await resHabilidades.json();
-      setHabilidades(dataHabilidades);
+      try {
+        const [hab, emp, prog] = await Promise.all([
+          fetch('http://localhost:5000/api/habilidades').then(r => r.json()),
+          fetch('http://localhost:5000/api/empresas').then(r => r.json()),
+          fetch('http://localhost:5000/api/programaciones').then(r => r.json())
+        ]);
+        setHabilidades(hab);
+        setEmpresas(emp);
+        setProgramaciones(prog);
+      } catch (err) {
+        console.error('❌ Error cargando datos iniciales:', err);
+      }
     };
     fetchData();
   }, []);
 
-  // Cargar empresas
+  // Obtener ID del reclutador desde localStorage
   useEffect(() => {
-
-    const fetchEmpresas = async () => {
-      const res = await fetch('http://localhost:5000/api/empresas');
-      const data = await res.json();
-      setEmpresas(data);
-    };
-
-    fetchEmpresas();
+    const guardado = localStorage.getItem('reclutador');
+    if (!guardado) return;
+    try {
+      const datos = JSON.parse(guardado);
+      const id = Number(datos.Id_Reclutador ?? datos.id ?? datos.Id_reclutador);
+      if (!isNaN(id)) {
+        setIdReclutador(id);
+      } else {
+        console.warn('⚠️ ID de reclutador inválido:', datos);
+      }
+    } catch (err) {
+      console.error('⚠️ Error parseando reclutador:', err);
+    }
   }, []);
 
-useEffect(() => {
-  const cargarVacante = async () => {
-    if (!idVacante || habilidades.length === 0) return;
+  // Cargar vacante para edición
+  useEffect(() => {
+    if (!idVacante) return;
+    const cargarVacante = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/vacantes/${idVacante}`);
+        if (!res.ok) throw new Error(`Error ${res.status} al obtener vacante`);
+        const vacante = await res.json();
 
-    try {
-      const res = await fetch(`http://localhost:5000/api/vacantes/${idVacante}`);
-      const vacante = await res.json();
-      setNombre(vacante.Descripcion);
-      setVacantes(vacante.Cantidad);
-      setContexto(vacante.Contexto);
-      setEmpresa(vacante.Id_Empresa);
+        setNombre(vacante.Descripcion || '');
+        setVacantes(vacante.Cantidad || '');
+        setContexto(vacante.Contexto || '');
+        setEmpresa(vacante.Id_Empresa || '');
+        setProgramacion(vacante.Id_Programacion || '');
 
-      // Espera a que las habilidades estén cargadas
-      const habilidadesVacante = vacante.habilidades || [];
-      const seleccionadas = habilidadesVacante.map(idH => {
-        return habilidades.find(h => h.Id_Habilidad === idH.Id_Habilidad || h.Id_Habilidad === idH);
-      }).filter(Boolean); // Filtra valores nulos o indefinidos
-
-      setHabilidadesSeleccionadas(seleccionadas);
-    } catch (err) {
-      console.error('Error al cargar vacante para edición:', err);
-    }
-  };
-
-  cargarVacante();
-}, [idVacante, habilidades]);
-
-
+        // Solo cuando ya cargaron habilidades
+        if (habilidades.length > 0) {
+          const seleccionadas = (vacante.habilidades || [])
+            .map(idH => habilidades.find(h => h.Id_Habilidad === idH.Id_Habilidad || h.Id_Habilidad === idH))
+            .filter(Boolean);
+          setHabilidadesSeleccionadas(seleccionadas);
+        }
+      } catch (err) {
+        console.error('❌ Error al cargar vacante para edición:', err);
+      }
+    };
+    cargarVacante();
+  }, [idVacante, habilidades.length]);
 
   // Enviar datos al backend
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!idReclutador) {
-      Swal.fire({
+      await Alert({
         icon: 'error',
         title: 'Error',
-        text: 'No se pudo identificar al reclutador. Por favor, vuelve a iniciar sesión.',
-      });
-      return;
-    }
-
-    if (!nombre || !vacantes || !contexto || !empresa || habilidadesSeleccionadas.length === 0) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Campos incompletos',
-        text: 'Por favor, completa todos los campos antes de guardar.',
+        html: 'No se pudo identificar al reclutador. Por favor, vuelve a iniciar sesión.',
       });
       return;
     }
@@ -126,13 +114,14 @@ useEffect(() => {
         : 'http://localhost:5000/api/vacantes';
 
       const nuevaVacante = {
-        Id_Itinerario: parseInt(idItinerario),
+        Id_Itinerario: Number(idItinerario),
         Descripcion: nombre,
-        Cantidad: parseInt(vacantes),
+        Cantidad: Number(vacantes),
         Contexto: contexto,
-        Id_reclutador: parseInt(idReclutador),
+        Id_reclutador: Number(idReclutador),
         Id_Empresa: Number(empresa),
-        habilidades: habilidadesSeleccionadas.map(h => parseInt(h.Id_Habilidad)),
+        habilidades: habilidadesSeleccionadas.map(h => Number(h.Id_Habilidad)),
+        Id_Programacion: Number(programacion)
       };
 
       const res = await fetch(url, {
@@ -141,26 +130,37 @@ useEffect(() => {
         body: JSON.stringify(nuevaVacante),
       });
 
-      if (!res.ok) throw new Error('Error al registrar vacante');
+      const data = await res.json();
 
-      Swal.fire({
+      if (!res.ok) {
+        await Alert({
+          icon: 'error',
+          title: 'Error',
+          html: data.error || data.mensaje || 'No se pudo registrar la vacante.',
+        });
+        return;
+      }
+
+      await Alert({
         icon: 'success',
         title: esEdicion ? '¡Vacante actualizada!' : '¡Vacante registrada!',
-        text: esEdicion ? 'La vacante ha sido actualizada correctamente.' : 'La vacante ha sido añadida correctamente.',
+        html: esEdicion
+          ? 'La vacante ha sido actualizada correctamente.'
+          : 'La vacante ha sido añadida correctamente.',
         confirmButtonColor: '#22c55e',
-      }).then(() => {
-        router.push(`/reclutador/vacantes?id=${idItinerario}&descripcion=${descripcion}`);
       });
+      router.push(`/reclutador/vacantes?id=${idItinerario}&descripcion=${descripcion}`);
     } catch (err) {
       console.error(err);
-      Swal.fire({
+      await Alert({
         icon: 'error',
         title: 'Error',
-        text: 'No se pudo registrar la vacante.',
+        html: 'No se pudo registrar la vacante.',
       });
     }
   };
 
+  // Renderizado
   return (
     <div className="min-h-screen bg-[#0b1120] text-white p-8">
       <h1 className="text-3xl font-bold mb-6">
@@ -212,6 +212,20 @@ useEffect(() => {
             );
           })}
         </div>
+
+        <label className="block mb-2">Programación:</label>
+        <select
+          className="w-full p-2 rounded mb-4 text-black"
+          value={programacion}
+          onChange={(e) => setProgramacion(Number(e.target.value))}
+        >
+          <option value="">Seleccione una programación</option>
+          {programaciones.map(p => (
+            <option key={p.id_Programacion} value={p.id_Programacion}>
+              {`Postulación: ${formatearFecha(p.FechIniPostulacion)} → ${formatearFecha(p.FechFinPostulacion)} | Aprobación: ${formatearFecha(p.FechIniAprobacion)} → ${formatearFecha(p.FechFinAprobacion)}`}
+            </option>
+          ))}
+        </select>
 
         <button type="submit" className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded text-white">
           {esEdicion ? 'Actualizar vacante' : 'Guardar vacante'}

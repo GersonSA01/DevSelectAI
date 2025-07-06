@@ -27,6 +27,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(fileUpload());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+
 // 🔗 RUTAS IMPORTADAS
 const entrevistaRoutes = require("./routes/entrevista");
 const postulanteRoutes = require("./routes/postulante");
@@ -47,6 +48,8 @@ const captureRoutes = require('./routes/captureRoutes');
 const ciudadRoutes = require('./routes/ciudad');
 const informeRoutes = require('./routes/informe');
 const calificarRoutes = require('./routes/calificar');
+const programacionesRoutes = require('./routes/programaciones');
+
 // 🚦 USO DE RUTAS
 app.use('/api/itinerarios', itinerarioRoutes);
 app.use('/api/entrevista', entrevistaRoutes);
@@ -67,7 +70,9 @@ app.use('/api/capturas', captureRoutes); // Ruta correcta
 app.use('/api/ciudades', ciudadRoutes);
 app.use('/api/informe', informeRoutes);
 app.use("/api/calificar", calificarRoutes);
+app.use('/api/programaciones', programacionesRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/postulante', require('./routes/postulante'));
 
 
 

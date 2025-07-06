@@ -14,7 +14,7 @@ export default function MonitoreoVisibilidad({ idEvaluacion }) {
 
     alertaActivaRef.current = true;
 
-    toast.warning(`🔍 Atención: ${motivo}`);
+    toast.warning(`Atención: ${motivo}`);
 
     setTimeout(async () => {
       if (typeof tomarCapturaPantalla === 'function') {

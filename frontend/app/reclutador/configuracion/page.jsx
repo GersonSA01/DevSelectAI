@@ -1,12 +1,25 @@
 'use client';
 import { useState } from 'react';
-import ConfiguracionCard from '../../components/ConfiguracionCard';
+import ConfiguracionCard from '../../components/configuracion/ConfiguracionCard';
 
 const modelos = [
   { titulo: 'Empresa', entidad: 'empresa', campos: ['Descripcion'] },
   { titulo: 'Habilidad', entidad: 'habilidad', campos: ['Descripcion'] },
   { titulo: 'Itinerario', entidad: 'itinerario', campos: ['descripcion'] },
+
+ {
+  titulo: 'Programación',
+  entidad: 'programacion',
+  campos: [
+    'FechIniPostulacion',
+    'FechFinPostulacion',
+    'FechIniAprobacion',
+    'FechFinAprobacion'
+  ]
+}
+
 ];
+
 
 export default function ConfiguracionPage() {
   const [activo, setActivo] = useState(null);

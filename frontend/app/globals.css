@@ -150,6 +150,15 @@
   background-color: #3BDCF6;
   animation: progressBar 5s linear forwards;
 }
+.swal2-validation-message {
+  background-color: #ffdddd !important;
+  color: #c0392b !important;
+  font-weight: bold;
+  border: 1px solid #e74c3c;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
 
 @keyframes progressBar {
   from {

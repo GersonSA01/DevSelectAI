@@ -172,6 +172,7 @@ useEffect(() => {
       console.log("📥 Respuesta del backend evaluación:", dataEval);
 
       if (!resEval.ok) throw new Error(dataEval?.error || 'Error inesperado al crear evaluación');
+      localStorage.setItem('id_evaluacion', dataEval.evaluacionId);
 
       localStorage.setItem('id_postulante', idPostulante);
       console.log('✅ Evaluación generada exitosamente.');
