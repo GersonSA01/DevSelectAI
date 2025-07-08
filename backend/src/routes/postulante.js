@@ -12,7 +12,10 @@ const {
   getEntrevistaOral,
   getPreguntasOrales,
   getPreguntaTecnica,
-  verificarPostulantePorCedula
+  verificarPostulantePorCedula,
+  verificarEstadoPostulacion,
+  aprobar,
+  rechazar
 } = require("../controllers/postulanteController");
 const postulanteController = require('../controllers/postulanteController');
 router.get("/", getAllPostulantes);
@@ -30,5 +33,10 @@ router.get("/entrevista", getEntrevistaOral);
 router.get("/preguntas-orales", getPreguntasOrales);
 router.get("/pregunta-tecnica", getPreguntaTecnica);
 router.get("/:id", obtenerPorId);
-router.get('/estado/:id', postulanteController.verificarEstadoPostulacion);
+router.get('/estado/:id', verificarEstadoPostulacion);
+
+router.put('/:id/aceptar', aprobar);
+router.put('/:id/rechazar', rechazar);
+
+
 module.exports = router;

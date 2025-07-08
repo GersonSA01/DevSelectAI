@@ -253,41 +253,95 @@ const verificarEstadoPostulacion = async (req, res) => {
   const idPostulante = req.params.id;
 
   try {
-    const registro = await db.PostulanteVacante.findOne({
-      where: { Id_Postulante: idPostulante },
+    const registro = await db.Postulante.findOne({
+      where: { id_postulante: idPostulante },
       include: [
         {
-          model: db.ProgramacionPostulacion,
-          as: 'programacionPostulacion',
+          model: db.EstadoPostulacion,
+          as: 'estadoPostulacion'
+        },
+        {
+          model: db.PostulanteVacante,
+          as: 'selecciones', // 👈 alias correcto según tu modelo
           include: [
-            { model: db.Programacion, as: 'programacion' }
+            {
+              model: db.ProgramacionPostulacion,
+              as: 'programacionPostulacion',
+              include: [
+                {
+                  model: db.Programacion,
+                  as: 'programacion'
+                }
+              ]
+            }
           ]
         }
       ]
     });
 
     if (!registro) {
-      // No hay registro, puede continuar con el proceso
-      return res.json({ estado: 'proceso' });
+      return res.json({ estado: 'proceso', mensaje: 'No tienes una postulación activa.' });
     }
 
-    // Si ya tiene registro, ya no puede repetir
-    const { FechIniAprobacion, FechFinAprobacion } = registro.programacionPostulacion.programacion;
+    const estadoId = registro.id_EstadoPostulacion;
+    const descripcion = registro.estadoPostulacion?.descripcion?.toLowerCase() || '';
 
-    return res.json({
-      estado: 'ya_asignado',
-      mensaje: 'Ya completaste tus entrevistas y exámenes y tienes una vacante asignada. Por favor, revisa tu correo para más detalles.',
-      fechas: {
-        inicio: FechIniAprobacion,
-        fin: FechFinAprobacion
+    let estado = '';
+    let mensaje = '';
+    let fechas = null;
+
+    switch (estadoId) {
+      case 1: // Por evaluar
+        estado = 'por_evaluar';
+        mensaje = 'Puedes iniciar tu proceso de entrevistas y evaluaciones.';
+        break;
+
+      case 2: // Evaluado
+        estado = 'evaluado';
+        mensaje = 'Ya has sido evaluado. Espera los resultados en tu correo.';
+        break;
+
+      case 3: // Aprobado
+        estado = 'aprobado';
+        mensaje = '¡Felicidades! Has sido aprobado/a.';
+        break;
+
+      case 4: // Rechazado
+        estado = 'rechazado';
+        mensaje = 'Lamentablemente, has sido rechazado. Puedes volver a intentarlo en otro período.';
+        break;
+
+      case 5: { // Calificado
+        estado = 'calificado';
+        mensaje = 'Tu calificación ha sido registrada. Revisa tu correo para más detalles.';
+
+        // obtener las fechas de la programación relacionada
+        const seleccion = registro.selecciones?.[0]; // primera selección
+        const programacion = seleccion?.programacionPostulacion?.programacion;
+
+        if (programacion) {
+          fechas = {
+            inicio: programacion.FechIniAprobacion,
+            fin: programacion.FechFinAprobacion
+          };
+        }
+        break;
       }
-    });
+
+      default:
+        estado = 'proceso';
+        mensaje = 'Tu estado actual es desconocido. Por favor contacta con soporte.';
+    }
+
+    return res.json({ estado, mensaje, fechas });
 
   } catch (error) {
     console.error('❌ Error en verificarEstadoPostulacion:', error);
     res.status(500).json({ error: 'Error interno' });
   }
 };
+
+
 
 const getPreguntasTeoricas = async (req, res) => {
   const { id } = req.query;
@@ -410,6 +464,113 @@ const getPreguntaTecnica = async (req, res) => {
 
 
 
+
+const aprobar = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const postulante = await db.Postulante.findByPk(id);
+    if (!postulante) {
+      return res.status(404).json({ message: 'Postulante no encontrado' });
+    }
+
+    postulante.id_EstadoPostulacion = 3; // id correcto para 'Aprobado'
+    await postulante.save();
+
+    const html = `
+  <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ccc; border-radius: 6px; overflow: hidden;">
+    <div style="background-color: #0f172a; padding: 20px; text-align: center;">
+      <h1 style="color: white; margin: 0;">DevSelectAI</h1>
+    </div>
+
+    <div style="padding: 30px; text-align: center;">
+      <div style="font-size: 50px; margin-bottom: 10px;">🎉</div>
+      <h2 style="color: #0f172a; margin: 0;">¡Felicidades!</h2>
+      <p style="font-size: 15px; color: #333; margin-top: 20px;">
+        Estimado/a <strong>${postulante.Nombre} ${postulante.Apellido}</strong>,
+      </p>
+      <p style="font-size: 15px; color: #333; margin: 15px 0;">
+        Nos complace informarte que has sido <strong>APROBADO/A</strong> en el proceso de selección.
+      </p>
+      <p style="font-size: 15px; color: #333; margin: 15px 0;">
+        Pronto nos pondremos en contacto contigo para indicarte los siguientes pasos y brindarte más detalles sobre tu asignación.
+      </p>
+      <p style="font-size: 15px; color: #333; margin-top: 20px;">
+        ¡Bienvenido a esta gran experiencia profesional!
+      </p>
+    </div>
+
+    <div style="background-color: #0f172a; color: #ccc; text-align: center; padding: 10px; font-size: 13px;">
+      ¿Tienes dudas? Visítanos en <a href="https://soporte.com" style="color: #93c5fd;">soporte.com</a>
+    </div>
+  </div>
+`;
+
+
+    await sendEmail(postulante.Correo, "Resultado de postulación - DevSelectAI", html);
+
+    res.json({ message: 'Postulante aprobado y correo enviado', postulante });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error al aprobar postulante' });
+  }
+};
+
+
+
+const rechazar = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const postulante = await db.Postulante.findByPk(id);
+    if (!postulante) {
+      return res.status(404).json({ message: 'Postulante no encontrado' });
+    }
+
+    postulante.id_EstadoPostulacion = 4; // id correcto para 'Rechazado'
+    await postulante.save();
+
+    const html = `
+  <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ccc; border-radius: 6px; overflow: hidden;">
+    <div style="background-color: #0f172a; padding: 20px; text-align: center;">
+      <h1 style="color: white; margin: 0;">DevSelectAI</h1>
+    </div>
+
+    <div style="padding: 30px; text-align: center;">
+      <div style="font-size: 50px; margin-bottom: 10px;">😔</div>
+      <h2 style="color: #0f172a; margin: 0;">Resultado de tu postulación</h2>
+      <p style="font-size: 15px; color: #333; margin-top: 20px;">
+        Estimado/a <strong>${postulante.Nombre} ${postulante.Apellido}</strong>,
+      </p>
+      <p style="font-size: 15px; color: #333; margin: 15px 0;">
+        Lamentamos informarte que en esta ocasión no has sido seleccionado en el proceso.
+      </p>
+      <p style="font-size: 15px; color: #333; margin: 15px 0;">
+        Queremos animarte a seguir formándote y a intentarlo nuevamente en futuras convocatorias. Tu esfuerzo y dedicación son muy valorados.
+      </p>
+      <p style="font-size: 15px; color: #333; margin-top: 20px;">
+        ¡Mucho éxito en tus próximos retos!
+      </p>
+    </div>
+
+    <div style="background-color: #0f172a; color: #ccc; text-align: center; padding: 10px; font-size: 13px;">
+      ¿Tienes dudas? Visítanos en <a href="https://soporte.com" style="color: #93c5fd;">soporte.com</a>
+    </div>
+  </div>
+`;
+
+
+    await sendEmail(postulante.Correo, "Resultado de postulación - DevSelectAI", html);
+
+    res.json({ message: 'Postulante rechazado y correo enviado', postulante });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error al rechazar postulante' });
+  }
+};
+
+
+
 module.exports = {
   crearPostulante,
   guardarHabilidades,
@@ -423,5 +584,7 @@ module.exports = {
   getPreguntasOrales,
   getPreguntaTecnica,
   verificarPostulantePorCedula,
-  verificarEstadoPostulacion
+  verificarEstadoPostulacion,
+  aprobar,
+  rechazar
 };

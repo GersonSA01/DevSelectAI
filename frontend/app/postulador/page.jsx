@@ -25,6 +25,7 @@ export default function Entrevistas() {
       }
 
       try {
+        // obtener itinerario
         const res = await fetch(`http://localhost:5000/api/postulante/${idPostulante}`);
         const data = await res.json();
 
@@ -34,27 +35,33 @@ export default function Entrevistas() {
 
         setItinerario(data.Itinerario);
 
+        // obtener estado
         const estadoRes = await fetch(`http://localhost:5000/api/postulante/estado/${idPostulante}`);
         const estadoData = await estadoRes.json();
 
-        if (estadoData.estado === 'ya_asignado') {
+        if (!estadoData || !estadoData.estado) {
+          throw new Error("No se pudo obtener el estado");
+        }
+
+        if (estadoData.estado !== 'proceso') {
           setBloqueado(true);
 
-          let mensaje = estadoData.mensaje?.trim() ||
-            'Ya completaste tus entrevistas y exámenes. Ahora estás en estado de ACEPTACIÓN/RECHAZO de tu vacante para las prácticas preprofesionales. Por favor, revisa tu correo.';
+          let mensaje = estadoData.mensaje || 'Tu proceso está en un estado distinto.';
 
-          const formatearFecha = (fecha) => {
-            const [y, m, d] = fecha.split('-');
-            return `${d}/${m}/${y}`;
-          };
-
-          if (estadoData.fechas) {
-            const inicio = formatearFecha(estadoData.fechas.inicio);
-            const fin = formatearFecha(estadoData.fechas.fin);
-            mensaje += `\n\n📅 Rango de aprobación: ${inicio} - ${fin}`;
+          if (estadoData.estado === 'calificado') {
+            if (estadoData.fechas) {
+              const inicio = formatearFecha(estadoData.fechas.inicio);
+              const fin = formatearFecha(estadoData.fechas.fin);
+              mensaje += `\n\n📅 Rango para aceptar: ${inicio} - ${fin}`;
+            } else if (estadoData.fechaAprobacion) {
+              const fecha = formatearFecha(estadoData.fechaAprobacion);
+              mensaje += `\n\n📅 Fecha de aprobación: ${fecha}`;
+            }
           }
 
           setMensajeFinal(mensaje);
+        } else {
+          setBloqueado(false);
         }
 
       } catch (err) {
@@ -67,6 +74,12 @@ export default function Entrevistas() {
       } finally {
         setCargando(false);
       }
+    };
+
+    const formatearFecha = (fecha) => {
+      if (!fecha) return '';
+      const [y, m, d] = fecha.split('-');
+      return `${d}/${m}/${y}`;
     };
 
     verificarEstadoPostulante();
@@ -112,9 +125,7 @@ export default function Entrevistas() {
 
             <button
               onClick={handleContinuar}
-              disabled={bloqueado}
-              className={`bg-cyan-400 hover:bg-cyan-300 text-black font-semibold py-2 px-6 rounded-full transition duration-200 
-                ${bloqueado ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className="bg-cyan-400 hover:bg-cyan-300 text-black font-semibold py-2 px-6 rounded-full transition duration-200"
             >
               Continuar
             </button>
@@ -122,7 +133,7 @@ export default function Entrevistas() {
         ) : (
           <>
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-5">
-              Proceso completado
+              Estado actual
             </h1>
 
             <p className="text-lg text-gray-300 leading-relaxed whitespace-pre-line">
