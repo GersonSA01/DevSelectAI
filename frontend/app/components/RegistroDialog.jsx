@@ -4,6 +4,10 @@ import { useState, useEffect } from "react";
 import { validarCamposRegistro } from "./validacionesRegistro";
 import { Alert } from "./alerts/Alerts";
 
+// Puedes mover esto a un archivo de config
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
 export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
   const router = useRouter();
 
@@ -21,54 +25,84 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
   const [ciudades, setCiudades] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/ciudades")
-      .then((res) => res.json())
-      .then((data) => setCiudades(data));
+    const cargarCiudades = async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/ciudades`);
+        if (!res.ok) throw new Error("No se pudo cargar ciudades");
+        const data = await res.json();
+        setCiudades(data);
+      } catch (err) {
+        console.error("Error al cargar ciudades:", err);
+        await Alert({
+          title: "Error",
+          html: "No se pudieron cargar las ciudades. Intenta más tarde.",
+          icon: "error",
+        });
+      }
+    };
+    cargarCiudades();
   }, []);
 
-  const normalizar = (texto) =>
-    texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-
   const handleBuscar = async () => {
-  if (!cedula) return;
+    if (!cedula) return;
 
-  try {
-    const res = await fetch(`http://localhost:5000/api/excel/${cedula}`);
-    if (!res.ok) {
+    if (!/^\d{10}$/.test(cedula)) {
       await Alert({
-        title: "Postulante no encontrado",
-        html: "Verifica la cédula ingresada.",
+        title: "Cédula inválida",
+        html: "Debe contener exactamente 10 dígitos.",
         icon: "error",
       });
       return;
     }
 
-    const data = await res.json();
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/excel/${cedula}`);
+      if (!res.ok) {
+        await Alert({
+          title: "Postulante no encontrado",
+          html: "Verifica la cédula ingresada.",
+          icon: "error",
+        });
+        return;
+      }
 
-    console.log("✅ Datos obtenidos desde Excel:", data); // 👉 Aquí verás todos los campos
+      const data = await res.json();
 
-    if (!data.Carrera || !data.Carrera.toLowerCase().includes("software")) {
-      await Alert({
-        title: "Carrera no válida",
-        html: "Solo se permiten registros para carreras de <b>Software</b>.",
-        icon: "warning",
-      });
-      return;
+      if (!data.Carrera || !data.Carrera.toLowerCase().includes("software")) {
+        await Alert({
+          title: "Carrera no válida",
+          html: "Solo se permiten registros para carreras de <b>Software</b>.",
+          icon: "warning",
+        });
+        return;
+      }
+
+      setNombres(data.Nombre);
+      setApellidos(data.Apellido);
+      setCorreo(data.Correo);
+      setRol(data.Rol);
+      setCarrera(data.Carrera);
+      setItinerario(data.Itinerario || "Sin Itinerario");
+      setCiudadNombre(data.Ciudad || "");
+      setTelefono("");
+    } catch (error) {
+      console.error("Error buscando postulante:", error);
     }
+  };
 
-    setNombres(data.Nombre);
-    setApellidos(data.Apellido);
-    setCorreo(data.Correo);
-    setRol(data.Rol);
-    setCarrera(data.Carrera);
-    setItinerario(data.Itinerario || "Sin Itinerario");
-    setCiudadNombre(data.Ciudad || "");
+  const resetForm = () => {
+    setCedula("");
+    setNombres("");
+    setApellidos("");
+    setCorreo("");
     setTelefono("");
-  } catch (error) {
-    console.error("Error buscando postulante:", error);
-  }
-};
-
+    setRol("");
+    setContrasena("");
+    setConfirmarContrasena("");
+    setCarrera("");
+    setItinerario("");
+    setCiudadNombre("");
+  };
 
   const handleClose = () => {
     setOpen(false);
@@ -83,11 +117,34 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validación de existencia previa por cédula (solo para estudiantes)
+    if (!/^\d{10}$/.test(cedula)) {
+      await Alert({ title: "Cédula inválida", html: "Debe contener exactamente 10 dígitos.", icon: "error" });
+      return;
+    }
+
+    if (telefono && !/^\d{7,10}$/.test(telefono)) {
+      await Alert({ title: "Teléfono inválido", html: "Entre 7 y 10 dígitos numéricos.", icon: "error" });
+      return;
+    }
+
+    if (contrasena.length < 8) {
+      await Alert({ title: "Contraseña débil", html: "Debe tener mínimo 8 caracteres.", icon: "error" });
+      return;
+    }
+
+    if (contrasena !== confirmarContrasena) {
+      await Alert({ title: "Contraseñas no coinciden", html: "Verifica las contraseñas.", icon: "error" });
+      return;
+    }
+
+    if (rol.toLowerCase() !== "estudiante" && rol.toLowerCase() !== "docente") {
+      await Alert({ title: "Rol no válido", html: "El rol debe ser <b>Estudiante</b> o <b>Docente</b>.", icon: "error" });
+      return;
+    }
+
     if (rol.toLowerCase() === "estudiante") {
       try {
-        const check = await fetch(`http://localhost:5000/api/postulante/cedula/${cedula}`);
-
+        const check = await fetch(`${BACKEND_URL}/api/postulante/cedula/${cedula}`);
         if (check.ok) {
           const existente = await check.json();
           if (existente) {
@@ -119,13 +176,13 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
     let endpoint = "";
 
     if (rol.toLowerCase() === "estudiante") {
-      endpoint = "http://localhost:5000/api/postulante";
+      endpoint = `${BACKEND_URL}/api/postulante`;
       body = {
-        Cedula: cedula,
-        Nombre: nombres,
-        Apellido: apellidos,
-        Correo: correo,
-        Telefono: telefono,
+        Cedula: cedula.trim(),
+        Nombre: nombres.trim(),
+        Apellido: apellidos.trim(),
+        Correo: correo.trim(),
+        Telefono: telefono.trim(),
         Contrasena: contrasena,
         ayuda: false,
         cant_alert: 0,
@@ -133,26 +190,17 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
         id_ciudad: idCiudad,
         id_EstadoPostulacion: 1,
         ItinerarioExcel: itinerario,
-
-
-      };
-    } else if (rol.toLowerCase() === "docente") {
-      endpoint = "http://localhost:5000/api/reclutador";
-      body = {
-        Cedula: cedula,
-        Nombres: nombres,
-        Apellidos: apellidos,
-        Correo: correo,
-        Telefono: telefono,
-        Contrasena: contrasena,
       };
     } else {
-      await Alert({
-        title: "Rol no válido",
-        html: "El rol debe ser <b>Estudiante</b> o <b>Docente</b>.",
-        icon: "error",
-      });
-      return;
+      endpoint = `${BACKEND_URL}/api/reclutador`;
+      body = {
+        Cedula: cedula.trim(),
+        Nombres: nombres.trim(),
+        Apellidos: apellidos.trim(),
+        Correo: correo.trim(),
+        Telefono: telefono.trim(),
+        Contrasena: contrasena,
+      };
     }
 
     try {
@@ -163,9 +211,10 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
       });
 
       if (!res.ok) {
+        const data = await res.json();
         await Alert({
           title: "Error al registrar",
-          html: "Verifica los datos ingresados.",
+          html: data.error || "Verifica los datos ingresados.",
           icon: "error",
         });
         return;
@@ -180,6 +229,11 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
       handleIrALogin();
     } catch (error) {
       console.error("Error en registro:", error);
+      await Alert({
+        title: "Error",
+        html: "No se pudo completar el registro. Intenta más tarde.",
+        icon: "error",
+      });
     }
   };
 
@@ -202,95 +256,104 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
           Accede al sistema de prácticas preprofesionales con IA
         </p>
 
-        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Cédula"
-              value={cedula}
-              onChange={(e) => setCedula(e.target.value)}
-              className="flex-1 p-2 rounded-md bg-gray-800 text-white placeholder-gray-400 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              type="button"
-              onClick={handleBuscar}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-md"
-            >
-              Buscar
-            </button>
-          </div>
-
+              <form className="grid grid-cols-1 md:grid-cols-2 gap-4" onSubmit={handleSubmit}>
+        {/* Cédula + Botón */}
+        <div className="md:col-span-2 flex gap-2">
           <input
             type="text"
-            placeholder="Nombres"
-            value={nombres}
-            readOnly
-            className="p-2 rounded-md bg-gray-800 text-white border border-gray-600 opacity-70 cursor-not-allowed"
+            placeholder="Cédula"
+            value={cedula}
+            onChange={(e) => setCedula(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleBuscar();
+              }
+            }}
+            className="flex-1 p-2 rounded-md bg-gray-800 text-white placeholder-gray-400 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <input
-            type="text"
-            placeholder="Apellidos"
-            value={apellidos}
-            readOnly
-            className="p-2 rounded-md bg-gray-800 text-white border border-gray-600 opacity-70 cursor-not-allowed"
-          />
-          <input
-            type="email"
-            placeholder="Correo institucional"
-            value={correo}
-            readOnly
-            className="p-2 rounded-md bg-gray-800 text-white border border-gray-600 opacity-70 cursor-not-allowed"
-          />
-          <input
-            type="text"
-            placeholder="Teléfono"
-            value={telefono}
-            onChange={(e) => setTelefono(e.target.value)}
-            className="p-2 rounded-md bg-gray-800 text-white placeholder-gray-400 border border-gray-600"
-          />
-          <input
-            type="text"
-            placeholder="Rol"
-            value={rol}
-            readOnly
-            className="p-2 rounded-md bg-gray-800 text-white border border-gray-600 opacity-70 cursor-not-allowed"
-          />
-          <input
-            type="text"
-            placeholder="Ciudad"
-            value={ciudadNombre}
-            readOnly
-            className="p-2 rounded-md bg-gray-800 text-white border border-gray-600 opacity-70 cursor-not-allowed"
-          />
-          <input
-            type="password"
-            placeholder="Contraseña"
-            value={contrasena}
-            onChange={(e) => setContrasena(e.target.value)}
-            className="p-2 rounded-md bg-gray-800 text-white placeholder-gray-400 border border-gray-600"
-          />
-          <input
-            type="password"
-            placeholder="Confirmar contraseña"
-            value={confirmarContrasena}
-            onChange={(e) => setConfirmarContrasena(e.target.value)}
-            className="p-2 rounded-md bg-gray-800 text-white placeholder-gray-400 border border-gray-600"
-          />
-
           <button
-            type="submit"
-            className="mt-2 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md font-semibold"
+            type="button"
+            onClick={handleBuscar}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-md"
           >
-            Registrarme
+            Buscar
           </button>
-        </form>
+        </div>
+
+        {/* Columna izquierda */}
+        <input
+          type="text"
+          placeholder="Nombres"
+          value={nombres}
+          readOnly
+          className="p-2 rounded-md bg-gray-800 text-white border border-gray-600 opacity-70 cursor-not-allowed"
+        />
+        <input
+          type="text"
+          placeholder="Apellidos"
+          value={apellidos}
+          readOnly
+          className="p-2 rounded-md bg-gray-800 text-white border border-gray-600 opacity-70 cursor-not-allowed"
+        />
+
+        <input
+          type="email"
+          placeholder="Correo institucional"
+          value={correo}
+          readOnly
+          className="p-2 rounded-md bg-gray-800 text-white border border-gray-600 opacity-70 cursor-not-allowed"
+        />
+        <input
+          type="text"
+          placeholder="Teléfono"
+          value={telefono}
+          onChange={(e) => setTelefono(e.target.value)}
+          className="p-2 rounded-md bg-gray-800 text-white placeholder-gray-400 border border-gray-600"
+        />
+
+        <input
+          type="text"
+          placeholder="Rol"
+          value={rol}
+          readOnly
+          className="p-2 rounded-md bg-gray-800 text-white border border-gray-600 opacity-70 cursor-not-allowed"
+        />
+        <input
+          type="text"
+          placeholder="Ciudad"
+          value={ciudadNombre}
+          readOnly
+          className="p-2 rounded-md bg-gray-800 text-white border border-gray-600 opacity-70 cursor-not-allowed"
+        />
+
+        <input
+          type="password"
+          placeholder="Contraseña"
+          value={contrasena}
+          onChange={(e) => setContrasena(e.target.value)}
+          className="p-2 rounded-md bg-gray-800 text-white placeholder-gray-400 border border-gray-600"
+        />
+        <input
+          type="password"
+          placeholder="Confirmar contraseña"
+          value={confirmarContrasena}
+          onChange={(e) => setConfirmarContrasena(e.target.value)}
+          className="p-2 rounded-md bg-gray-800 text-white placeholder-gray-400 border border-gray-600"
+        />
+
+        <button
+          type="submit"
+          className="md:col-span-2 mt-2 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md font-semibold"
+        >
+          Registrarme
+        </button>
+      </form>
+
 
         <p className="text-center text-sm text-gray-400 mt-4">
           ¿Ya tienes una cuenta?{" "}
-          <button
-            onClick={handleIrALogin}
-            className="text-blue-400 hover:underline"
-          >
+          <button onClick={handleIrALogin} className="text-blue-400 hover:underline">
             Inicia sesión
           </button>
         </p>

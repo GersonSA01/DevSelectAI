@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Alert } from '../../../components/alerts/Alerts';
 
-// Función auxiliar para formatear fechas
 function formatearFecha(fecha) {
   if (!fecha) return '';
   return new Date(fecha).toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -29,7 +28,6 @@ export default function RegistrarVacante() {
   const [programaciones, setProgramaciones] = useState([]);
   const [programacion, setProgramacion] = useState('');
 
-  // Unificar fetch de habilidades, empresas y programaciones
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -48,7 +46,6 @@ export default function RegistrarVacante() {
     fetchData();
   }, []);
 
-  // Obtener ID del reclutador desde localStorage
   useEffect(() => {
     const guardado = localStorage.getItem('reclutador');
     if (!guardado) return;
@@ -57,15 +54,12 @@ export default function RegistrarVacante() {
       const id = Number(datos.Id_Reclutador ?? datos.id ?? datos.Id_reclutador);
       if (!isNaN(id)) {
         setIdReclutador(id);
-      } else {
-        console.warn('⚠️ ID de reclutador inválido:', datos);
       }
     } catch (err) {
       console.error('⚠️ Error parseando reclutador:', err);
     }
   }, []);
 
-  // Cargar vacante para edición
   useEffect(() => {
     if (!idVacante) return;
     const cargarVacante = async () => {
@@ -80,7 +74,6 @@ export default function RegistrarVacante() {
         setEmpresa(vacante.Id_Empresa || '');
         setProgramacion(vacante.Id_Programacion || '');
 
-        // Solo cuando ya cargaron habilidades
         if (habilidades.length > 0) {
           const seleccionadas = (vacante.habilidades || [])
             .map(idH => habilidades.find(h => h.Id_Habilidad === idH.Id_Habilidad || h.Id_Habilidad === idH))
@@ -94,7 +87,6 @@ export default function RegistrarVacante() {
     cargarVacante();
   }, [idVacante, habilidades.length]);
 
-  // Enviar datos al backend
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -120,9 +112,12 @@ export default function RegistrarVacante() {
         Contexto: contexto,
         Id_reclutador: Number(idReclutador),
         Id_Empresa: Number(empresa),
-        habilidades: habilidadesSeleccionadas.map(h => Number(h.Id_Habilidad)),
-        Id_Programacion: Number(programacion)
+        habilidades: habilidadesSeleccionadas.map(h => Number(h.Id_Habilidad))
       };
+
+      if (!esEdicion) {
+        nuevaVacante.Id_Programacion = Number(programacion);
+      }
 
       const res = await fetch(url, {
         method: metodo,
@@ -160,74 +155,114 @@ export default function RegistrarVacante() {
     }
   };
 
-  // Renderizado
   return (
     <div className="min-h-screen bg-[#0b1120] text-white p-8">
       <h1 className="text-3xl font-bold mb-6">
         {esEdicion ? 'EDITAR VACANTE' : `REGISTRAR VACANTE PARA "${descripcion}"`}
       </h1>
-      <form onSubmit={handleSubmit} className="max-w-md mx-auto bg-[#111827] p-6 rounded shadow">
-        <label className="block mb-2">Nombre de vacante:</label>
-        <input className="w-full p-2 rounded mb-4 text-black" value={nombre} onChange={(e) => setNombre(e.target.value)} />
 
-        <label className="block mb-2">Vacantes disponibles:</label>
-        <input type="number" className="w-full p-2 rounded mb-4 text-black" value={vacantes} onChange={(e) => setVacantes(e.target.value)} />
-
-        <label className="block mb-2">Contexto:</label>
-        <textarea className="w-full p-2 rounded mb-4 text-black" value={contexto} onChange={(e) => setContexto(e.target.value)} />
-
-
-        <label className="block mb-2">Empresa:</label>
-        <select className="w-full p-2 rounded mb-4 text-black" value={empresa} onChange={(e) => setEmpresa(Number(e.target.value))}>
-          <option value="">Seleccione una empresa</option>
-          {empresas.map((e) => (
-            <option key={e.Id_Empresa} value={e.Id_Empresa}>{e.Descripcion}</option>
-          ))}
-        </select>
-
-        <label className="block mb-2">Habilidades requeridas (máx. 3):</label>
-        <div className="flex flex-wrap gap-2 mb-4">
-          {habilidades.map((h) => {
-            const seleccionada = habilidadesSeleccionadas.some(sel => sel.Id_Habilidad === h.Id_Habilidad);
-            const puedeSeleccionar = seleccionada || habilidadesSeleccionadas.length < 3;
-
-            return (
-              <button
-                key={h.Id_Habilidad}
-                type="button"
-                onClick={() => {
-                  if (seleccionada) {
-                    setHabilidadesSeleccionadas(prev => prev.filter(x => x.Id_Habilidad !== h.Id_Habilidad));
-                  } else if (puedeSeleccionar) {
-                    setHabilidadesSeleccionadas(prev => [...prev, h]);
-                  }
-                }}
-                className={`px-3 py-1 rounded-full border transition-all duration-200
-                  ${seleccionada ? 'bg-blue-600 text-white border-blue-400' : 'bg-white text-black border-gray-400'}
-                  hover:scale-105`}
-              >
-                {h.Descripcion}
-                {seleccionada && <span className="ml-2">✕</span>}
-              </button>
-            );
-          })}
+      <form
+        onSubmit={handleSubmit}
+        className="max-w-3xl mx-auto bg-[#111827] p-8 rounded-xl shadow-lg border border-[#1f2937] space-y-4"
+      >
+        <div>
+          <label className="block mb-1">Nombre de vacante:</label>
+          <input
+            className="w-full p-2 rounded bg-[#1e293b] text-white"
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+          />
         </div>
 
-        <label className="block mb-2">Programación:</label>
-        <select
-          className="w-full p-2 rounded mb-4 text-black"
-          value={programacion}
-          onChange={(e) => setProgramacion(Number(e.target.value))}
-        >
-          <option value="">Seleccione una programación</option>
-          {programaciones.map(p => (
-            <option key={p.id_Programacion} value={p.id_Programacion}>
-              {`Postulación: ${formatearFecha(p.FechIniPostulacion)} → ${formatearFecha(p.FechFinPostulacion)} | Aprobación: ${formatearFecha(p.FechIniAprobacion)} → ${formatearFecha(p.FechFinAprobacion)}`}
-            </option>
-          ))}
-        </select>
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <label className="block mb-1">Vacantes disponibles:</label>
+            <input
+              type="number"
+              className="w-full p-2 rounded bg-[#1e293b] text-white"
+              value={vacantes}
+              onChange={(e) => setVacantes(e.target.value)}
+            />
+          </div>
 
-        <button type="submit" className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded text-white">
+          <div>
+            <label className="block mb-1">Empresa:</label>
+            <select
+              className="w-full p-2 rounded bg-[#1e293b] text-white"
+              value={empresa}
+              onChange={(e) => setEmpresa(Number(e.target.value))}
+            >
+              <option value="">Seleccione una empresa</option>
+              {empresas.map((e) => (
+                <option key={e.Id_Empresa} value={e.Id_Empresa}>{e.Descripcion}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block mb-1">
+            Programación: {esEdicion && <span className="text-red-400 text-sm">(No editable, contacte a administración si requiere cambiarla)</span>}
+          </label>
+          <select
+            className="w-full p-2 rounded bg-[#1e293b] text-white"
+            value={programacion}
+            disabled={esEdicion}
+            onChange={(e) => setProgramacion(Number(e.target.value))}
+          >
+            <option value="">Seleccione una programación</option>
+            {programaciones.map(p => (
+              <option key={p.id_Programacion} value={p.id_Programacion}>
+                {`Postulación: ${formatearFecha(p.FechIniPostulacion)} → ${formatearFecha(p.FechFinPostulacion)} | Aprobación: ${formatearFecha(p.FechIniAprobacion)} → ${formatearFecha(p.FechFinAprobacion)}`}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block mb-1">Habilidades requeridas (máx. 3):</label>
+          <div className="flex flex-wrap gap-2">
+            {habilidades.map((h) => {
+              const seleccionada = habilidadesSeleccionadas.some(sel => sel.Id_Habilidad === h.Id_Habilidad);
+              const puedeSeleccionar = seleccionada || habilidadesSeleccionadas.length < 3;
+
+              return (
+                <button
+                  key={h.Id_Habilidad}
+                  type="button"
+                  onClick={() => {
+                    if (seleccionada) {
+                      setHabilidadesSeleccionadas(prev => prev.filter(x => x.Id_Habilidad !== h.Id_Habilidad));
+                    } else if (puedeSeleccionar) {
+                      setHabilidadesSeleccionadas(prev => [...prev, h]);
+                    }
+                  }}
+                  className={`px-3 py-1 rounded-full border transition-all duration-200
+                    ${seleccionada
+                      ? 'bg-blue-600 text-white border-blue-400'
+                      : 'bg-[#1e293b] text-white border-gray-500 hover:bg-blue-700'}`}
+                >
+                  {h.Descripcion}
+                  {seleccionada && <span className="ml-2">✕</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <label className="block mb-1">Contexto:</label>
+          <textarea
+            className="w-full p-2 rounded bg-[#1e293b] text-white h-40 resize-y"
+            value={contexto}
+            onChange={(e) => setContexto(e.target.value)}
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded text-white w-full mt-4"
+        >
           {esEdicion ? 'Actualizar vacante' : 'Guardar vacante'}
         </button>
       </form>

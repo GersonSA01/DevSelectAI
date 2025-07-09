@@ -7,7 +7,7 @@ import PostulacionesHeader from '../../components/postulaciones/PostulacionesHea
 import PostulacionesStats from '../../components/postulaciones/PostulacionesStats';
 import PostulacionesFiltros from '../../components/postulaciones/PostulacionesFiltros';
 import PostulacionesTabla from '../../components/postulaciones/PostulacionesTabla';
-import PostulacionesSkeleton from '../../components/SkeletonPostulaciones';
+import PostulacionesSkeleton from '../../components/skeleton/SkeletonPostulaciones';
 
 export default function PostulacionesPage() {
   const router = useRouter();
@@ -58,7 +58,11 @@ export default function PostulacionesPage() {
         programacionActual={programacionActual}
       />
 
-      <PostulacionesStats postulantes={postulantes} />
+      <PostulacionesStats
+  postulantes={postulantes}
+  programacionActual={programacionActual}
+/>
+
 
       <PostulacionesFiltros
         itinerarios={itinerarios}

@@ -54,7 +54,6 @@ useEffect(() => {
             value={programacionSeleccionada}
             onChange={e => setProgramacionSeleccionada(e.target.value)}
           >
-            <option value="">Selecciona una programación</option>
             {programaciones.map(p => (
               <option key={p.id_Programacion} value={p.id_Programacion}>
                 {p.rangoPostulacion}

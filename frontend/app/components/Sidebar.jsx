@@ -1,8 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import SkeletonSidebar from './SkeletonSidebar';
+import { useRouter, usePathname } from 'next/navigation';
+import SkeletonSidebar from './skeleton/SkeletonSidebar';
 import {
   ChevronDown,
   ChevronUp,
@@ -19,10 +19,10 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   const [openSection, setOpenSection] = useState('vacantes');
   const [docente, setDocente] = useState(null);
   const router = useRouter();
+  const pathname = usePathname();
   const { itinerarios } = useItinerarios();
   const [loading, setLoading] = useState(true);
 
-  // ✅ Detectar tamaño de pantalla al cargar y colapsar si es móvil
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768) {
@@ -32,9 +32,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
       }
     };
 
-    handleResize(); // Ejecuta al montar
-    window.addEventListener('resize', handleResize); // Reacciona a cambios
-
+    handleResize();
+    window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [setIsCollapsed]);
 
@@ -68,7 +67,10 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   }
 
   return (
-    <div className={`h-screen bg-[#0f172a] text-white transition-all duration-300 fixed top-16 left-0 z-40 ${isCollapsed ? 'w-16' : 'w-64'} border-r border-neutral-700`}>
+    <div
+      className={`h-screen bg-[#0f172a] text-white transition-all duration-300 fixed top-16 left-0 z-40
+      ${isCollapsed ? 'w-16 shadow-md' : 'w-64'} border-r border-neutral-700`}
+    >
       <div className="p-4 flex items-center justify-between">
         {!isCollapsed && (
           <div>
@@ -87,9 +89,11 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
         <div>
           <button
             onClick={() => toggleSection('vacantes')}
-            className="flex items-center justify-between w-full py-2 px-3 rounded hover:bg-slate-800"
+            className={`flex items-center w-full py-2 px-3 rounded hover:bg-slate-800 transition-all
+            ${isCollapsed ? 'justify-center' : 'justify-between'} 
+            ${pathname.includes('/reclutador/vacantes') ? 'bg-slate-800' : ''}`}
           >
-            <span className="flex items-center gap-x-2">
+            <span className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-x-2'}`}>
               <CheckCircle2 size={18} />
               {!isCollapsed && 'Vacantes'}
             </span>
@@ -98,38 +102,59 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
             )}
           </button>
 
-          {!isCollapsed && openSection === 'vacantes' && (
-            <div className="ml-7 space-y-1">
+          {openSection === 'vacantes' && (
+            <div
+              className={`${isCollapsed ? 'ml-0 flex flex-col items-center' : 'ml-7'} 
+              space-y-1 transition-all`}
+            >
               {Array.isArray(itinerarios) && itinerarios.length > 0 ? (
-                itinerarios.map((itinerario) => (
+                itinerarios.map((itinerario, idx) => (
                   <Link
                     key={itinerario.id_Itinerario}
                     href={`/reclutador/vacantes?id=${itinerario.id_Itinerario}&descripcion=${itinerario.descripcion}`}
-                    className="block py-1 hover:text-cyan-400"
+                    className={`block py-1 text-xs hover:text-cyan-400 transition-all
+                      ${pathname.includes(`/reclutador/vacantes`) &&
+                        pathname.includes(itinerario.id_Itinerario)
+                        ? 'text-cyan-400 font-semibold'
+                        : ''
+                      }`}
                   >
-                    {itinerario.descripcion}
+                    {isCollapsed ? `It.${idx + 1}` : itinerario.descripcion}
                   </Link>
                 ))
               ) : (
-                <div className="text-sm text-neutral-400 italic">No hay itinerarios disponibles</div>
+                <div className="text-sm text-neutral-400 italic">
+                  {!isCollapsed && 'No hay itinerarios'}
+                </div>
               )}
             </div>
           )}
         </div>
 
-        <Link href="/reclutador/postuladores" className="flex items-center gap-x-2 py-2 px-3 rounded hover:bg-slate-800">
+        <Link
+          href="/reclutador/postuladores"
+          className={`flex items-center w-full py-2 px-3 rounded hover:bg-slate-800 transition-all
+            ${isCollapsed ? 'justify-center' : 'gap-x-2'} 
+            ${pathname.startsWith('/reclutador/postuladores') ? 'bg-slate-800' : ''}`}
+        >
           <User2 size={18} />
           {!isCollapsed && 'Postulante'}
         </Link>
 
-        <Link href="/reclutador/configuracion" className="flex items-center gap-x-2 py-2 px-3 rounded hover:bg-slate-800">
+        <Link
+          href="/reclutador/configuracion"
+          className={`flex items-center w-full py-2 px-3 rounded hover:bg-slate-800 transition-all
+            ${isCollapsed ? 'justify-center' : 'gap-x-2'}
+            ${pathname.startsWith('/reclutador/configuracion') ? 'bg-slate-800' : ''}`}
+        >
           <Settings size={18} />
           {!isCollapsed && 'Configuración'}
         </Link>
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-x-2 py-2 px-3 rounded hover:bg-red-800 text-red-500 mt-4 w-full text-left"
+          className={`flex items-center w-full py-2 px-3 rounded hover:bg-red-800 text-red-500 mt-4 transition-all
+            ${isCollapsed ? 'justify-center' : 'gap-x-2'}`}
         >
           <LogOut size={18} />
           {!isCollapsed && 'Cerrar sesión'}

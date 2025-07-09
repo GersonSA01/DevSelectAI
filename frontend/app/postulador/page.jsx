@@ -6,6 +6,7 @@ import { Alert } from "../components/alerts/alerts";
 
 export default function Entrevistas() {
   const [itinerario, setItinerario] = useState('');
+  const [nombrePostulante, setNombrePostulante] = useState('');
   const [cargando, setCargando] = useState(true);
   const [bloqueado, setBloqueado] = useState(false);
   const [mensajeFinal, setMensajeFinal] = useState('');
@@ -25,7 +26,6 @@ export default function Entrevistas() {
       }
 
       try {
-        // obtener itinerario
         const res = await fetch(`http://localhost:5000/api/postulante/${idPostulante}`);
         const data = await res.json();
 
@@ -34,8 +34,8 @@ export default function Entrevistas() {
         }
 
         setItinerario(data.Itinerario);
+        setNombrePostulante(`${data.Nombre} ${data.Apellido}`);
 
-        // obtener estado
         const estadoRes = await fetch(`http://localhost:5000/api/postulante/estado/${idPostulante}`);
         const estadoData = await estadoRes.json();
 
@@ -53,9 +53,6 @@ export default function Entrevistas() {
               const inicio = formatearFecha(estadoData.fechas.inicio);
               const fin = formatearFecha(estadoData.fechas.fin);
               mensaje += `\n\n📅 Rango para aceptar: ${inicio} - ${fin}`;
-            } else if (estadoData.fechaAprobacion) {
-              const fecha = formatearFecha(estadoData.fechaAprobacion);
-              mensaje += `\n\n📅 Fecha de aprobación: ${fecha}`;
             }
           }
 
@@ -110,7 +107,7 @@ export default function Entrevistas() {
         {!bloqueado ? (
           <>
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-5">
-              Bienvenido a <span className="text-cyan-400">DevSelectAI</span>
+              Bienvenido/a {nombrePostulante} a <span className="text-cyan-400">DevSelectAI</span>
             </h1>
 
             <p className="text-lg text-gray-300 leading-relaxed mb-3">
@@ -133,7 +130,7 @@ export default function Entrevistas() {
         ) : (
           <>
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-5">
-              Estado actual
+              Estimado Estudiante {nombrePostulante}
             </h1>
 
             <p className="text-lg text-gray-300 leading-relaxed whitespace-pre-line">

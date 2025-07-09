@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ZoomCaptura from "../../components/calificacion/ZoomCaptura";
-import SkeletonLoader from "../../components/SkeletonLoader";
+import SkeletonLoader from "../../components/skeleton/SkeletonLoader";
 import ModuloEntrevista from "../../components/calificacion/ModuloEntrevista";
 import ModuloTeorico   from "../../components/calificacion/ModuloTeorico";
 import ModuloTecnico   from "../../components/calificacion/ModuloTecnico";

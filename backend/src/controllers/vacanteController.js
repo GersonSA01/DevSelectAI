@@ -213,6 +213,53 @@ exports.crearVacante = async (req, res) => {
   }
 };
 
+exports.actualizarVacante = async (req, res) => {
+  const { id } = req.params;
+  const {
+    Id_Itinerario, Descripcion, Cantidad, Contexto,
+    Id_reclutador, Id_Empresa, habilidades
+  } = req.body;
+
+  try {
+    if (
+      Id_Itinerario == null || !Descripcion || Cantidad == null || !Contexto ||
+      Id_reclutador == null || Id_Empresa == null || !Array.isArray(habilidades)
+    ) {
+      return res.status(400).json({ error: 'Datos incompletos o inválidos.' });
+    }
+
+    if (habilidades.length === 0 || habilidades.length > 3) {
+      return res.status(400).json({ error: 'Debe seleccionar entre 1 y 3 habilidades.' });
+    }
+
+    const vacante = await Vacante.findByPk(id);
+    if (!vacante) return res.status(404).json({ error: 'Vacante no encontrada' });
+
+    await vacante.update({
+      id_Itinerario: Id_Itinerario,
+      Descripcion,
+      Contexto,
+      Cantidad,
+      Id_Empresa,
+      Id_reclutador,
+    });
+
+    await VacanteHabilidad.destroy({ where: { Id_Vacante: id } });
+    await VacanteHabilidad.bulkCreate(
+      habilidades.slice(0, 3).map(idHabilidad => ({
+        Id_Vacante: id,
+        Id_Habilidad: idHabilidad
+      }))
+    );
+
+    res.json({ mensaje: 'Vacante actualizada correctamente.' });
+  } catch (error) {
+    console.error('❌ Error al actualizar vacante:', error);
+    res.status(500).json({ error: 'Error al actualizar vacante' });
+  }
+};
+
+
 exports.getHabilidadesByVacante = async (req, res) => {
   try {
     const { idVacante } = req.params;
@@ -266,81 +313,6 @@ exports.getById = async (req, res) => {
   }
 };
 
-exports.actualizarVacante = async (req, res) => {
-  const { id } = req.params;
-  const {
-    Id_Itinerario, Descripcion, Cantidad, Contexto,
-    Id_reclutador, Id_Empresa, habilidades, Id_Programacion
-  } = req.body;
-
-  try {
-    if (
-      Id_Itinerario == null || !Descripcion || Cantidad == null || !Contexto ||
-      Id_reclutador == null || Id_Empresa == null || !Array.isArray(habilidades)
-    ) {
-      return res.status(400).json({ error: 'Datos incompletos o inválidos.' });
-    }
-
-    if (habilidades.length === 0 || habilidades.length > 3) {
-      return res.status(400).json({ error: 'Debe seleccionar entre 1 y 3 habilidades.' });
-    }
-
-    // Validar programación y fecha de inicio
-    if (!Id_Programacion) {
-      return res.status(400).json({ error: 'Debe seleccionar una programación.' });
-    }
-
-    const programacion = await Programacion.findByPk(Id_Programacion);
-    if (!programacion) {
-      return res.status(400).json({ error: 'Programación no encontrada.' });
-    }
-
-    const hoy = new Date();
-    hoy.setHours(0,0,0,0);
-    const fechaIni = new Date(programacion.FechIniPostulacion);
-    fechaIni.setHours(0,0,0,0);
-    if (fechaIni < hoy) {
-      return res.status(400).json({ error: 'No se puede asignar una programación que ya inició.' });
-    }
-
-    const vacante = await Vacante.findByPk(id);
-    if (!vacante) return res.status(404).json({ error: 'Vacante no encontrada' });
-
-    await vacante.update({
-      id_Itinerario: Id_Itinerario,
-      Descripcion,
-      Contexto,
-      Cantidad,
-      Id_Empresa,
-      Id_reclutador,
-    });
-
-    await VacanteHabilidad.destroy({ where: { Id_Vacante: id } });
-    await VacanteHabilidad.bulkCreate(
-      habilidades.slice(0, 3).map(idHabilidad => ({
-        Id_Vacante: id,
-        Id_Habilidad: idHabilidad
-      }))
-    );
-
-    const programacionExistente = await ProgramacionPostulacion.findOne({ where: { Id_Vacante: id } });
-    if (programacionExistente) {
-      await programacionExistente.update({ id_Programacion: Id_Programacion });
-    } else {
-      await ProgramacionPostulacion.create({
-        Id_Vacante: id,
-        id_Programacion: Id_Programacion,
-        CantAprobados: 0,
-        CantRechazados: 0
-      });
-    }
-
-    res.json({ mensaje: 'Vacante actualizada correctamente.' });
-  } catch (error) {
-    console.error('❌ Error al actualizar vacante:', error);
-    res.status(500).json({ error: 'Error al actualizar vacante' });
-  }
-};
 
 exports.eliminarVacante = async (req, res) => {
   const { id } = req.params;
