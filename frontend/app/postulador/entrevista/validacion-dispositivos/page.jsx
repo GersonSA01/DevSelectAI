@@ -11,6 +11,10 @@ export default function ValidacionDispositivos() {
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const micAudioElement = useRef(null);
+  const currentMicStream = useRef(null);
+  const yaGenerado = useRef(false);
+
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
@@ -20,130 +24,7 @@ export default function ValidacionDispositivos() {
   const [microfonos, setMicrofonos] = useState([]);
   const [selectedCam, setSelectedCam] = useState('');
   const [selectedMic, setSelectedMic] = useState('');
-  const micAudioElement = useRef(null);
 
-  // 📦 Guardar la referencia para liberar el micrófono al desmontar
-  const currentMicStream = useRef(null);
-
-  // 🔍 Detectar dispositivos disponibles
-  useEffect(() => {
-    const listarDispositivos = async () => {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoInputs = devices.filter((d) => d.kind === 'videoinput');
-      const audioInputs = devices.filter((d) => d.kind === 'audioinput');
-
-      setCamaras(videoInputs);
-      setMicrofonos(audioInputs);
-      if (videoInputs[0]) setSelectedCam(videoInputs[0].deviceId);
-      if (audioInputs[0]) setSelectedMic(audioInputs[0].deviceId);
-    };
-
-    listarDispositivos();
-  }, []);
-
-  // 🎥 Acceder a la cámara y mantener el stream activo (NO detenerlo en cleanup)
-  useEffect(() => {
-    const accederCamara = async () => {
-      if (!selectedCam) return;
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { deviceId: selectedCam },
-        });
-
-        if (videoRef.current) videoRef.current.srcObject = stream;
-        setCameraStream(stream);         // Pasar al context
-        window.copiaCamara = stream;     // Global (opcional)
-        setCamReady(true);
-      } catch (err) {
-        console.warn('No se pudo acceder a la cámara:', err);
-        setCamReady(false);
-      }
-    };
-
-    accederCamara();
-  }, [selectedCam]);
-
-  // 🎙️ Acceder al micrófono y visualizar en canvas
-// 🎙️ Acceder al micrófono y visualizar en canvas
-useEffect(() => {
-  const accederMicrofono = async () => {
-    if (!selectedMic) return;
-
-    // 🔇 Detener audio anterior si existe
-    if (micAudioElement.current) {
-      micAudioElement.current.pause();
-      micAudioElement.current.srcObject = null;
-      micAudioElement.current = null;
-    }
-
-    if (currentMicStream.current) {
-      currentMicStream.current.getTracks().forEach((track) => track.stop());
-      currentMicStream.current = null;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { deviceId: selectedMic },
-      });
-
-      currentMicStream.current = stream;
-
-      // 🔊 Loopback actualizado
-      micAudioElement.current = new Audio();
-      micAudioElement.current.srcObject = stream;
-      micAudioElement.current.play().catch(() => {}); // evitar AbortError
-      setMicReady(true);
-
-      // 🎛️ Visualización en canvas
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
-      source.connect(analyser);
-      analyser.fftSize = 256;
-
-      const bufferLength = analyser.fftSize;
-      const dataArray = new Uint8Array(bufferLength);
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-
-      const draw = () => {
-        requestAnimationFrame(draw);
-        analyser.getByteTimeDomainData(dataArray);
-
-        ctx.fillStyle = '#2B2C3F';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = '#3BDCF6';
-        ctx.beginPath();
-
-        const sliceWidth = canvas.width / bufferLength;
-        let x = 0;
-
-        for (let i = 0; i < bufferLength; i++) {
-          const v = dataArray[i] / 128.0;
-          const y = (v * canvas.height) / 2;
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-          x += sliceWidth;
-        }
-
-        ctx.lineTo(canvas.width, canvas.height / 2);
-        ctx.stroke();
-      };
-
-      draw();
-    } catch (err) {
-      console.warn('No se pudo acceder al micrófono:', err);
-      setMicReady(false);
-    }
-  };
-
-  accederMicrofono();
-}, [selectedMic]);
-const yaGenerado = useRef(false);
-
-useEffect(() => {
   const generarEvaluacion = async () => {
     if (yaGenerado.current || !token) return;
 
@@ -153,6 +34,7 @@ useEffect(() => {
       console.log("📌 Token detectado, buscando postulante...");
       const resId = await fetch(`http://localhost:5000/api/postulante/token/${token}`);
       const dataId = await resId.json();
+
       console.log("✔️ Postulante encontrado:", dataId);
 
       if (!resId.ok || !dataId?.Id_Postulante) {
@@ -172,25 +54,131 @@ useEffect(() => {
       console.log("📥 Respuesta del backend evaluación:", dataEval);
 
       if (!resEval.ok) throw new Error(dataEval?.error || 'Error inesperado al crear evaluación');
-      localStorage.setItem('id_evaluacion', dataEval.evaluacionId);
 
       localStorage.setItem('id_postulante', idPostulante);
+      localStorage.setItem('id_evaluacion', dataEval.evaluacionId);
       console.log('✅ Evaluación generada exitosamente.');
     } catch (error) {
       console.error('❌ Error completo:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     }
   };
 
-  generarEvaluacion();
-}, [token]);
+  useEffect(() => {
+    generarEvaluacion();
+  }, [token]);
 
+  useEffect(() => {
+    const listarDispositivos = async () => {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoInputs = devices.filter(d => d.kind === 'videoinput');
+      const audioInputs = devices.filter(d => d.kind === 'audioinput');
 
+      setCamaras(videoInputs);
+      setMicrofonos(audioInputs);
+      if (videoInputs[0]) setSelectedCam(videoInputs[0].deviceId);
+      if (audioInputs[0]) setSelectedMic(audioInputs[0].deviceId);
+    };
 
-  // 🧼 Limpiar solo micrófono
+    listarDispositivos();
+  }, []);
+
+  useEffect(() => {
+    const accederCamara = async () => {
+      if (!selectedCam) return;
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: selectedCam },
+        });
+
+        if (videoRef.current) videoRef.current.srcObject = stream;
+        setCameraStream(stream);
+        window.copiaCamara = stream;
+        setCamReady(true);
+      } catch (err) {
+        console.warn('❌ No se pudo acceder a la cámara:', err);
+        setCamReady(false);
+      }
+    };
+
+    accederCamara();
+  }, [selectedCam]);
+
+  useEffect(() => {
+    const accederMicrofono = async () => {
+      if (!selectedMic) return;
+
+      if (micAudioElement.current) {
+        micAudioElement.current.pause();
+        micAudioElement.current.srcObject = null;
+      }
+      if (currentMicStream.current) {
+        currentMicStream.current.getTracks().forEach(track => track.stop());
+        currentMicStream.current = null;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: { deviceId: selectedMic },
+        });
+
+        currentMicStream.current = stream;
+
+        micAudioElement.current = new Audio();
+        micAudioElement.current.srcObject = stream;
+        micAudioElement.current.play().catch(() => {});
+        setMicReady(true);
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioCtx.createMediaStreamSource(stream);
+        const analyser = audioCtx.createAnalyser();
+        source.connect(analyser);
+        analyser.fftSize = 256;
+
+        const bufferLength = analyser.fftSize;
+        const dataArray = new Uint8Array(bufferLength);
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+
+        const draw = () => {
+          requestAnimationFrame(draw);
+          analyser.getByteTimeDomainData(dataArray);
+
+          ctx.fillStyle = '#2B2C3F';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = '#3BDCF6';
+          ctx.beginPath();
+
+          const sliceWidth = canvas.width / bufferLength;
+          let x = 0;
+
+          for (let i = 0; i < bufferLength; i++) {
+            const v = dataArray[i] / 128.0;
+            const y = (v * canvas.height) / 2;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+            x += sliceWidth;
+          }
+
+          ctx.lineTo(canvas.width, canvas.height / 2);
+          ctx.stroke();
+        };
+
+        draw();
+      } catch (err) {
+        console.warn('❌ No se pudo acceder al micrófono:', err);
+        setMicReady(false);
+      }
+    };
+
+    accederMicrofono();
+  }, [selectedMic]);
+
   useEffect(() => {
     return () => {
       if (currentMicStream.current) {
-        currentMicStream.current.getTracks().forEach((track) => track.stop());
+        currentMicStream.current.getTracks().forEach(t => t.stop());
         currentMicStream.current = null;
       }
       if (micAudioElement.current) {
@@ -205,15 +193,15 @@ useEffect(() => {
       <h2 className="text-2xl font-bold mb-8">Verifica tu cámara, micrófono y comparte pantalla</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl mb-6">
-        {/* Cámara */}
+        
         <div className="bg-[#1D1E33] p-6 rounded-lg shadow-md">
           <label className="block mb-2 text-sm text-gray-300">Selecciona tu cámara</label>
           <select
             className="w-full mb-4 text-sm p-2 bg-[#2B2C3F] rounded text-white"
             value={selectedCam}
-            onChange={(e) => setSelectedCam(e.target.value)}
+            onChange={e => setSelectedCam(e.target.value)}
           >
-            {camaras.map((cam) => (
+            {camaras.map(cam => (
               <option key={cam.deviceId} value={cam.deviceId}>
                 {cam.label || 'Cámara sin nombre'}
               </option>
@@ -225,15 +213,15 @@ useEffect(() => {
           <p className="mt-2 text-sm">{camReady ? 'Cámara detectada ✔️' : 'Cámara no detectada ❌'}</p>
         </div>
 
-        {/* Micrófono */}
+        
         <div className="bg-[#1D1E33] p-6 rounded-lg shadow-md">
           <label className="block mb-2 text-sm text-gray-300">Selecciona tu micrófono</label>
           <select
             className="w-full mb-2 text-sm p-2 bg-[#2B2C3F] rounded text-white"
             value={selectedMic}
-            onChange={(e) => setSelectedMic(e.target.value)}
+            onChange={e => setSelectedMic(e.target.value)}
           >
-            {microfonos.map((mic) => (
+            {microfonos.map(mic => (
               <option key={mic.deviceId} value={mic.deviceId}>
                 {mic.label || 'Micrófono sin nombre'}
               </option>

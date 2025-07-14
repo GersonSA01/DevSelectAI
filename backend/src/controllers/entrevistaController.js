@@ -2,7 +2,7 @@ const axios = require('axios');
 const FormData = require('form-data');
 const db = require('../models');
 
-// Función de reintento con espera creciente
+
 const retryAxiosTTS = async (data, config, maxRetries = 2) => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -23,7 +23,7 @@ const retryAxiosTTS = async (data, config, maxRetries = 2) => {
         throw error;
       }
 
-      // Espera mayor: 4s, 8s
+      
       await new Promise(resolve => setTimeout(resolve, 4000 * attempt));
     }
   }
@@ -53,31 +53,25 @@ exports.procesarAudio = async (req, res) => {
 
     let entrevista;
 
-// Buscar la evaluación asociada al postulante
-const evaluacion = await db.Evaluacion.findOne({
-  where: { Id_postulante: idPostulante },
-  order: [['id_Evaluacion', 'DESC']]
-});
-
-if (evaluacion?.Id_Entrevista) {
-  entrevista = await db.EntrevistaOral.findByPk(evaluacion.Id_Entrevista);
-} else {
-  // Si no hay entrevista, la creamos
-  entrevista = await db.EntrevistaOral.create({
-    RetroalimentacionIA: null
-  });
-
-  // Y la asociamos creando o actualizando la evaluación
-  if (evaluacion) {
-    await evaluacion.update({ Id_Entrevista: entrevista.Id_Entrevista });
-  } else {
-    await db.Evaluacion.create({
-      Id_postulante: idPostulante,
-      Id_Entrevista: entrevista.Id_Entrevista
+    const evaluacion = await db.Evaluacion.findOne({
+      where: { Id_postulante: idPostulante },
+      order: [['id_Evaluacion', 'DESC']]
     });
-  }
-}
 
+    if (evaluacion?.Id_Entrevista) {
+      entrevista = await db.EntrevistaOral.findByPk(evaluacion.Id_Entrevista);
+    } else {
+      entrevista = await db.EntrevistaOral.create({ RetroalimentacionIA: null });
+
+      if (evaluacion) {
+        await evaluacion.update({ Id_Entrevista: entrevista.Id_Entrevista });
+      } else {
+        await db.Evaluacion.create({
+          Id_postulante: idPostulante,
+          Id_Entrevista: entrevista.Id_Entrevista
+        });
+      }
+    }
 
     let textoUsuario = '';
     if (step !== '0') {
@@ -114,27 +108,23 @@ if (evaluacion?.Id_Entrevista) {
     } else if (step === '2') {
       prompt = `El postulante respondió: "${textoUsuario}". Formula una tercera y última pregunta técnica relacionada con las habilidades: ${habilidadesTexto}.`;
     } else if (step === '3') {
-  // 🔍 Obtener calificación total de las preguntas orales
-  const preguntas = await db.PreguntaOral.findAll({
-    where: { Id_Entrevista: entrevista.Id_Entrevista }
-  });
+      const preguntas = await db.PreguntaOral.findAll({
+        where: { Id_Entrevista: entrevista.Id_Entrevista }
+      });
 
-  const totalCalificacion = preguntas.reduce((acc, p) => acc + (p.CalificacionIA || 0), 0);
+      const totalCalificacion = preguntas.reduce((acc, p) => acc + (p.CalificacionIA || 0), 0);
 
-  prompt = `
+      prompt = `
 El postulante ha obtenido un total de ${totalCalificacion} puntos sobre 6 posibles en la entrevista oral.
 
 Con base en ese puntaje:
 1. Inicia tu respuesta indicando la calificación que obtuvo: "Tu calificación en la entrevista oral fue de X/6."
-2. Luego, en una nueva frase, indica si el postulante AVANZA o NO AVANZA.
-3. Finaliza con una breve justificación profesional y empática.
-
-Ejemplo esperado:
-"Tu calificación en la entrevista oral fue de 5/6. AVANZAS. Has demostrado un sólido dominio de tus habilidades técnicas."
+2. Luego, escribe una breve observación profesional y empática sobre su desempeño.
+No indiques si avanza o no. Solo incluye calificación y comentario.
+Ejemplo:
+"Tu calificación en la entrevista oral fue de 5/6. Has demostrado un buen dominio de tus habilidades técnicas y una actitud positiva."
 `;
-}
-
-
+    }
 
     const gptRes = await axios.post(
       'https://api.openai.com/v1/chat/completions',
@@ -158,12 +148,9 @@ Ejemplo esperado:
     );
 
     const respuestaGPT = gptRes.data.choices[0].message.content;
-    console.log('➡️ Paso actual:', step);
-    console.log('🧠 Respuesta generada por IA:', respuestaGPT);
 
     if (['1', '2', '3'].includes(step)) {
-  // 🧠 Evaluar con GPT si respondió bien y si usó lenguaje técnico
-  const evalPrompt = `
+      const evalPrompt = `
 Evalúa esta respuesta del postulante con base en dos criterios:
 1. ¿Responde correctamente o de forma adecuada a una pregunta técnica?
 2. ¿Utiliza lenguaje técnico específico en su explicación?
@@ -177,64 +164,60 @@ Responde ÚNICAMENTE este JSON:
 Respuesta del postulante: "${textoUsuario}"
 `;
 
-  let calificacionIA = 0;
-  try {
-    const evalRes = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: 'gpt-4',
-        messages: [
+      let calificacionIA = 0;
+      try {
+        const evalRes = await axios.post(
+          'https://api.openai.com/v1/chat/completions',
           {
-            role: 'system',
-            content:
-              'Eres un evaluador técnico objetivo. Evalúa si una respuesta es adecuada y si se usó lenguaje técnico. Devuelve solo el JSON solicitado.'
+            model: 'gpt-4',
+            messages: [
+              {
+                role: 'system',
+                content:
+                  'Eres un evaluador técnico objetivo. Evalúa si una respuesta es adecuada y si se usó lenguaje técnico. Devuelve solo el JSON solicitado.'
+              },
+              { role: 'user', content: evalPrompt }
+            ]
           },
-          { role: 'user', content: evalPrompt }
-        ]
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        const evalData = evalRes.data.choices[0].message.content;
+        const parsed = JSON.parse(evalData);
+
+        if (parsed.respuestaBien) calificacionIA = 1;
+        if (parsed.respuestaBien && parsed.usoLenguajeTecnico) calificacionIA = 2;
+      } catch (err) {
+        console.warn('⚠️ No se pudo interpretar la calificación IA. Se asigna 0.', err.message);
       }
-    );
 
-    const evalData = evalRes.data.choices[0].message.content;
-    const parsed = JSON.parse(evalData);
+      await db.PreguntaOral.create({
+        Ronda: parseInt(step),
+        PreguntaIA: respuestaGPT,
+        RespuestaPostulante: textoUsuario,
+        CalificacionIA: calificacionIA,
+        Id_Entrevista: entrevista.Id_Entrevista,
+        TiempoRptaPostulante: tiempoRespuesta
+      });
+    }
 
-    if (parsed.respuestaBien) calificacionIA = 1;
-    if (parsed.respuestaBien && parsed.usoLenguajeTecnico) calificacionIA = 2;
-  } catch (err) {
-    console.warn('⚠️ No se pudo interpretar la calificación IA. Se asigna 0.', err.message);
-  }
+    if (parseInt(step) === 3) {
+      await entrevista.update({
+        RetroalimentacionIA: respuestaGPT.trim()
+      });
+    }
 
-  // Guardar todo en PreguntaOral
-  await db.PreguntaOral.create({
-    Ronda: parseInt(step),
-    PreguntaIA: respuestaGPT,
-    RespuestaPostulante: textoUsuario,
-    CalificacionIA: calificacionIA,
-    Id_Entrevista: entrevista.Id_Entrevista,
-    TiempoRptaPostulante: tiempoRespuesta
-  });
-}
-
-
- if (parseInt(step) === 3) {
-  await entrevista.update({
-    RetroalimentacionIA: respuestaGPT.trim()
-  });
-}
-
-
-    // 🎙️ Generar audio TTS con retry y texto limitado
     let audioBase64 = null;
     try {
       const textoLimpio = respuestaGPT
         .replace(/[\n\r]+/g, ' ')
         .replace(/[^\x00-\x7F]/g, '')
-        .substring(0, 300); // Limitar a 300 caracteres
+        .substring(0, 300);
 
       if (textoLimpio.trim().length > 0) {
         const ttsRes = await retryAxiosTTS(
@@ -249,12 +232,11 @@ Respuesta del postulante: "${textoUsuario}"
               'Content-Type': 'application/json'
             },
             responseType: 'arraybuffer',
-            timeout: 30000 // 30 segundos
+            timeout: 30000
           }
         );
 
         audioBase64 = Buffer.from(ttsRes.data).toString('base64');
-        console.log('🎵 Audio generado correctamente');
       } else {
         console.warn('⚠️ Texto vacío, no se genera voz');
       }
@@ -277,7 +259,8 @@ Respuesta del postulante: "${textoUsuario}"
     });
   }
 };
-// GET /api/getPreguntasOrales/:idEntrevista
+
+
 exports.getPreguntasOrales = async (req, res) => {
   const idEntrevista = parseInt(req.params.idEntrevista);
 

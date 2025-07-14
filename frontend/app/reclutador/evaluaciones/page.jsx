@@ -37,7 +37,7 @@ export default function CalificacionPage() {
   const [zoomImagen,        setZoomImagen]            = useState(null);
   const [idEvaluacion,      setIdEvaluacion]          = useState(null);
 
-  // Memoiza para no recrear la función en cada render
+  
   const actualizarCalificacion = useCallback((tipo, valor) => {
     setCalificaciones(prev => ({ ...prev, [tipo]: valor }));
   }, []);
@@ -123,14 +123,14 @@ export default function CalificacionPage() {
 
   const handleFinalizar = async () => {
   try {
-    // 1️⃣ Prepara el payload
+    
     const payload = {
       idEvaluacion,
       ObservacionGeneral: observacionGeneral,
       PuntajeTotal: parseFloat(total),
     };
 
-    // 2️⃣ Llama al endpoint que actualiza la tabla DAI_T_Evaluacion
+    
     const res = await fetch("http://localhost:5000/api/calificar/general", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -143,7 +143,7 @@ export default function CalificacionPage() {
       throw new Error("Error al guardar la evaluación");
     }
 
-    // 3️⃣ Redirige al informe
+    
     router.push(`/reclutador/informes?id=${idPostulante}`);
   } catch (err) {
     console.error(err);
@@ -157,7 +157,7 @@ export default function CalificacionPage() {
         <SkeletonLoader />
       ) : (
         <>
-          {/* Encabezado */}
+          
           <div className="sticky top-20 bg-[#0A0A23] py-4 z-10 border-b border-[#3BDCF6] shadow-md rounded-md">
 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-4">
               <div>
@@ -170,7 +170,7 @@ export default function CalificacionPage() {
             </div>
           </div>
 
-          {/* Módulos */}
+          
           <ModuloEntrevista
             preguntasOrales={preguntasOrales}
             entrevista={entrevista}
@@ -206,7 +206,7 @@ export default function CalificacionPage() {
             actualizarCalificacion={actualizarCalificacion}
           />
 
-          {/* Observación General */}
+          
           <div className="bg-[#1D1E33] p-6 rounded-lg mt-10">
             <h2 className="text-xl font-semibold mb-2">Observación General</h2>
             <textarea
@@ -218,7 +218,7 @@ export default function CalificacionPage() {
 
           </div>
 
-          {/* Botón finalizar */}
+          
           <div className="flex justify-center mt-12">
           <button
   onClick={handleFinalizar}

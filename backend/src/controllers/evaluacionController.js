@@ -7,7 +7,7 @@ exports.crearEvaluacionInicial = async (req, res) => {
     const idPostulante = parseInt(req.params.idPostulante);
     console.log('▶️ ID Postulante recibido:', idPostulante);
 
-    // Buscar la vacante asignada
+    
     const relacion = await db.PostulanteVacante.findOne({
       where: { Id_Postulante: idPostulante },
       include: {
@@ -25,12 +25,12 @@ exports.crearEvaluacionInicial = async (req, res) => {
     const itinerarioVacante = relacion.vacante.id_Itinerario;
     console.log('✅ Vacante:', idVacante, '| Itinerario:', itinerarioVacante);
 
-    // Evitar evaluaciones duplicadas por itinerario
+
     const evaluacionesPrevias = await db.Evaluacion.findAll({
       where: { Id_postulante: idPostulante },
       include: {
         model: db.PreguntaEvaluacion,
-        as: 'respuestas', // ✅ CORREGIDO: coincide con alias real
+        as: 'respuestas', 
         include: {
           model: db.Pregunta,
           as: 'pregunta',
@@ -48,7 +48,7 @@ exports.crearEvaluacionInicial = async (req, res) => {
       return res.status(409).json({ error: 'Ya existe una evaluación para este itinerario' });
     }
 
-    // Seleccionar preguntas teóricas (5)
+    
     const preguntasTeoricas = await db.Pregunta.findAll({
       where: { Id_vacante: idVacante },
       include: [{ model: db.Opcion, as: 'opciones', required: true }],
@@ -56,7 +56,7 @@ exports.crearEvaluacionInicial = async (req, res) => {
       limit: 5
     });
 
-    // Seleccionar una pregunta técnica
+    
     const preguntasTecnicas = await db.Pregunta.findAll({
       where: { Id_vacante: idVacante },
       include: [{ model: db.PreguntaTecnica, as: 'preguntaTecnica', required: true }]
@@ -69,10 +69,10 @@ exports.crearEvaluacionInicial = async (req, res) => {
     console.log('📋 Preguntas teóricas:', preguntasTeoricas.map(p => p.Id_Pregunta));
     console.log('🧠 Pregunta técnica:', preguntaTecnica?.Id_Pregunta || 'Ninguna');
 
-    // Crear entrevista vacía
+    
     const entrevista = await db.EntrevistaOral.create({ RetroalimentacionIA: null });
 
-    // Crear evaluación principal
+    
     const evaluacion = await db.Evaluacion.create({
       Id_postulante: idPostulante,
       Id_Entrevista: entrevista.Id_Entrevista,
@@ -81,7 +81,7 @@ exports.crearEvaluacionInicial = async (req, res) => {
       RptaPostulante: ''
     });
 
-    // Insertar preguntas teóricas en PreguntaEvaluacion
+    
     const insertadas = [];
 
     for (const pregunta of preguntasTeoricas) {
@@ -101,7 +101,7 @@ exports.crearEvaluacionInicial = async (req, res) => {
       }
     }
 
-    // Insertar pregunta técnica si existe
+    
     if (preguntaTecnica) {
       try {
         const insert = await db.PreguntaEvaluacion.create({
@@ -136,7 +136,7 @@ exports.obtenerEvaluacionTeorica = async (req, res) => {
   try {
     const idPostulante = parseInt(req.params.idPostulante);
 
-    // Buscar la evaluación del postulante
+    
     const evaluacion = await db.Evaluacion.findOne({
       where: { Id_postulante: idPostulante },
     });
@@ -145,7 +145,7 @@ exports.obtenerEvaluacionTeorica = async (req, res) => {
       return res.status(404).json({ error: 'Evaluación no encontrada.' });
     }
 
-    // Obtener preguntas con opciones
+    
     const preguntasEvaluacion = await db.PreguntaEvaluacion.findAll({
       where: { id_Evaluacion: evaluacion.id_Evaluacion },
       include: {
@@ -160,7 +160,7 @@ exports.obtenerEvaluacionTeorica = async (req, res) => {
     const resultado = teoricas.map(pe => ({
       Id_Pregunta: pe.Id_Pregunta,
       Id_PreguntaEvaluacion: pe.id_PreguntaEvaluacion,
-      Id_Evaluacion: pe.id_Evaluacion, // ✅ AÑADIDO AQUÍ
+      Id_Evaluacion: pe.id_Evaluacion, 
       Pregunta: pe.pregunta.Pregunta,
       opciones: pe.pregunta.opciones.map(o => ({
         Id_Opcion: o.Id_Opcion,
@@ -186,19 +186,19 @@ exports.responderPregunta = async (req, res) => {
       return res.status(400).json({ error: 'Faltan datos obligatorios.' });
     }
 
-    // Verifica que exista la evaluación
+    
     const evaluacion = await db.Evaluacion.findByPk(idEvaluacion);
     if (!evaluacion) {
       return res.status(404).json({ error: 'Evaluación no encontrada.' });
     }
 
-    // Verifica que la opción exista
+    
     const opcion = await db.Opcion.findByPk(idOpcionSeleccionada);
     if (!opcion) {
       return res.status(400).json({ error: 'Opción seleccionada inválida.' });
     }
 
-    // Actualiza la pregunta respondida con su opción y puntaje
+    
     const [actualizado] = await db.PreguntaEvaluacion.update(
       {
         RptaPostulante: opcion.Opcion,
@@ -224,7 +224,7 @@ exports.responderPregunta = async (req, res) => {
       });
     }
 
-    // ⏱️ Actualizar el tiempo en TODAS las preguntas teóricas de la evaluación (solo si aún no tienen tiempo)
+    
     await db.PreguntaEvaluacion.update(
       { TiempoRptaPostulante: tiempo || 0 },
       {
@@ -253,7 +253,7 @@ exports.obtenerPreguntaTecnicaAsignada = async (req, res) => {
   try {
     const idPostulante = parseInt(req.params.idPostulante, 10);
 
-    // 1️⃣ Buscar la evaluación del postulante con sus respuestas y asociación técnica
+    
     const evaluacion = await db.Evaluacion.findOne({
       where: { Id_postulante: idPostulante },
       include: {
@@ -274,7 +274,7 @@ exports.obtenerPreguntaTecnicaAsignada = async (req, res) => {
       return res.status(404).json({ error: 'Evaluación no encontrada.' });
     }
 
-    // 2️⃣ Encontrar la respuesta que tenga asociada una pregunta técnica
+    
     const respuestaTecnica = evaluacion.respuestas.find(
       r => r.pregunta?.preguntaTecnica
     );
@@ -283,13 +283,13 @@ exports.obtenerPreguntaTecnicaAsignada = async (req, res) => {
       return res.status(404).json({ error: 'No se encontró pregunta técnica asignada.' });
     }
 
-    // 3️⃣ Serializar la respuesta usando directamente el campo UsoIA de la evaluación
+    
     res.json({
       Id_Evaluacion: evaluacion.id_Evaluacion,
       Id_Pregunta: respuestaTecnica.Id_Pregunta,
       pregunta: respuestaTecnica.pregunta.Pregunta,
       respuesta: respuestaTecnica.RptaPostulante || '',
-      usoIA: respuestaTecnica.UsoIA  // ahora toma el valor 0 o 1 desde la BD
+      usoIA: respuestaTecnica.UsoIA  
     });
   } catch (error) {
     console.error('❌ Error al obtener pregunta técnica:', error);

@@ -59,7 +59,7 @@ export default function PresentacionEntrevista() {
 
 useEffect(() => {
   if (!cameraStream) {
-    reiniciarCamara(); // intenta recuperar el stream perdido
+    reiniciarCamara(); 
   } else if (camRef.current) {
     camRef.current.srcObject = cameraStream;
     camRef.current.play();
@@ -110,7 +110,7 @@ useEffect(() => {
     setRespuestaAnimada('');
     setRespuestaGPT('');
     setPresentacionIniciada(true);
-    await procesarAudio(null); // Paso 0 sin audio
+    await procesarAudio(null); 
   };
 
  const startRecording = async () => {
@@ -124,7 +124,7 @@ useEffect(() => {
     clearInterval(temporizadorRef.current);
     setTiempoRestante(15);
 
-    // 🟥 Calcular tiempo exacto entre IA y fin de grabación
+    
     const duracion = Math.round((Date.now() - inicioGrabacion) / 1000);
     await procesarAudio(audioBlob, duracion);
   };
@@ -133,7 +133,7 @@ useEffect(() => {
   setMediaRecorder(recorder);
   setRecording(true);
 
-  // Temporizador visual de 15s
+  
   setTiempoRestante(15);
   temporizadorRef.current = setInterval(() => {
     setTiempoRestante(prev => {
@@ -205,13 +205,13 @@ useEffect(() => {
           audio.play().then(() => {
             audio.onended = () => {
               desbloquearInterfaz();
-              setInicioGrabacion(Date.now()); // ✅ Aquí sí se activa justo cuando termina la IA
+              setInicioGrabacion(Date.now()); 
             };
 
             audio.onerror = err => {
               console.error('❌ Error al reproducir audio:', err);
               desbloquearInterfaz();
-              setInicioGrabacion(Date.now()); // (fallback por si falla el audio)
+              setInicioGrabacion(Date.now()); 
             };
           }).catch(err => {
             console.error('❌ Error al iniciar audio:', err);
@@ -242,7 +242,7 @@ return (
     <ValidadorEntorno idEvaluacion={idEvaluacion} onCamVisibilityChange={setCameraVisible} />
 
     {!presentacionIniciada ? (
-      // 🔹 Pantalla de bienvenida antes de iniciar
+      
 <div className="flex flex-col items-center justify-center h-full px-6 text-center">
   <div className="max-w-md">
     <h1 className="text-2xl font-bold text-white mb-4">Antes de iniciar la entrevista</h1>
@@ -277,7 +277,7 @@ return (
 </div>
 
     ) : (
-      // 🔸 Pantalla completa de la entrevista una vez iniciada
+      
       <>
         <div className="hidden sm:block absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
   <AnimatedCircle letter="D" isPlaying={isPlayingAudio} />
@@ -370,7 +370,7 @@ return (
       </>
     )}
 
-    {/* ✅ Cámara visible SIEMPRE */}
+    
     <video
       ref={camRef}
       muted

@@ -16,15 +16,15 @@ exports.crearCapture = async (req, res) => {
       return res.status(404).json({ error: 'La evaluación no existe' });
     }
 
-    // Extraer base64 sin el prefijo
+    
     const base64Data = File.replace(/^data:image\/jpeg;base64,/, '');
     const fileName = `captura_${id_Evaluacion}_${Date.now()}.jpg`;
     const filePath = path.join(__dirname, '..', 'uploads', fileName);
 
-    // Asegura que el directorio existe
+   
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
 
-    // Guardar archivo como imagen
+    
     fs.writeFileSync(filePath, base64Data, 'base64');
 
     const nuevaCaptura = await db.Capture.create({
@@ -46,7 +46,7 @@ exports.getCapturasPorPostulante = async (req, res) => {
   const idPostulante = parseInt(req.params.idPostulante);
 
   try {
-    // Busca TODAS las evaluaciones del postulante
+    
     const evaluaciones = await db.Evaluacion.findAll({
       where: { Id_postulante: idPostulante },
       attributes: ['id_Evaluacion'],
@@ -56,10 +56,10 @@ exports.getCapturasPorPostulante = async (req, res) => {
       return res.status(404).json({ error: 'No se encontró evaluación para este postulante' });
     }
 
-    // Extraer los ID de las evaluaciones
+    
     const idsEvaluacion = evaluaciones.map(e => e.id_Evaluacion);
 
-    // Buscar capturas que coincidan con cualquier evaluación del postulante
+    
     const capturas = await db.Capture.findAll({
       where: {
         id_Evaluacion: idsEvaluacion

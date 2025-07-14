@@ -87,7 +87,7 @@ export default function DetectorOscuridad({ onVisibilityChange, idEvaluacion }) 
           }
           alertaActivaRef.current = false;
           failureCountRef.current = 0;
-        }, 1000); // espera antes de capturar
+        }, 1000); 
       }
 
       onVisibilityChange(isVisible);

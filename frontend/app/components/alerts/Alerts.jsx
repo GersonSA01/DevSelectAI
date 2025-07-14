@@ -2,7 +2,7 @@
 import Swal from 'sweetalert2';
 
 /**
- * CustomAlert estilizado
+ * 
  * @param {Object} options
  * @returns {Promise<SweetAlertResult>}
  */

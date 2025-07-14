@@ -10,7 +10,10 @@ const {
 const db = require('../models');
 const { Op } = require('sequelize');
 
-// 🚀 NUEVA función: Vacantes por habilidades
+const { DateTime } = require('luxon');
+
+
+
 exports.getVacantesPorHabilidades = async (req, res) => {
   const { habilidades, idPostulante } = req.body;
 
@@ -30,23 +33,35 @@ exports.getVacantesPorHabilidades = async (req, res) => {
 
     const idItinerario = relacion.itinerario.id_Itinerario;
 
+    const hoy = new Date();
+
     const vacantes = await Vacante.findAll({
-      where: { id_Itinerario: idItinerario },
+      where: {
+        id_Itinerario: idItinerario,
+        Cantidad: { [Op.gt]: 0 }
+      },
       include: [
         {
           model: VacanteHabilidad,
           as: 'habilidades',
           required: true,
           where: { Id_Habilidad: habilidades },
-          include: [
-            { model: Habilidad, as: 'habilidad' }
-          ]
+          include: [{ model: Habilidad, as: 'habilidad' }]
         },
         {
           model: ProgramacionPostulacion,
           as: 'programacionesPostulacion',
+          required: true,
           include: [
-            { model: Programacion, as: 'programacion' }
+            {
+              model: Programacion,
+              as: 'programacion',
+              required: true,
+              where: {
+                FechIniPostulacion: { [Op.lte]: hoy },
+                FechFinPostulacion: { [Op.gte]: hoy }
+              }
+            }
           ]
         },
         {
@@ -65,13 +80,16 @@ exports.getVacantesPorHabilidades = async (req, res) => {
         Id_Habilidad: h.Id_Habilidad,
         Descripcion: h.habilidad?.Descripcion || 'Sin descripción'
       }));
+
       const programacion = v.programacionesPostulacion?.[0]?.programacion;
 
       return {
         Id_Vacante: v.Id_Vacante,
         Descripcion: v.Descripcion,
         Contexto: v.Contexto,
+        Cantidad: v.Cantidad,
         Habilidades: habilidadesPlano,
+        Empresa: v.empresa?.Nombre || null,
         Programacion: programacion
           ? {
               FechIniPostulacion: programacion.FechIniPostulacion,
@@ -91,6 +109,7 @@ exports.getVacantesPorHabilidades = async (req, res) => {
   }
 };
 
+
 exports.getByItinerario = async (req, res) => {
   const { idItinerario } = req.params;
 
@@ -106,7 +125,7 @@ exports.getByItinerario = async (req, res) => {
         },
         {
           model: db.ProgramacionPostulacion,
-          as: 'programacionesPostulacion', // <-- alias correcto
+          as: 'programacionesPostulacion',
           include: [
             {
               model: db.Programacion,
@@ -117,10 +136,8 @@ exports.getByItinerario = async (req, res) => {
       ]
     });
 
-    // Transformar las habilidades y programaciones
     const resultado = vacantes.map(v => {
       const habilidadesPlano = (v.habilidades || []).map(h => h.habilidad);
-      // Tomar la primera programación asociada (ajusta si hay varias)
       const programacion = v.programacionesPostulacion?.[0]?.programacion;
       return {
         ...v.toJSON(),
@@ -174,13 +191,40 @@ exports.crearVacante = async (req, res) => {
       return res.status(400).json({ error: 'Programación no encontrada.' });
     }
 
-    const hoy = new Date();
-    hoy.setHours(0,0,0,0);
-    const fechaIni = new Date(programacion.FechIniPostulacion);
-    fechaIni.setHours(0,0,0,0);
+    const hoy = DateTime.now().setZone('America/Guayaquil').startOf('day');
+    console.log(`Hoy (Ecuador): ${hoy.toISODate()}`);
+
+    if (!programacion.FechIniPostulacion) {
+      console.log(`La programación con id ${Id_Programacion} no tiene FechIniPostulacion definida.`);
+      return res.status(400).json({ error: 'La programación seleccionada no tiene fecha de inicio configurada.' });
+    }
+
+    console.log(`Raw de BD:`, programacion.FechIniPostulacion);
+    console.log(`Tipo de dato:`, typeof programacion.FechIniPostulacion);
+
+    let fechaIni;
+
+    if (programacion.FechIniPostulacion instanceof Date) {
+      
+      fechaIni = DateTime.fromJSDate(programacion.FechIniPostulacion, { zone: 'America/Guayaquil' }).startOf('day');
+    } else {
+      
+      fechaIni = DateTime.fromISO(programacion.FechIniPostulacion, { zone: 'America/Guayaquil' }).startOf('day');
+    }
+
+    if (!fechaIni.isValid) {
+      console.log(`La fecha de inicio es inválida: ${fechaIni.invalidExplanation}`);
+      return res.status(400).json({ error: 'Fecha de inicio inválida en la programación.' });
+    }
+
+    console.log(`Fecha inicio interpretada (Ecuador): ${fechaIni.toISODate()}`);
+
     if (fechaIni < hoy) {
+      console.log(`La fecha de inicio ${fechaIni.toISODate()} < hoy ${hoy.toISODate()}`);
       return res.status(400).json({ error: 'No se puede asignar una programación que ya inició.' });
     }
+
+    console.log(`La fecha de inicio ${fechaIni.toISODate()} es válida (>= hoy ${hoy.toISODate()})`);
 
     const nuevaVacante = await Vacante.create({
       id_Itinerario: Id_Itinerario,
@@ -192,12 +236,16 @@ exports.crearVacante = async (req, res) => {
       Id_reclutador,
     });
 
+    console.log(`Vacante creada con id ${nuevaVacante.Id_Vacante}`);
+
     await VacanteHabilidad.bulkCreate(
       habilidades.slice(0, 3).map(id => ({
         Id_Vacante: nuevaVacante.Id_Vacante,
         Id_Habilidad: id
       }))
     );
+
+    console.log(`Habilidades asignadas: ${habilidades.join(', ')}`);
 
     await ProgramacionPostulacion.create({
       Id_Vacante: nuevaVacante.Id_Vacante,
@@ -206,12 +254,15 @@ exports.crearVacante = async (req, res) => {
       CantRechazados: 0
     });
 
+    console.log(`ProgramaciónPostulacion creada para la vacante ${nuevaVacante.Id_Vacante}`);
+
     res.status(201).json({ message: 'Vacante creada', vacante: nuevaVacante });
   } catch (error) {
-    console.error('❌ Error al crear vacante:', error);
+    console.error('Error al crear vacante:', error);
     res.status(500).json({ error: 'Error al crear la vacante', detalle: error.message });
   }
 };
+
 
 exports.actualizarVacante = async (req, res) => {
   const { id } = req.params;
@@ -344,19 +395,19 @@ exports.asignarVacante = async (req, res) => {
   }
 
   try {
-    // Verificar que el postulante exista
+    
     const postulante = await db.Postulante.findByPk(idPostulante);
     if (!postulante) {
       return res.status(404).json({ error: 'Postulante no encontrado.' });
     }
 
-    // Verificar que la vacante exista
+    
     const vacante = await Vacante.findByPk(idVacante);
     if (!vacante) {
       return res.status(404).json({ error: 'Vacante no encontrada.' });
     }
 
-    // Buscar la ProgramacionPostulacion para esa vacante
+    
     const programacionPostulacion = await ProgramacionPostulacion.findOne({
       where: { Id_Vacante: idVacante }
     });
@@ -367,7 +418,7 @@ exports.asignarVacante = async (req, res) => {
 
     console.log('✅ ProgramacionPostulacion encontrada:', programacionPostulacion.toJSON());
 
-    // Determinar el nombre correcto de la clave primaria
+    
     const idProgramacionPostulacion =
       programacionPostulacion.Id_ProgramacionPostulacion ||
       programacionPostulacion.id ||
@@ -377,7 +428,7 @@ exports.asignarVacante = async (req, res) => {
       return res.status(500).json({ error: 'No se pudo determinar el id de la ProgramacionPostulacion.' });
     }
 
-    // Verificar que el postulante no esté ya asignado a esa vacante
+   
     const yaAsignado = await db.PostulanteVacante.findOne({
       where: {
         Id_Postulante: idPostulante,
@@ -389,7 +440,7 @@ exports.asignarVacante = async (req, res) => {
       return res.status(400).json({ error: 'El postulante ya está asignado a esta vacante.' });
     }
 
-    // Crear la asignación
+    
     const asignacion = await db.PostulanteVacante.create({
       Id_Postulante: idPostulante,
       Id_Vacante: idVacante,

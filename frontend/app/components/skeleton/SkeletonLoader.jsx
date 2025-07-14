@@ -1,7 +1,7 @@
 export default function SkeletonLoader() {
   return (
     <div className="space-y-8 animate-pulse">
-      {/* Skeleton del encabezado */}
+      
       <div className="sticky top-20 bg-[#0A0A23] py-4 z-10 border-b border-[#3BDCF6] shadow-md rounded-md px-4">
         <div className="flex justify-between items-center">
           <div>
@@ -15,7 +15,7 @@ export default function SkeletonLoader() {
         </div>
       </div>
 
-      {/* Skeleton del primer módulo */}
+      
       <div className="bg-[#1D1E33] rounded-lg p-6 space-y-4">
         <div className="h-5 bg-gray-600 rounded w-56" />
         <div className="space-y-2">

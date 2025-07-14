@@ -3,10 +3,10 @@ import React from 'react';
 export default function PostulacionesSkeleton() {
   return (
     <div className="min-h-screen bg-[#0b1120] text-white p-4 sm:p-6 md:p-8 overflow-x-hidden animate-pulse">
-      {/* Título */}
+      
       <div className="h-8 w-48 bg-slate-700 rounded mb-6" />
 
-      {/* Selector de periodo */}
+      
       <div className="bg-[#1E293B] p-4 rounded-lg mb-4 shadow-md">
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
@@ -20,7 +20,7 @@ export default function PostulacionesSkeleton() {
         </div>
       </div>
 
-      {/* Tarjetas resumen */}
+      
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
         {[1, 2, 3].map(i => (
           <div key={i} className="flex items-center bg-slate-800 rounded-xl p-4 shadow">
@@ -33,7 +33,7 @@ export default function PostulacionesSkeleton() {
         ))}
       </div>
 
-      {/* Filtros */}
+      
       <div className="bg-[#1E293B] p-4 rounded-lg mb-4 shadow-md flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
           <div className="h-4 w-20 bg-slate-700 rounded mb-2" />
@@ -48,7 +48,7 @@ export default function PostulacionesSkeleton() {
         </div>
       </div>
 
-      {/* Tabla */}
+      
       <div className="overflow-x-auto rounded-xl bg-slate-900 border border-slate-800 shadow">
         <table className="min-w-full divide-y divide-slate-800">
           <thead>

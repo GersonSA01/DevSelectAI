@@ -35,7 +35,7 @@ export default function ValidadorEntorno({ idEvaluacion, onCamVisibilityChange }
           });
 
           hasRequestedRef.current = false;
-          iniciarPantalla(); // 🔁 vuelve a intentar
+          iniciarPantalla(); 
           return;
         }
 
@@ -53,7 +53,7 @@ export default function ValidadorEntorno({ idEvaluacion, onCamVisibilityChange }
         });
 
         hasRequestedRef.current = false;
-        iniciarPantalla(); // 🔁 vuelve a intentar
+        iniciarPantalla(); 
       }
     };
 

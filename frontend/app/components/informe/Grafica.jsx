@@ -11,7 +11,7 @@ import {
 import { useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 
-// Registrar los módulos
+
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 export default function Grafica({ tiempos, itinerario, habilidades }) {
@@ -79,7 +79,7 @@ export default function Grafica({ tiempos, itinerario, habilidades }) {
 
   return (
     <div className="space-y-6">
-      {/* Panel de resumen general */}
+      
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
         <div className="bg-[#1D1E33] p-4 rounded-lg text-center">
           <p className="text-gray-400">Tiempo total</p>
@@ -95,15 +95,15 @@ export default function Grafica({ tiempos, itinerario, habilidades }) {
         </div>
       </div>
 
-      {/* Gráfico y detalles en layout responsive */}
+      
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Gráfico */}
+        
         <div className="bg-[#1D1E33] p-6 rounded-lg w-full lg:w-2/3">
           <h2 className="text-xl font-semibold mb-4">Tiempo por pregunta</h2>
           <Bar data={data} options={options} />
         </div>
 
-        {/* Detalles por pregunta */}
+        
         <div className="w-full lg:w-1/3 space-y-4">
           {detallesPreguntas.map((p, index) => (
             <div

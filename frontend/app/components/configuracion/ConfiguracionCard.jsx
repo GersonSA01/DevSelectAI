@@ -38,11 +38,11 @@ export default function ConfiguracionCard({ titulo, entidad, campos, expanded, o
 
   useEffect(() => {
     if (expanded) cargarRegistros();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [expanded]);
 
   const handleGuardar = async () => {
-    // Normaliza una fecha a año-mes-día (sin hora)
+    
     const normalizar = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
     const fechaPostIni = new Date(formData['FechIniPostulacion']);
@@ -50,7 +50,7 @@ export default function ConfiguracionCard({ titulo, entidad, campos, expanded, o
     const fechaAprobIni =
       formData['FechIniAprobacion'] && new Date(formData['FechIniAprobacion']);
 
-    // Validaciones usando fechas normalizadas
+    
     if (normalizar(fechaPostIni) < normalizar(new Date())) {
       alert('La fecha de inicio de postulación no puede ser menor a hoy.');
       return;
@@ -70,7 +70,7 @@ export default function ConfiguracionCard({ titulo, entidad, campos, expanded, o
   const payload = { ...formData };
   Object.keys(payload).forEach((key) => {
     if (payload[key] instanceof Date) {
-      // aquí decides qué campos quieres que sumen 1 día
+      
       let date = new Date(payload[key]);
 
       const yyyy = date.getFullYear();
@@ -120,7 +120,7 @@ export default function ConfiguracionCard({ titulo, entidad, campos, expanded, o
     }));
   };
 
-  // función auxiliar para calcular diferencia en días
+  
   const diasEntre = (inicio, fin) => {
     if (!inicio || !fin) return null;
     const d1 = new Date(inicio);
@@ -138,7 +138,7 @@ export default function ConfiguracionCard({ titulo, entidad, campos, expanded, o
 
   useEffect(() => {
     if (fechaPostIni && fechaPostFin) {
-      setDiasPostulacion(diasEntre(fechaPostIni, fechaPostFin) + 1); // +1 para incluir ambos días
+      setDiasPostulacion(diasEntre(fechaPostIni, fechaPostFin) + 1); 
     } else {
       setDiasPostulacion(null);
     }
@@ -153,7 +153,7 @@ export default function ConfiguracionCard({ titulo, entidad, campos, expanded, o
     } else {
       setDiasAprobacion(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [formData]);
 
   const renderCampoFecha = (campo, minDateExtra) => {
@@ -162,13 +162,13 @@ export default function ConfiguracionCard({ titulo, entidad, campos, expanded, o
     let minDate = minDateExtra || null;
 
     if (campo === 'FechIniPostulacion') {
-      minDate = new Date(); // hoy
+      minDate = new Date(); 
     }
     if (campo === 'FechFinPostulacion' && fechaPostIni) {
-      minDate = new Date(fechaPostIni.getTime() + 86400000); // +1 día
+      minDate = new Date(fechaPostIni.getTime() + 86400000); 
     }
     if (campo.toLowerCase().includes('aprobacion') && fechaPostFin) {
-      minDate = new Date(fechaPostFin.getTime() + 86400000); // +1 día
+      minDate = new Date(fechaPostFin.getTime() + 86400000); 
     }
 
     const invalido =
@@ -246,7 +246,7 @@ export default function ConfiguracionCard({ titulo, entidad, campos, expanded, o
               setFormData={setFormData}
             />
 
-            {/* 👇 aquí vuelve tu CRUD (botones y tabla) 👇 */}
+            
             <div className="flex gap-4 mt-2">
               <button
                 onClick={handleGuardar}
@@ -333,7 +333,7 @@ export default function ConfiguracionCard({ titulo, entidad, campos, expanded, o
       key.toLowerCase().includes('fech') &&
       convertido[key]
     ) {
-      convertido[key] = parseLocalDate(convertido[key]); // aquí
+      convertido[key] = parseLocalDate(convertido[key]); 
     }
   });
   setFormData(convertido);

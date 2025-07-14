@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
       autoIncrement: true
     },
     Respuesta: {
-      type: DataTypes.TEXT // Para código, se recomienda usar TEXT
+      type: DataTypes.TEXT 
     },    
     Id_Pregunta: {
       type: DataTypes.INTEGER

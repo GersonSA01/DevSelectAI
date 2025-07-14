@@ -24,7 +24,7 @@ export default function ZoomCaptura({ captura, setZoomImagen, guardarCaptura, ca
   };
 
   const handleCancelar = async () => {
-    // Si estaba aprobada, lo desmarca y actualiza en la BD
+    
     if (captura.Aprobado) {
       const nuevas = capturas.map(c =>
         c.id_Capture === captura.id_Capture

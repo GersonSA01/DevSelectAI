@@ -2,10 +2,10 @@ export default function SkeletonVacantes() {
   return (
     <div className="min-h-screen bg-[#0b1120] text-white p-6">
       <h1 className="text-3xl font-bold text-center mb-2 animate-pulse">
-        {/* Título en carga */}
+        
       </h1>
       <p className="text-center text-gray-400 mb-6 animate-pulse">
-        {/* Descripción en carga */}
+        
       </p>
 
       <div className="flex justify-end mb-4">

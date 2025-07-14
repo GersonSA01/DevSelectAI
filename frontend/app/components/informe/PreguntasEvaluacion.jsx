@@ -4,7 +4,7 @@ import { FileText, Code2, HelpCircle, MessageSquareText } from 'lucide-react';
 export default function PreguntasEvaluacion({ preguntasTeoricas, preguntaTecnica }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Preguntas Teóricas */}
+      
       <div className="bg-[#1D1E33] p-6 rounded-lg">
         <div className="flex items-center gap-2 mb-4">
           <FileText className="text-[#3BDCF6]" />
@@ -29,8 +29,7 @@ export default function PreguntasEvaluacion({ preguntasTeoricas, preguntaTecnica
         )}
       </div>
 
-      {/* Pregunta Técnica */}
-      {/* Pregunta Técnica */}
+      
 <div className="bg-[#1D1E33] p-6 rounded-lg">
   <div className="flex items-center gap-2 mb-4">
     <Code2 className="text-[#3BDCF6]" size={20} />

@@ -1,4 +1,4 @@
-// routes/calificacion.js
+
 const express = require("express");
 const router = express.Router();
 const {
@@ -10,7 +10,7 @@ const {
 
 router.put("/entrevista-oral", calificarEntrevistaOral);
 router.get("/entrevista-oral/:idEntrevista", getEntrevistaOral);
-router.put("/tecnica", calificarTecnico);  // ← Nueva ruta
+router.put("/tecnica", calificarTecnico);  
 router.put("/general", actualizarEvaluacionGeneral);
 
 module.exports = router;

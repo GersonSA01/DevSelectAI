@@ -15,7 +15,7 @@ export default function TablaGeneral({ columnas, filas }) {
         <tbody className="bg-[#0f172a] divide-y divide-gray-700 text-white">
           {filas.length > 0 ? (
             filas.map((fila, i) => {
-              // Soporte para filas expandidas (objeto con colspan y content)
+              
               if (
                 typeof fila === 'object' &&
                 !Array.isArray(fila) &&
@@ -28,7 +28,7 @@ export default function TablaGeneral({ columnas, filas }) {
                   </tr>
                 );
               }
-              // Fila normal (array)
+              
               if (Array.isArray(fila)) {
                 return (
                   <tr key={i} className="hover:bg-[#1e293b] transition">
@@ -38,7 +38,7 @@ export default function TablaGeneral({ columnas, filas }) {
                   </tr>
                 );
               }
-              // Si no es ni objeto especial ni array, ignora
+              
               return null;
             })
           ) : (

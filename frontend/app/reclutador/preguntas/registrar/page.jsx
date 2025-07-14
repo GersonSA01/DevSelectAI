@@ -160,64 +160,63 @@ export default function RegistrarPregunta() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-[#111827] p-6 rounded shadow space-y-6">
-          <div>
-            <label className="block text-sm mb-1">Texto de la pregunta:</label>
-            <textarea
-              className="w-full p-2 rounded text-black"
-              placeholder="Escribe la pregunta..."
-              value={pregunta}
-              onChange={(e) => setPregunta(e.target.value)}
-              required
-            />
-          </div>
+       <form onSubmit={handleSubmit} className="bg-[#111827] p-6 rounded-lg shadow space-y-6">
+  <div>
+    <label className="block text-sm text-gray-300 mb-1">Texto de la pregunta:</label>
+    <textarea
+      className="w-full p-2 rounded-md text-sm bg-[#1f2937] text-white placeholder-gray-400 focus:ring-2 focus:outline-none"
+      placeholder="Escribe la pregunta..."
+      value={pregunta}
+      onChange={(e) => setPregunta(e.target.value)}
+      required
+    />
+  </div>
 
-          <div>
-            <h3 className="font-semibold mb-2">Opciones de respuesta</h3>
-            {opciones.map((opcion, index) => (
-              <div key={index} className="flex items-center mb-2 gap-2">
-                <input
-                  type="radio"
-                  name="opcionCorrecta"
-                  checked={opcion.correcta}
-                  onChange={() => handleOpcionChange(index)}
-                  className="accent-green-500"
-                />
-                <input
-                  type="text"
-                  className="flex-1 p-2 rounded text-black"
-                  placeholder={`Opción ${index + 1}`}
-                  value={opcion.texto}
-                  onChange={(e) => handleTextoOpcion(index, e.target.value)}
-                  required
-                />
-                {opcion.correcta && (
-                  <span className="text-green-400 text-sm font-semibold">✔ Correcta</span>
-                )}
-                {opciones.length > 2 && (
-                  <button
-                    type="button"
-                    onClick={() => eliminarOpcion(index)}
-                    className="text-red-500 hover:text-red-700 text-sm"
-                  >✖</button>
-                )}
-              </div>
-            ))}
-
-            {opciones.length < 5 && (
-              <button
-                type="button"
-                onClick={agregarOpcion}
-                className="mt-2 bg-blue-600 hover:bg-blue-700 px-3 py-1 text-sm text-white rounded"
-              >+ Agregar opción</button>
-            )}
-          </div>
-
+  <div>
+    <h3 className="font-medium text-gray-300 mb-2">Opciones de respuesta</h3>
+    {opciones.map((opcion, index) => (
+      <div key={index} className="flex items-center gap-2 mb-2">
+        <input
+          type="radio"
+          name="opcionCorrecta"
+          checked={opcion.correcta}
+          onChange={() => handleOpcionChange(index)}
+        />
+        <input
+          type="text"
+          className="flex-1 p-2 rounded-md text-sm bg-[#1f2937] text-white placeholder-gray-400 focus:ring-2 focus:outline-none"
+          placeholder={`Opción ${index + 1}`}
+          value={opcion.texto}
+          onChange={(e) => handleTextoOpcion(index, e.target.value)}
+          required
+        />
+        {opciones.length > 2 && (
           <button
-            type="submit"
-            className="w-full bg-green-500 hover:bg-green-600 px-4 py-2 rounded text-white"
-          >Guardar pregunta</button>
-        </form>
+            type="button"
+            onClick={() => eliminarOpcion(index)}
+            className="text-red-400 hover:text-red-600 text-xs"
+          >✖</button>
+        )}
+      </div>
+    ))}
+
+    {opciones.length < 5 && (
+      <button
+        type="button"
+        onClick={agregarOpcion}
+        className="mt-2 bg-blue-600 hover:bg-blue-700 px-3 py-1 text-xs text-white rounded-md"
+      >+ Agregar opción</button>
+    )}
+  </div>
+
+  <button
+    type="submit"
+    className="w-full bg-green-500 hover:bg-green-600 px-4 py-2 rounded-md text-white font-medium"
+  >
+    Guardar pregunta
+  </button>
+</form>
+
       </div>
     </div>
   );

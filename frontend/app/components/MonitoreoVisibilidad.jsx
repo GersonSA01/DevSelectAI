@@ -21,7 +21,7 @@ export default function MonitoreoVisibilidad({ idEvaluacion }) {
         await tomarCapturaPantalla(idEvaluacion);
       }
       alertaActivaRef.current = false;
-    }, 3000); // Da tiempo para que el usuario vea la alerta
+    }, 3000); 
   };
 
   useEffect(() => {

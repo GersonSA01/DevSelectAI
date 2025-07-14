@@ -4,7 +4,7 @@ const cors = require("cors");
 const fileUpload = require("express-fileupload");
 const app = express();
 
-// 📦 BASE DE DATOS
+
 const db = require("./models");
 const cargarDatosIniciales = require("./script/cargarDatosIniciales");
 
@@ -17,7 +17,7 @@ db.sequelize.sync({ force: false })
     console.error("❌ Error al sincronizar la base de datos:", err);
   });
 
-// 🔐 MIDDLEWARES
+
 app.use(cors({
   origin: 'http://localhost:3000',
   exposedHeaders: ['X-Respuesta-GPT']
@@ -28,7 +28,7 @@ app.use(fileUpload());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
-// 🔗 RUTAS IMPORTADAS
+
 const entrevistaRoutes = require("./routes/entrevista");
 const postulanteRoutes = require("./routes/postulante");
 const reclutadorRoutes = require("./routes/reclutador");
@@ -50,7 +50,7 @@ const informeRoutes = require('./routes/informe');
 const calificarRoutes = require('./routes/calificar');
 const programacionesRoutes = require('./routes/programaciones');
 
-// 🚦 USO DE RUTAS
+
 app.use('/api/itinerarios', itinerarioRoutes);
 app.use('/api/entrevista', entrevistaRoutes);
 app.use('/api/postulante', postulanteRoutes);
@@ -76,12 +76,11 @@ app.use('/api/postulante', require('./routes/postulante'));
 
 
 
-// 🌐 RUTA PRINCIPAL
 app.get("/", (req, res) => {
   res.send("🚀 Bienvenido a DevSelectAI - Backend en funcionamiento");
 });
 
-// ⚠️ RUTA NO ENCONTRADA
+
 app.use((req, res) => {
   res.status(404).json({ error: "Ruta no encontrada" });
 });

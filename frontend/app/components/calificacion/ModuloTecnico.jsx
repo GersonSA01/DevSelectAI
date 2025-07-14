@@ -97,7 +97,7 @@ export default function ModuloTecnico({
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Lado izquierdo: enunciado y respuesta */}
+        
         <div className="space-y-4 text-sm text-gray-300">
           <p>
             <strong>Pregunta técnica:</strong> {preguntaTecnica.pregunta}
@@ -107,7 +107,7 @@ export default function ModuloTecnico({
           </pre>
         </div>
 
-        {/* Lado derecho: inputs */}
+        
         <div className="bg-[#181A2F] rounded-md p-5 text-white border border-[#2B2C3F] space-y-4">
           <h3 className="text-[#3BDCF6] font-semibold text-base flex items-center gap-2 mb-3">
             <FaCheckCircle /> Criterios de Evaluación

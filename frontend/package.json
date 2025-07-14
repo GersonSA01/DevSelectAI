@@ -63,6 +63,7 @@
     "jsonwebtoken": "^9.0.2",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
+    "jwt-decode": "^4.0.0",
     "lucide-react": "^0.446.0",
     "next": "^13.5.8",
     "next-themes": "^0.3.0",

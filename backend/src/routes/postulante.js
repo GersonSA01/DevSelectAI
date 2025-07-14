@@ -27,7 +27,7 @@ router.put('/:id/cambiar-estado', cambiarEstado);
 router.get("/cedula/:cedula", verificarPostulantePorCedula);
 
 
-// 🔹 Nuevas rutas para evaluación
+
 router.get("/preguntas-teoricas", getPreguntasTeoricas);
 router.get("/entrevista", getEntrevistaOral);
 router.get("/preguntas-orales", getPreguntasOrales);

@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    id_ProgramacionPostulacion: {       // ✅ NUEVO CAMPO AGREGADO
+    id_ProgramacionPostulacion: {       
       type: DataTypes.INTEGER,
       allowNull: false
     },

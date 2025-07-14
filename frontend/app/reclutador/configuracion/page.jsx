@@ -25,7 +25,7 @@ export default function ConfiguracionPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simula la carga inicial
+    
     const timer = setTimeout(() => setLoading(false), 500);
     return () => clearTimeout(timer);
   }, []);

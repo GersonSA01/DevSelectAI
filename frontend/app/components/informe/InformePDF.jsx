@@ -7,19 +7,19 @@ export default function InformePDF({ datos }) {
   const generarPDF = async () => {
     const doc = new jsPDF();
 
-    // TÍTULO
+    
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.text('Informe de Evaluación - DevSelectAI', 105, 20, { align: 'center' });
 
-    // DATOS BÁSICOS
+ 
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
     doc.text(`Nombre: ${datos.nombre}`, 14, 35);
     doc.text(`Itinerario: ${datos.itinerario}`, 14, 43);
     doc.text(`Vacante: ${datos.vacante}`, 14, 51);
 
-    // HABILIDADES
+    
     doc.setFont('helvetica', 'bold');
     doc.text('Habilidades:', 14, 63);
     doc.setFont('helvetica', 'normal');
@@ -27,19 +27,19 @@ export default function InformePDF({ datos }) {
       doc.text(`- ${h}`, 20, 71 + i * 7);
     });
 
-    // Puntaje Final debajo de habilidades
+    
     let y = 71 + datos.habilidades.length * 7 + 10;
-    doc.setFillColor(50, 50, 50); // gris oscuro
-    doc.setTextColor(255, 255, 255); // texto blanco
+    doc.setFillColor(50, 50, 50); 
+    doc.setTextColor(255, 255, 255); 
     doc.rect(55, y, 100, 12, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.text(`PUNTAJE FINAL: ${datos.puntajeFinal}/10`, 105, y + 8, { align: 'center' });
 
-    doc.setTextColor(0, 0, 0); // Restaurar texto negro
+    doc.setTextColor(0, 0, 0); ro
     y += 25;
 
-    // TABLA DE CALIFICACIONES
+    
     const { entrevista, teorico, tecnica, capturas } = datos.calificaciones;
     const total = entrevista + teorico + tecnica + capturas;
     autoTable(doc, {
@@ -50,11 +50,11 @@ export default function InformePDF({ datos }) {
       headStyles: { fillColor: [50, 50, 50], textColor: [255, 255, 255], fontStyle: 'bold' },
     });
 
-    // ✅ Usar lastAutoTable.finalY de forma segura
+    
     y = doc.lastAutoTable?.finalY || y;
     y += 10;
 
-    // OBSERVACIÓN
+   
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.text('Observación de la IA:', 14, y);
@@ -64,7 +64,7 @@ export default function InformePDF({ datos }) {
 
     y += 30;
 
-    // DETALLE: ENTREVISTA
+    
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.text('Detalle de la Entrevista Oral:', 14, y);
@@ -76,7 +76,7 @@ export default function InformePDF({ datos }) {
 
     y += 8 + datos.tiempos.entrevista.length * 6 + 10;
 
-    // DETALLE: TEÓRICO
+    
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.text('Detalle de la Evaluación Teórica:', 14, y);
@@ -102,7 +102,7 @@ export default function InformePDF({ datos }) {
       },
     });
 
-    // DETALLE: TÉCNICA
+    
     doc.addPage();
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
@@ -136,7 +136,7 @@ export default function InformePDF({ datos }) {
     doc.setFont('helvetica', 'normal');
     doc.text(datos.preguntaTecnica.UsoIA ? 'Sí' : 'No', 40, resumenY + 14);
 
-    // Guardar el PDF
+    
     doc.save(`informe_postulante_${datos.nombre}.pdf`);
   };
 

@@ -21,38 +21,40 @@ export default function PostulacionesStats({ postulantes, programacionActual }) 
         color="green"
         label="Total"
         value={enProgramacion.length}
+        customBg="rgba(34, 197, 94, 0.3)" // verde
       />
       <StatCard
         icon={<FiClock />}
         color="yellow"
         label="Pendientes"
         value={pendientes}
-        customBg="rgba(250, 204, 21, 0.3)" // fondo amarillo más visible
+        customBg="rgba(250, 204, 21, 0.3)" // amarillo
       />
       <StatCard
         icon={<FiCheck />}
         color="blue"
         label="Aprobados"
         value={count('Aprobado')}
+        customBg="rgba(59, 130, 246, 0.3)" // azul
       />
       <StatCard
         icon={<FiX />}
         color="red"
         label="Rechazados"
         value={count('Rechazado')}
+        customBg="rgba(239, 68, 68, 0.3)" // rojo
       />
     </div>
   );
 }
 
 function StatCard({ icon, color, label, value, customBg }) {
-  const bgClass = `bg-${color}-500/20`;
   const bgStyle = customBg ? { backgroundColor: customBg } : undefined;
 
   return (
     <div className="flex items-center bg-slate-800 rounded-xl p-4 shadow">
       <div
-        className={`p-3 rounded-full text-${color}-400 text-xl ${!customBg ? bgClass : ''}`}
+        className={`p-3 rounded-full text-${color}-400 text-xl`}
         style={bgStyle}
       >
         {icon}

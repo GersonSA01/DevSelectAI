@@ -1,4 +1,4 @@
-// models/PreguntaEvaluacion.js
+
 module.exports = (sequelize, DataTypes) => {
   return sequelize.define('PreguntaEvaluacion', {
     id_PreguntaEvaluacion: {

@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
   return sequelize.define('Postulante', {
-    Id_Postulante: { type: DataTypes.INTEGER, primaryKey: true },
+    Id_Postulante: { type: DataTypes.INTEGER, primaryKey: true,  autoIncrement: true },
     Cedula: DataTypes.STRING(10),
     Nombre: DataTypes.STRING,
     Apellido: DataTypes.STRING,

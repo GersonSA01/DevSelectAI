@@ -1,4 +1,4 @@
-import { FiEye, FiCheck, FiX } from 'react-icons/fi';
+import { FiEye, FiCheck, FiX, FiEdit } from 'react-icons/fi';
 import { Alert } from '../alerts/Alerts';
 
 /**
@@ -23,7 +23,7 @@ export const getHoyLocalDate = () => {
 /**
  * Verifica si una fecha está dentro del rango [inicio, fin] inclusive
  */
-export const estaEnRango = (fecha, inicioStr, finStr) => {
+export function estaEnRango(fecha, inicioStr, finStr) {
   const f = new Date(fecha);
   const inicio = new Date(inicioStr);
   const fin = new Date(finStr);
@@ -33,24 +33,24 @@ export const estaEnRango = (fecha, inicioStr, finStr) => {
   fin.setHours(23, 59, 59, 999);
 
   return f >= inicio && f <= fin;
-};
+}
 
 /**
  * Verifica si está dentro del rango de postulación
  */
-export const estaEnRangoPostulacion = (fechaSeleccion, programacion) => {
+export function estaEnRangoPostulacion(fechaSeleccion, programacion) {
   if (!fechaSeleccion || !programacion) return false;
   return estaEnRango(
     fechaSeleccion,
     programacion.FechIniPostulacion,
     programacion.FechFinPostulacion
   );
-};
+}
 
 /**
  * Verifica si hoy está dentro del rango de aprobación
  */
-export const estaEnRangoAprobacion = (programacion) => {
+export function estaEnRangoAprobacion(programacion) {
   if (!programacion) return false;
   const hoy = getHoyLocalDate();
   return estaEnRango(
@@ -58,19 +58,18 @@ export const estaEnRangoAprobacion = (programacion) => {
     programacion.FechIniAprobacion,
     programacion.FechFinAprobacion
   );
-};
+}
 
 /**
  * Determina si el postulante puede ver su informe
  */
-export const puedeVerInforme = (estado) => {
-  return ['Aprobado', 'Rechazado', 'Calificado'].includes(estado);
-};
+export const puedeVerInforme = (estado) =>
+  ['Aprobado', 'Rechazado', 'Calificado'].includes(estado);
 
 /**
  * Aprobar postulante con backend + Alert
  */
-export const aceptarPostulante = async (id, nombre, vacante, programacionActual, setPostulantes) => {
+export async function aceptarPostulante(id, nombre, vacante, programacionActual, setPostulantes) {
   if (!programacionActual || !estaEnRangoAprobacion(programacionActual)) {
     await Alert({
       title: 'Fuera de rango',
@@ -89,29 +88,32 @@ export const aceptarPostulante = async (id, nombre, vacante, programacionActual,
     cancelButtonText: 'Cancelar'
   });
 
-  if (confirm.isConfirmed) {
-    try {
-      const res = await fetch(`http://localhost:5000/api/postulante/${id}/aceptar`, { method: 'PUT' });
-      if (!res.ok) throw new Error();
-      await Alert({
-        title: 'Aprobado',
-        html: `${nombre} fue aprobado correctamente.`,
-        icon: 'success'
-      });
-      window.location.reload();
-      setPostulantes(prev =>
-        prev.map(p => p.Id_Postulante === id ? { ...p, Estado: 'Aprobado' } : p)
-      );
-    } catch {
-      await Alert({ title: 'Error', html: 'No se pudo aprobar.', icon: 'error' });
-    }
+  if (!confirm.isConfirmed) return;
+
+  try {
+    const res = await fetch(`http://localhost:5000/api/postulante/${id}/aceptar`, { method: 'PUT' });
+    if (!res.ok) throw new Error();
+
+    await Alert({
+      title: 'Aprobado',
+      html: `${nombre} fue aprobado correctamente.`,
+      icon: 'success'
+    });
+
+    window.location.reload();
+
+    setPostulantes(prev =>
+      prev.map(p => p.Id_Postulante === id ? { ...p, Estado: 'Aprobado' } : p)
+    );
+  } catch {
+    await Alert({ title: 'Error', html: 'No se pudo aprobar.', icon: 'error' });
   }
-};
+}
 
 /**
  * Rechazar postulante con backend + Alert
  */
-export const rechazarPostulante = async (id, setPostulantes) => {
+export async function rechazarPostulante(id, setPostulantes) {
   const confirm = await Alert({
     title: '¿Rechazar postulante?',
     html: 'El postulante será rechazado.',
@@ -121,24 +123,27 @@ export const rechazarPostulante = async (id, setPostulantes) => {
     cancelButtonText: 'Cancelar'
   });
 
-  if (confirm.isConfirmed) {
-    try {
-      const res = await fetch(`http://localhost:5000/api/postulante/${id}/rechazar`, { method: 'PUT' });
-      if (!res.ok) throw new Error();
-      await Alert({
-        title: 'Rechazado',
-        html: 'El postulante ha sido rechazado.',
-        icon: 'success'
-      });
-      window.location.reload();
-      setPostulantes(prev =>
-        prev.map(p => p.Id_Postulante === id ? { ...p, Estado: 'Rechazado' } : p)
-      );
-    } catch {
-      await Alert({ title: 'Error', html: 'No se pudo rechazar.', icon: 'error' });
-    }
+  if (!confirm.isConfirmed) return;
+
+  try {
+    const res = await fetch(`http://localhost:5000/api/postulante/${id}/rechazar`, { method: 'PUT' });
+    if (!res.ok) throw new Error();
+
+    await Alert({
+      title: 'Rechazado',
+      html: 'El postulante ha sido rechazado.',
+      icon: 'success'
+    });
+
+    window.location.reload();
+
+    setPostulantes(prev =>
+      prev.map(p => p.Id_Postulante === id ? { ...p, Estado: 'Rechazado' } : p)
+    );
+  } catch {
+    await Alert({ title: 'Error', html: 'No se pudo rechazar.', icon: 'error' });
   }
-};
+}
 
 /**
  * Renderiza las filas de la tabla general
@@ -175,45 +180,49 @@ export const renderFilasPostulantes = ({
 /**
  * Renderiza las habilidades como chips
  */
-const renderHabilidades = (p) => (
-  (p.habilidades || []).length > 0
-    ? p.habilidades.map((h, idx) => (
-        <span
-          key={idx}
-          className="inline-flex items-center rounded-full bg-slate-700 px-3 py-1 text-xs font-medium text-blue-300 mr-1"
-        >
-          {h.habilidad?.Descripcion}
-        </span>
-      ))
-    : <span className="text-gray-400 text-xs">—</span>
-);
+function renderHabilidades(p) {
+  if ((p.habilidades || []).length === 0) {
+    return <span className="text-gray-400 text-xs">—</span>;
+  }
+
+  return p.habilidades.map((h, idx) => (
+    <span
+      key={idx}
+      className="inline-flex items-center rounded-full bg-slate-700 px-3 py-1 text-xs font-medium text-blue-300 mr-1"
+    >
+      {h.habilidad?.Descripcion}
+    </span>
+  ));
+}
 
 /**
  * Renderiza el estado y la calificación
  */
-const renderEstado = (p) => (
-  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium shadow ${estadoClase(p.estadoPostulacion?.descripcion)}`}>
-      {p.estadoPostulacion?.descripcion || '—'}
-    </span>
-    {p.estadoPostulacion?.descripcion === 'Calificado' && p.evaluaciones?.[0]?.PuntajeTotal !== undefined && (
-      <div className={`text-xs font-semibold px-2 py-1 rounded shadow-inner ${
-        p.evaluaciones[0].PuntajeTotal >= 16
-          ? 'bg-green-100 text-green-800'
-          : p.evaluaciones[0].PuntajeTotal >= 10
-          ? 'bg-yellow-100 text-yellow-800'
-          : 'bg-red-100 text-red-800'
-      }`}>
-        Nota: {p.evaluaciones[0].PuntajeTotal}/20
-      </div>
-    )}
-  </div>
-);
+function renderEstado(p) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+      <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium shadow ${estadoClase(p.estadoPostulacion?.descripcion)}`}>
+        {p.estadoPostulacion?.descripcion || '—'}
+      </span>
+      {p.estadoPostulacion?.descripcion === 'Calificado' && p.evaluaciones?.[0]?.PuntajeTotal !== undefined && (
+        <div className={`text-xs font-semibold px-2 py-1 rounded shadow-inner ${
+          p.evaluaciones[0].PuntajeTotal >= 16
+            ? 'bg-green-100 text-green-800'
+            : p.evaluaciones[0].PuntajeTotal >= 10
+            ? 'bg-yellow-100 text-yellow-800'
+            : 'bg-red-100 text-red-800'
+        }`}>
+          Nota: {p.evaluaciones[0].PuntajeTotal}/20
+        </div>
+      )}
+    </div>
+  );
+}
 
 /**
  * Devuelve las clases según el estado
  */
-const estadoClase = (estado) => {
+function estadoClase(estado) {
   switch (estado) {
     case 'Por evaluar': return 'bg-yellow-100 text-yellow-800';
     case 'Evaluado': return 'bg-blue-100 text-blue-800';
@@ -222,26 +231,49 @@ const estadoClase = (estado) => {
     case 'Calificado': return 'bg-indigo-100 text-indigo-800';
     default: return 'bg-gray-100 text-gray-800';
   }
-};
+}
 
 /**
  * Renderiza los botones de acciones
  */
-const renderAcciones = (p, programacionActual, router, setPostulantes) => (
-  <div className={`flex justify-center gap-6 text-2xl ${puedeVerInforme(p.estadoPostulacion?.descripcion) ? 'justify-around' : 'justify-evenly'}`}>
-    {puedeVerInforme(p.estadoPostulacion?.descripcion) && (
-      <div
-        className="flex flex-col items-center cursor-pointer"
-        onClick={() => router.push(`/reclutador/informes?id=${p.Id_Postulante}`)}
-      >
-        <FiEye className="text-yellow-400 hover:text-yellow-300" />
-        <span className="text-xs text-gray-300 mt-1 text-center">Ver informe</span>
-      </div>
-    )}
+function renderAcciones(p, programacionActual, router, setPostulantes) {
+  const estado = p.estadoPostulacion?.descripcion;
 
-    {!['Aprobado', 'Rechazado'].includes(p.estadoPostulacion?.descripcion) &&
-      programacionActual &&
-      estaEnRangoAprobacion(programacionActual) && (
+  // Por Evaluar o Por Elegir Vacante → solo texto gris
+  if (estado === 'Por Evaluar' || estado === 'Por Elegir Vacante') {
+    return (
+      <div className="flex justify-center text-sm text-gray-400">
+        {estado}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex justify-center gap-6 text-2xl">
+      {/* Ver informe cuando está Aprobado o Rechazado */}
+      {['Aprobado', 'Rechazado'].includes(estado) && (
+        <div
+          className="flex flex-col items-center cursor-pointer"
+          onClick={() => router.push(`/reclutador/informes?id=${p.Id_Postulante}`)}
+        >
+          <FiEye className="text-yellow-400 hover:text-yellow-300" />
+          <span className="text-xs text-gray-300 mt-1 text-center">Ver informe</span>
+        </div>
+      )}
+
+      {/* Calificar cuando está Evaluado */}
+      {estado === 'Evaluado' && (
+        <div
+          className="flex flex-col items-center cursor-pointer"
+          onClick={() => router.push(`/reclutador/evaluaciones?id=${p.Id_Postulante}`)}
+        >
+          <FiEdit className="text-indigo-400 hover:text-indigo-300" />
+          <span className="text-xs text-gray-300 mt-1 text-center">Calificar</span>
+        </div>
+      )}
+
+      {/* Aprobar / Rechazar SOLO cuando está Calificado */}
+      {estado === 'Calificado' && programacionActual && estaEnRangoAprobacion(programacionActual) && (
         <>
           <div
             className="flex flex-col items-center cursor-pointer"
@@ -268,5 +300,6 @@ const renderAcciones = (p, programacionActual, router, setPostulantes) => (
           </div>
         </>
       )}
-  </div>
-);
+    </div>
+  );
+}

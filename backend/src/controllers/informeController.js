@@ -56,14 +56,14 @@ exports.obtenerInformePostulante = async (req, res) => {
       include: [{ model: db.PreguntaOral, as: 'preguntasOrales' }]
     });
 
-    // Habilidades
+   
     const habilidades = postulante.habilidades.map(h => h.habilidad.Descripcion);
 
-    // Oral
+    
     const tiemposOrales = entrevista?.preguntasOrales.map(p => p.TiempoRptaPostulante || 0) || [];
     const calificacionOral = entrevista?.preguntasOrales.reduce((acc, p) => acc + (p.CalificacionIA || 0), 0) || 0;
 
-    // Teóricas
+    
     const teoricas = evaluacion?.respuestas?.filter(r => !r.pregunta?.preguntaTecnica) || [];
     const tiempoTeorico = teoricas.reduce((acc, r) => acc + (r.TiempoRptaPostulante || 0), 0);
     const calificacionTeorico = teoricas.reduce((acc, r) => acc + (r.Puntaje || 0), 0);
@@ -75,7 +75,7 @@ exports.obtenerInformePostulante = async (req, res) => {
       TiempoRpta: r.TiempoRptaPostulante || 0
     }));
 
-    // Técnica
+    
     const tecnica = evaluacion?.respuestas?.find(r => r.pregunta?.preguntaTecnica);
     const tiempoTecnica = tecnica?.TiempoRptaPostulante || 0;
     const calificacionTecnica = tecnica?.Puntaje || 0;
@@ -90,17 +90,15 @@ exports.obtenerInformePostulante = async (req, res) => {
         }
       : null;
 
-    // Capturas
-    // Capturas
 const capturas = (evaluacion?.captures || []).filter(c => c.Aprobado === true || c.Aprobado === 1);
 const totalCapturas = capturas.length;
 const capturasPenalizadas = capturas.filter(c => c.Aprobado === true || c.Aprobado === 1).length;
 
-// Regla: 2 - (n penalizadas * 0.5)
+
 let puntajeCapturas = 2 - (capturasPenalizadas * 0.5);
 if (puntajeCapturas < 0) puntajeCapturas = 0;
 
-    // Vacante e Itinerario
+    
     const seleccion = postulante.selecciones?.[0];
     const vacante = seleccion?.vacante;
     const itinerarioDescripcion = vacante?.itinerario?.descripcion || 'No asignado';
@@ -108,11 +106,11 @@ if (puntajeCapturas < 0) puntajeCapturas = 0;
 
     const observacion = evaluacion?.ObservacionGeneral || '';
 
-    // Cálculo final
+    
     const puntajeEvaluacion = calificacionOral + calificacionTeorico + calificacionTecnica;
     const puntajeFinal = puntajeEvaluacion + puntajeCapturas;
 
-    // Actualizar base
+    
     await evaluacion.update({ PuntajeTotal: puntajeFinal });
 
     res.json({
@@ -129,7 +127,7 @@ if (puntajeCapturas < 0) puntajeCapturas = 0;
         entrevista: calificacionOral,
         teorico: calificacionTeorico,
         tecnica: calificacionTecnica,
-        capturas: puntajeCapturas // ← nota sobre 2, no cantidad
+        capturas: puntajeCapturas 
       },
       puntajeEvaluacion,
       puntajeFinal,

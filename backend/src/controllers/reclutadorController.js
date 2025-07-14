@@ -1,5 +1,7 @@
 const { Reclutador } = require("../models");
 
+const bcrypt = require("bcrypt");
+
 exports.crearReclutador = async (req, res) => {
   try {
     const { Cedula, Nombres, Apellidos, Correo, Telefono, Contrasena } = req.body;
@@ -20,7 +22,17 @@ exports.crearReclutador = async (req, res) => {
       return res.status(400).json({ error: "La contraseña debe tener al menos 8 caracteres" });
     }
 
-    const nuevo = await Reclutador.create({ Cedula, Nombres, Apellidos, Correo, Telefono, Contrasena });
+    
+    const hashedPassword = await bcrypt.hash(Contrasena, 10);
+
+    const nuevo = await Reclutador.create({
+      Cedula,
+      Nombres,
+      Apellidos,
+      Correo,
+      Telefono,
+      Contrasena: hashedPassword
+    });
 
     res.status(201).json(nuevo);
   } catch (error) {
@@ -28,3 +40,6 @@ exports.crearReclutador = async (req, res) => {
     res.status(500).json({ error: "Error interno del servidor" });
   }
 };
+
+
+

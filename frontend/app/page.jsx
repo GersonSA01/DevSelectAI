@@ -15,7 +15,7 @@ export default function Home() {
 
   return (
     <main className="relative min-h-screen flex items-center justify-center px-6 bg-background text-white overflow-hidden">
-      {/* Imagen de fondo */}
+      
       <Image
         src="/fondo_pantalla.png"
         alt="Fondo tecnológico DevSelectAI"
@@ -25,10 +25,10 @@ export default function Home() {
         className="z-0"
       />
 
-      {/* Capa negra semi-transparente */}
+      
       <div className="absolute inset-0 bg-black opacity-50 z-10"></div>
 
-      {/* Contenido principal */}
+      
       <div className="relative z-20 text-center max-w-2xl">
         <h1 className="text-5xl md:text-6xl font-extrabold mb-4">
           DevSelectAI
@@ -55,7 +55,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Modales */}
+      
       <SeleccionarPerfilDialog open={open} setOpen={setOpen} />
       <RegistroDialog open={openRegistro} setOpen={setOpenRegistro} />
     </main>

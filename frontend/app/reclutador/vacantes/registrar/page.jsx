@@ -3,11 +3,16 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Alert } from '../../../components/alerts/Alerts';
+import { jwtDecode } from "jwt-decode";
 
 function formatearFecha(fecha) {
   if (!fecha) return '';
-  return new Date(fecha).toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' });
+  const soloFecha = fecha.slice(0, 10);
+  const [a, m, d] = soloFecha.split('-');
+  return `${d}/${m}/${a}`;
 }
+
+
 
 export default function RegistrarVacante() {
   const router = useRouter();
@@ -46,19 +51,27 @@ export default function RegistrarVacante() {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    const guardado = localStorage.getItem('reclutador');
-    if (!guardado) return;
-    try {
-      const datos = JSON.parse(guardado);
-      const id = Number(datos.Id_Reclutador ?? datos.id ?? datos.Id_reclutador);
-      if (!isNaN(id)) {
-        setIdReclutador(id);
-      }
-    } catch (err) {
-      console.error('⚠️ Error parseando reclutador:', err);
+useEffect(() => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.warn('⚠️ No hay token en localStorage');
+      return;
     }
-  }, []);
+
+    const decoded = jwtDecode(token);
+    const id = Number(decoded.id || decoded.Id_Reclutador || decoded.Id_reclutador);
+
+    if (!isNaN(id)) {
+      setIdReclutador(id);
+      console.log(`✅ Reclutador ID obtenido del JWT: ${id}`);
+    } else {
+      console.error('⚠️ ID de reclutador no válido en el token');
+    }
+  } catch (err) {
+    console.error('❌ Error al decodificar JWT:', err);
+  }
+}, []);
 
   useEffect(() => {
     if (!idVacante) return;

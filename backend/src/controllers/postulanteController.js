@@ -1,80 +1,90 @@
 const crypto = require("crypto");
-const db = require('../models');
-const sendEmail = require('../../utils/sendEmail');
-require('dotenv').config();
+const db = require("../models");
+const { sendEmail, Templates } = require("../../utils/sendEmail");
+const bcrypt = require("bcrypt");
+
+require("dotenv").config();
 
 const baseUrl = process.env.URL_FRONTEND || "http://localhost:3000";
 
-// 👉 Crear postulante y enviar correo
 const crearPostulante = async (req, res) => {
   const datos = req.body;
 
   try {
+    if (!datos.Cedula || !datos.Nombre || !datos.Apellido || !datos.Correo || !datos.Contrasena) {
+      return res.status(400).json({ error: "Faltan campos obligatorios." });
+    }
+
+    if (!/^\d{10}$/.test(datos.Cedula)) {
+      return res.status(400).json({ error: "La cédula debe tener exactamente 10 dígitos." });
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.Correo)) {
+      return res.status(400).json({ error: "El correo no es válido." });
+    }
+
+    if (datos.Contrasena.length < 8) {
+      return res.status(400).json({ error: "La contraseña debe tener mínimo 8 caracteres." });
+    }
+
+    const existente = await db.Postulante.findOne({ where: { Cedula: datos.Cedula } });
+    if (existente) {
+      return res.status(400).json({ error: "Ya existe un postulante con esta cédula." });
+    }
+
     const token = crypto.randomBytes(24).toString("hex");
+    const hashedPassword = await bcrypt.hash(datos.Contrasena, 10);
 
-      if (!datos.Cedula || !datos.Nombre || !datos.Apellido || !datos.Correo || !datos.Contrasena) {
-        return res.status(400).json({ error: "Faltan campos obligatorios." });
-      }
+    const max = await db.Postulante.max("Id_Postulante");
+    const nuevoId = (max || 0) + 1;
 
-      if (!/^\d{10}$/.test(datos.Cedula)) {
-        return res.status(400).json({ error: "La cédula debe tener exactamente 10 dígitos." });
-      }
-
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.Correo)) {
-        return res.status(400).json({ error: "El correo no es válido." });
-      }
-
-      if (datos.Contrasena.length < 8) {
-        return res.status(400).json({ error: "La contraseña debe tener mínimo 8 caracteres." });
-      }
-
-
-    const nuevoPostulante = await db.Postulante.findOne({
-      where: { Cedula: datos.Cedula }
+    const postulante = await db.Postulante.create({
+      Id_Postulante: nuevoId,
+      Cedula: datos.Cedula,
+      Nombre: datos.Nombre,
+      Apellido: datos.Apellido,
+      Correo: datos.Correo,
+      Telefono: datos.Telefono || null,
+      Contrasena: hashedPassword,
+      FechPostulacion: new Date(),
+      id_ciudad: datos.id_ciudad || null,
+      id_EstadoPostulacion: datos.id_EstadoPostulacion || 6,
+      token_entrevista: token,
     });
 
-    if (!nuevoPostulante) throw new Error("No se pudo recuperar el postulante.");
+    if (datos.ItinerarioExcel) {
+      const match = datos.ItinerarioExcel.match(/\d+/);
+      const numeroItinerario = match ? parseInt(match[0]) : null;
 
-    const textoItinerario = datos.Itinerario || datos.ItinerarioExcel || "";
-    const match = textoItinerario.match(/\d+/);
-    const numeroItinerario = match ? parseInt(match[0]) : null;
-
-    if (numeroItinerario) {
-      const itinerario = await db.Itinerario.findOne({
-        where: {
-          descripcion: { [db.Sequelize.Op.like]: `%Itinerario ${numeroItinerario}%` }
-        }
-      });
-
-      if (itinerario) {
-        await db.ItinerarioPostulante.create({
-          Id_Postulante: nuevoPostulante.Id_Postulante,
-          id_Itinerario: itinerario.id_Itinerario,
-          Id_EstadoItinerario: 1,
-          FechInicio: new Date(),
-          FechFin: null
+      if (numeroItinerario) {
+        const itinerario = await db.Itinerario.findOne({
+          where: {
+            descripcion: { [db.Sequelize.Op.like]: `%Itinerario ${numeroItinerario}%` },
+          },
         });
+
+        if (itinerario) {
+          await db.ItinerarioPostulante.create({
+            Id_Postulante: postulante.Id_Postulante,
+            id_Itinerario: itinerario.id_Itinerario,
+            Id_EstadoItinerario: 1,
+            FechInicio: new Date(),
+            FechFin: null,
+          });
+        }
       }
     }
 
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto;">
-        <div style="background-color: #0f172a; padding: 20px; text-align: center;">
-          <h1 style="color: white;">DevSelectAI</h1>
-        </div>
-        <div style="padding: 30px;">
-          <h2>🎓 Bienvenido/a a DevSelectAI</h2>
-          <p>Has sido registrado exitosamente en nuestro sistema de entrevistas inteligentes para prácticas preprofesionales.</p>
-        </div>
-      </div>
-    `;
+    await sendEmail(
+      postulante.Correo,
+      "✅ Registro exitoso - DevSelectAI",
+      Templates.registroExitoso()
+    );
 
-    await sendEmail(nuevoPostulante.Correo, "✅ Registro exitoso - DevSelectAI", html);
-
-    res.status(201).json({ mensaje: 'Postulante registrado y correo enviado.' });
+    res.status(201).json({ mensaje: "Postulante registrado y correo enviado." });
   } catch (error) {
-    console.error('❌ Error al crear postulante:', error);
-    res.status(500).json({ error: 'Error al crear postulante' });
+    console.error("❌ Error al crear postulante:", error);
+    res.status(500).json({ error: "Error al crear postulante" });
   }
 };
 
@@ -91,21 +101,20 @@ const guardarHabilidades = async (req, res) => {
     }
   }
 
-
   try {
     await db.DetalleHabilidad.destroy({ where: { Id_Postulante: idPostulante } });
 
     for (const idHabilidad of habilidades) {
       await db.DetalleHabilidad.create({
         Id_Postulante: idPostulante,
-        Id_Habilidad: idHabilidad
+        Id_Habilidad: idHabilidad,
       });
     }
 
-    res.json({ mensaje: 'Habilidades guardadas correctamente.' });
+    res.json({ mensaje: "Habilidades guardadas correctamente." });
   } catch (error) {
-    console.error('Error al guardar habilidades:', error);
-    res.status(500).json({ error: 'Error interno al guardar habilidades' });
+    console.error("Error al guardar habilidades:", error);
+    res.status(500).json({ error: "Error interno al guardar habilidades" });
   }
 };
 
@@ -114,17 +123,17 @@ const obtenerPorToken = async (req, res) => {
 
   try {
     const postulante = await db.Postulante.findOne({
-      where: { token_entrevista: token }
+      where: { token_entrevista: token },
     });
 
     if (!postulante) {
-      return res.status(404).json({ error: 'Token inválido o datos no encontrados.' });
+      return res.status(404).json({ error: "Token inválido o datos no encontrados." });
     }
 
     res.json(postulante);
   } catch (error) {
-    console.error('Error al obtener postulante por token:', error);
-    res.status(500).json({ error: 'Error al buscar el postulante.' });
+    console.error("Error al obtener postulante por token:", error);
+    res.status(500).json({ error: "Error al buscar el postulante." });
   }
 };
 
@@ -132,81 +141,163 @@ const seleccionarVacante = async (req, res) => {
   const { idPostulante, idVacante } = req.body;
 
   if (!idPostulante || !idVacante) {
-    return res.status(400).json({ error: 'Faltan datos requeridos.' });
+    return res.status(400).json({ error: "Faltan datos requeridos." });
   }
-
-  if (!idPostulante || !idVacante || idPostulante <= 0 || idVacante <= 0) {
-  return res.status(400).json({ error: "Datos inválidos para asignar vacante." });
-  }
-
 
   try {
-    const existente = await db.PostulanteVacante.findOne({
-      where: { Id_Postulante: idPostulante }
-    });
-
+    const existente = await db.PostulanteVacante.findOne({ where: { Id_Postulante: idPostulante } });
     if (existente) {
-      return res.status(400).json({
-        error: 'El postulante ya tiene una vacante asignada.',
-        existente
-      });
+      return res.status(400).json({ error: "El postulante ya tiene una vacante asignada." });
     }
 
     const vacante = await db.Vacante.findByPk(idVacante, {
-      include: [{ model: db.ProgramacionPostulacion, as: 'programacionesPostulacion' }]
+      include: [{ model: db.ProgramacionPostulacion, as: "programacionesPostulacion" }],
     });
-
-    if (!vacante) return res.status(404).json({ error: 'Vacante no encontrada.' });
+    if (!vacante) return res.status(404).json({ error: "Vacante no encontrada." });
 
     const programacion = vacante.programacionesPostulacion[0];
-    if (!programacion) return res.status(400).json({ error: 'Vacante sin programación.' });
+    if (!programacion) return res.status(400).json({ error: "Vacante sin programación." });
 
     await db.PostulanteVacante.create({
       Id_Postulante: idPostulante,
       Id_Vacante: idVacante,
       id_ProgramacionPostulacion: programacion.id_ProgramacionPostulacion,
-      FechaSeleccion: new Date()
+      FechaSeleccion: new Date(),
     });
+
+    await db.Postulante.update(
+      { id_EstadoPostulacion: 1 },
+      { where: { Id_Postulante: idPostulante } }
+    );
 
     const postulante = await db.Postulante.findByPk(idPostulante);
 
-    const html = `
-      <div style="font-family: Arial; max-width: 700px; margin: auto;">
-        <div style="background-color: #0f172a; padding: 20px; text-align: center;">
-          <h1 style="color: white;">DevSelectAI</h1>
-        </div>
-        <div style="padding: 20px;">
-          <p>Hola ${postulante.Nombre} ${postulante.Apellido},</p>
-          <p>¡Felicidades! Has sido asignado a la vacante: <strong>${vacante.Descripcion}</strong></p>
-          <p><a href="${baseUrl}/postulador/entrevista/inicio?token=${postulante.token_entrevista}" 
-          style="background: #0f172a; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">
-          🎤 Iniciar entrevista</a></p>
-        </div>
-      </div>
-    `;
+    await sendEmail(
+      postulante.Correo,
+      "📌 Vacante asignada - DevSelectAI",
+      Templates.vacanteAsignada({
+        nombre: postulante.Nombre,
+        apellido: postulante.Apellido,
+        vacante: vacante.Descripcion,
+        enlace: `${baseUrl}/postulador/entrevista/inicio?token=${postulante.token_entrevista}`,
+      })
+    );
 
-    await sendEmail(postulante.Correo, "📌 Vacante asignada - DevSelectAI", html);
-
-    res.json({ message: 'Vacante asignada y correo enviado.' });
+    res.json({ message: "Vacante asignada y correo enviado." });
   } catch (error) {
-    console.error('❌ Error al asignar vacante:', error);
-    res.status(500).json({ error: 'Error interno.' });
+    console.error("❌ Error al asignar vacante:", error);
+    res.status(500).json({ error: "Error interno." });
   }
 };
 
-const verificarPostulantePorCedula = async (req, res) => {
-  const { cedula } = req.params;
-  if (!/^\d{10}$/.test(cedula)) {
-    return res.status(400).json({ error: "Cédula inválida." });
-  }
+const aprobar = async (req, res) => {
+  const { id } = req.params;
 
   try {
-    const existente = await db.Postulante.findOne({ where: { Cedula: cedula } });
-    if (existente) return res.json(existente);
-    else return res.status(404).json(null);
+    const postulante = await db.Postulante.findByPk(id);
+    if (!postulante) return res.status(404).json({ message: "Postulante no encontrado" });
+
+    const postulanteVacante = await db.PostulanteVacante.findOne({
+      where: { Id_Postulante: id },
+      include: [
+        { model: db.Vacante, as: "vacante" },
+        {
+          model: db.ProgramacionPostulacion,
+          as: "programacionPostulacion",
+          include: [{ model: db.Programacion, as: "programacion" }],
+        },
+      ],
+    });
+
+    const vacante = postulanteVacante?.vacante;
+    const programacion = postulanteVacante?.programacionPostulacion?.programacion;
+    if (!vacante) return res.status(404).json({ message: "Vacante no encontrada" });
+
+    if (vacante.Cantidad <= 0) {
+      return res.status(400).json({ message: `No hay más cupos disponibles para la vacante "${vacante.Descripcion}"` });
+    }
+
+    postulante.id_EstadoPostulacion = 3;
+    await postulante.save();
+
+    vacante.Cantidad -= 1;
+    await vacante.save();
+
+    const formatFecha = (d) => {
+      d = new Date(d);
+      return `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
+    };
+    const periodoPostulacion = programacion
+      ? `${formatFecha(programacion.FechIniPostulacion)} → ${formatFecha(programacion.FechFinPostulacion)}`
+      : null;
+
+    await sendEmail(
+      postulante.Correo,
+      "Resultado de postulación - DevSelectAI",
+      Templates.aprobado({
+        nombre: postulante.Nombre,
+        apellido: postulante.Apellido,
+        vacante: vacante.Descripcion,
+        periodoPostulacion,
+      })
+    );
+
+    res.json({ message: "Postulante aprobado y correo enviado" });
   } catch (error) {
-    console.error("❌ Error al verificar postulante:", error);
-    return res.status(500).json({ error: "Error interno" });
+    console.error(error);
+    res.status(500).json({ message: "Error al aprobar postulante" });
+  }
+};
+
+const rechazar = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const postulante = await db.Postulante.findByPk(id);
+    if (!postulante) return res.status(404).json({ message: "Postulante no encontrado" });
+
+    const postulanteVacante = await db.PostulanteVacante.findOne({
+      where: { Id_Postulante: id },
+      include: [
+        { model: db.Vacante, as: "vacante" },
+        {
+          model: db.ProgramacionPostulacion,
+          as: "programacionPostulacion",
+          include: [{ model: db.Programacion, as: "programacion" }],
+        },
+      ],
+    });
+
+    const vacante = postulanteVacante?.vacante;
+    const programacion = postulanteVacante?.programacionPostulacion?.programacion;
+    if (!vacante || !programacion) {
+      return res.status(404).json({ message: "Vacante o periodo no encontrado" });
+    }
+
+    postulante.id_EstadoPostulacion = 4;
+    await postulante.save();
+
+    const formatFecha = (d) => {
+      d = new Date(d);
+      return `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
+    };
+    const periodoPostulacion = `${formatFecha(programacion.FechIniPostulacion)} → ${formatFecha(programacion.FechFinPostulacion)}`;
+
+    await sendEmail(
+      postulante.Correo,
+      "Resultado de postulación - DevSelectAI",
+      Templates.rechazado({
+        nombre: postulante.Nombre,
+        apellido: postulante.Apellido,
+        vacante: vacante.Descripcion,
+        periodoPostulacion,
+      })
+    );
+
+    res.json({ message: "Postulante rechazado y correo enviado" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error al rechazar postulante" });
   }
 };
 
@@ -261,6 +352,7 @@ const obtenerPorId = async (req, res) => {
 const cambiarEstado = async (req, res) => {
   const { id } = req.params;
   const { nuevoEstado } = req.body;
+
   if (!id || !nuevoEstado || id <= 0 || nuevoEstado <= 0) {
     return res.status(400).json({ error: "Datos inválidos." });
   }
@@ -276,6 +368,23 @@ const cambiarEstado = async (req, res) => {
   } catch (error) {
     console.error('❌ Error al actualizar estado:', error);
     res.status(500).json({ error: 'Error interno' });
+  }
+};
+
+const verificarPostulantePorCedula = async (req, res) => {
+  const { cedula } = req.params;
+
+  if (!/^\d{10}$/.test(cedula)) {
+    return res.status(400).json({ error: "Cédula inválida." });
+  }
+
+  try {
+    const existente = await db.Postulante.findOne({ where: { Cedula: cedula } });
+    if (existente) return res.json(existente);
+    else return res.status(404).json(null);
+  } catch (error) {
+    console.error("❌ Error al verificar postulante:", error);
+    return res.status(500).json({ error: "Error interno" });
   }
 };
 
@@ -313,10 +422,10 @@ const verificarEstadoPostulacion = async (req, res) => {
     let fechas = null;
 
     switch (estadoId) {
-      case 1: // Por evaluar
-        estado = 'por_evaluar';
+      case 1: 
+        estado = 'Por evaluar';
         mensaje =
-          'Tu postulación ha sido recibida correctamente y está lista para ser evaluada. Puedes iniciar tu proceso de entrevistas y evaluaciones cuando lo desees.😊';
+          'Ya has completado tu seleccion de vacantes 🥳. Te notificaremos por correo tu link para ingresar a la entrevista.😄';
         break;
 
       case 2: // Evaluado
@@ -336,7 +445,8 @@ const verificarEstadoPostulacion = async (req, res) => {
         mensaje =
           'Lamentamos informarte que no has sido seleccionado/a en esta ocasión. No te desanimes, puedes intentarlo nuevamente en el siguiente periodo.😞';
         break;
-
+      
+      
       case 5: { // Calificado
         estado = 'calificado';
         mensaje =
@@ -352,6 +462,7 @@ const verificarEstadoPostulacion = async (req, res) => {
           };
         }
         break;
+      
       }
 
       default:
@@ -366,8 +477,6 @@ const verificarEstadoPostulacion = async (req, res) => {
     res.status(500).json({ error: 'Error interno' });
   }
 };
-
-
 
 const getPreguntasTeoricas = async (req, res) => {
   const { id } = req.query;
@@ -489,237 +598,20 @@ const getPreguntaTecnica = async (req, res) => {
 };
 
 
-
-const aprobar = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const postulante = await db.Postulante.findByPk(id);
-    if (!postulante) {
-      return res.status(404).json({ message: 'Postulante no encontrado' });
-    }
-
-    // intenta traer las relaciones opcionales
-    const postulanteVacante = await db.PostulanteVacante.findOne({
-      where: { Id_Postulante: id },
-      include: [
-        { model: db.Vacante, as: 'vacante' },
-        {
-          model: db.ProgramacionPostulacion,
-          as: 'programacionPostulacion',
-          include: [{ model: db.Programacion, as: 'programacion' }]
-        }
-      ]
-    });
-
-    if (!postulanteVacante || !postulanteVacante.vacante) {
-      return res.status(404).json({ message: 'No se encontró la vacante asociada al postulante' });
-    }
-
-    const vacante = postulanteVacante.vacante;
-    const programacion = postulanteVacante.programacionPostulacion?.programacion;
-
-    // 🚨 Validar si quedan cupos
-    if (vacante.Cantidad <= 0) {
-      return res.status(400).json({
-        message: `No hay más cupos disponibles para la vacante "${vacante.Descripcion}"`
-      });
-    }
-
-    // ahora sí actualiza estado y resta 1 cupo
-    postulante.id_EstadoPostulacion = 3; // Aprobado
-    await postulante.save();
-
-    vacante.Cantidad -= 1;
-    await vacante.save();
-
-    let periodoPostulacion = null;
-    if (programacion) {
-      const formatFecha = (iso) => {
-        const d = new Date(iso);
-        const dd = String(d.getDate()).padStart(2, '0');
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const yyyy = d.getFullYear();
-        return `${dd}-${mm}-${yyyy}`;
-      };
-      periodoPostulacion = `${formatFecha(programacion.FechIniPostulacion)} → ${formatFecha(programacion.FechFinPostulacion)}`;
-    }
-
-    const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ccc; border-radius: 6px; overflow: hidden;">
-      <div style="background-color: #0f172a; padding: 20px; text-align: center;">
-        <h1 style="color: white; margin: 0;">DevSelectAI</h1>
-      </div>
-
-      <div style="padding: 30px; text-align: center;">
-        <div style="font-size: 50px; margin-bottom: 10px;">🎉</div>
-        <h2 style="color: #0f172a; margin: 0;">¡Felicidades!</h2>
-        <p style="font-size: 15px; color: #333; margin-top: 20px;">
-          Estimado/a <strong>${postulante.Nombre} ${postulante.Apellido}</strong>,
-        </p>
-        <p style="font-size: 15px; color: #333; margin: 15px 0;">
-          Nos complace informarte que has sido <strong>APROBADO/A</strong> en el proceso de selección.
-        </p>
-        <p style="font-size: 15px; color: #333; margin: 15px 0;">
-          Vacante: <strong>${vacante.Descripcion}</strong>
-        </p>
-        ${periodoPostulacion ? `
-        <p style="font-size: 15px; color: #333; margin: 15px 0;">
-          Periodo de postulación: <strong>${periodoPostulacion}</strong>
-        </p>` : ''}
-        <p style="font-size: 15px; color: #333; margin: 15px 0;">
-          Diríjase al Bloque C para mayor información.
-        </p>
-        <p style="font-size: 15px; color: #333; margin-top: 20px;">
-          ¡Bienvenido a esta gran experiencia profesional!
-        </p>
-      </div>
-
-      <div style="background-color: #0f172a; color: #ccc; text-align: center; padding: 10px; font-size: 13px;">
-        ¿Tienes dudas? Visítanos en <a href="https://soporte.com" style="color: #93c5fd;">soporte.com</a>
-      </div>
-    </div>
-    `;
-
-    await sendEmail(postulante.Correo, "Resultado de postulación - DevSelectAI", html);
-
-    res.json({
-      message: 'Postulante aprobado y correo enviado',
-      postulante,
-      vacante: vacante?.Descripcion || null,
-      periodoPostulacion
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error al aprobar postulante' });
-  }
-};
-
-
-
-const rechazar = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const postulante = await db.Postulante.findByPk(id);
-    if (!postulante) {
-      return res.status(404).json({ message: 'Postulante no encontrado' });
-    }
-
-    const postulanteVacante = await db.PostulanteVacante.findOne({
-      where: { Id_Postulante: id },
-      include: [
-        {
-          model: db.Vacante,
-          as: 'vacante'
-        },
-        {
-          model: db.ProgramacionPostulacion,
-          as: 'programacionPostulacion',
-          include: [
-            {
-              model: db.Programacion,
-              as: 'programacion'
-            }
-          ]
-        }
-      ]
-    });
-
-    if (!postulanteVacante) {
-      return res.status(404).json({ message: 'No se encontró la relación Postulante-Vacante' });
-    }
-
-    const vacante = postulanteVacante.vacante;
-    const programacionPostulacion = postulanteVacante.programacionPostulacion;
-    const programacion = programacionPostulacion?.programacion;
-
-    if (!vacante) {
-      return res.status(404).json({ message: 'Vacante asociada no encontrada' });
-    }
-
-    if (!programacion) {
-      return res.status(404).json({ message: 'Periodo de postulación no encontrado' });
-    }
-
-    // Actualizar estado del postulante
-    postulante.id_EstadoPostulacion = 4; // Rechazado
-    await postulante.save();
-
-    // Formatear fechas a dd-mm-yyyy
-    const formatFecha = (isoDate) => {
-      const date = new Date(isoDate);
-      const dd = String(date.getDate()).padStart(2, '0');
-      const mm = String(date.getMonth() + 1).padStart(2, '0');
-      const yyyy = date.getFullYear();
-      return `${dd}-${mm}-${yyyy}`;
-    };
-
-    const periodoPostulacion = `${formatFecha(programacion.FechIniPostulacion)} → ${formatFecha(programacion.FechFinPostulacion)}`;
-
-    const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ccc; border-radius: 6px; overflow: hidden;">
-      <div style="background-color: #0f172a; padding: 20px; text-align: center;">
-        <h1 style="color: white; margin: 0;">DevSelectAI</h1>
-      </div>
-
-      <div style="padding: 30px; text-align: center;">
-        <div style="font-size: 50px; margin-bottom: 10px;">😔</div>
-        <h2 style="color: #0f172a; margin: 0;">Resultado de tu postulación</h2>
-        <p style="font-size: 15px; color: #333; margin-top: 20px;">
-          Estimado/a <strong>${postulante.Nombre} ${postulante.Apellido}</strong>,
-        </p>
-        <p style="font-size: 15px; color: #333; margin: 15px 0;">
-          Lamentamos informarte que en esta ocasión no has sido seleccionado en el proceso para la vacante:
-        </p>
-        <p style="font-size: 16px; font-weight: bold; color: #0f172a;">"${vacante.Descripcion}"</p>
-        <p style="font-size: 15px; color: #333; margin: 15px 0;">
-          Este resultado corresponde al <strong>periodo de postulación:</strong><br>
-          <span style="color:#0f172a;">${periodoPostulacion}</span>
-        </p>
-        <p style="font-size: 15px; color: #333; margin: 15px 0;">
-          Queremos animarte a seguir formándote y a intentarlo nuevamente en futuras convocatorias. Tu esfuerzo y dedicación son muy valorados.
-        </p>
-        <p style="font-size: 15px; color: #333; margin-top: 20px;">
-          ¡Mucho éxito en tus próximos retos!
-        </p>
-      </div>
-
-      <div style="background-color: #0f172a; color: #ccc; text-align: center; padding: 10px; font-size: 13px;">
-        ¿Tienes dudas? Visítanos en <a href="https://soporte.com" style="color: #93c5fd;">soporte.com</a>
-      </div>
-    </div>
-    `;
-
-    await sendEmail(postulante.Correo, "Resultado de postulación - DevSelectAI", html);
-
-    res.json({
-      message: 'Postulante rechazado y correo enviado',
-      postulante,
-      vacante: vacante.Descripcion,
-      periodoPostulacion
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error al rechazar postulante' });
-  }
-};
-
-
 module.exports = {
   crearPostulante,
   guardarHabilidades,
   obtenerPorToken,
   seleccionarVacante,
+  aprobar,
+  rechazar,
   getAllPostulantes,
   obtenerPorId,
   cambiarEstado,
+  verificarPostulantePorCedula,
+  verificarEstadoPostulacion,
   getPreguntasTeoricas,
   getEntrevistaOral,
   getPreguntasOrales,
-  getPreguntaTecnica,
-  verificarPostulantePorCedula,
-  verificarEstadoPostulacion,
-  aprobar,
-  rechazar
+  getPreguntaTecnica
 };

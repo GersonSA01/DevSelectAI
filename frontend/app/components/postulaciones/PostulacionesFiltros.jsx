@@ -6,7 +6,7 @@ export default function PostulacionesFiltros({ itinerarios, filtroNombre, setFil
         <input
           type="text"
           placeholder="Buscar por nombre"
-          className="bg-slate-800 text-white px-3 py-1 rounded-md text-sm"
+          className="bg-slate-800 text-white placeholder-gray-400 placeholder-opacity-70 px-3 py-1 rounded-md text-sm shadow-inner border border-slate-600 focus:border-blue-500 focus:outline-none"
           value={filtroNombre}
           onChange={e => setFiltroNombre(e.target.value)}
         />
@@ -14,7 +14,7 @@ export default function PostulacionesFiltros({ itinerarios, filtroNombre, setFil
       <div className="flex flex-col sm:flex-row gap-2">
         <label className="text-sm font-medium">Itinerario:</label>
         <select
-          className="bg-slate-800 text-white px-3 py-1 rounded-md text-sm"
+          className="bg-slate-800 text-white px-3 py-1 rounded-md text-sm shadow-inner border border-slate-600 focus:border-blue-500 focus:outline-none"
           value={itinerario}
           onChange={e => setItinerario(e.target.value)}
         >

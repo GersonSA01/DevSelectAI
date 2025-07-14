@@ -77,10 +77,16 @@ export default function EntrevistaLayout({ children }) {
   return (
     <StreamProvider>
       <main
-        className="min-h-screen pt-16 bg-cover bg-center bg-no-repeat"
+        className="relative min-h-screen pt-16 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/fondo_pantalla.png')" }}
       >
-        {children}
+        
+        <div className="absolute inset-0 bg-black/70 z-0"></div>
+
+        
+        <div className="relative z-10">
+          {children}
+        </div>
       </main>
     </StreamProvider>
   );

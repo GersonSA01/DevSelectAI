@@ -37,7 +37,7 @@ export default function ReclutadorDashboard() {
       <p className="text-gray-400 mb-6 text-sm sm:text-base">Panel de administración de prácticas preprofesionales</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        {/* Postulantes */}
+        
         <Link href="/reclutador/postuladores" className="bg-slate-800 p-5 sm:p-6 rounded shadow hover:bg-slate-700 transition">
           <div className="flex items-center gap-4">
             <User2 size={28} className="text-cyan-400" />
@@ -48,7 +48,7 @@ export default function ReclutadorDashboard() {
           </div>
         </Link>
 
-        {/* Vacantes */}
+        
         <div
           onClick={toggleItinerarios}
           className="bg-slate-800 p-5 sm:p-6 rounded shadow hover:bg-slate-700 transition cursor-pointer"
@@ -94,7 +94,7 @@ export default function ReclutadorDashboard() {
           </AnimatePresence>
         </div>
 
-        {/* Configuración */}
+        
         <Link href="/reclutador/configuracion" className="bg-slate-800 p-5 sm:p-6 rounded shadow hover:bg-slate-700 transition">
           <div className="flex items-center gap-4">
             <Settings size={28} className="text-white" />

@@ -3,7 +3,7 @@ module.exports = (sequelize, DataTypes) => {
     id_Evaluacion: {
       type: DataTypes.INTEGER,
       primaryKey: true,
-      autoIncrement: true // ✅ Esto es lo que faltaba
+      autoIncrement: true 
     },
     ObservacionGeneral: DataTypes.STRING,
     PuntajeTotal: DataTypes.DECIMAL(10, 2),

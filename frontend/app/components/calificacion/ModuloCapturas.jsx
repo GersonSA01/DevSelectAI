@@ -13,7 +13,7 @@ export default function ModuloCapturas({
   setZoomImagen,
   actualizarCalificacion,
 }) {
-  // Recalcula nota cada vez que cambian las capturas aprobadas
+  
   useEffect(() => {
     const aprobadas = capturas.filter(c => c.Aprobado).length;
     const nota = Math.max(0, 2 - aprobadas * 0.5);
@@ -63,14 +63,14 @@ export default function ModuloCapturas({
               key={c.id_Capture}
               className="bg-[#2B2C3F] rounded-lg shadow overflow-hidden relative group"
             >
-              {/* Imagen */}
+              
               <img
                 src={`http://localhost:5000/uploads/${c.File}`}
                 alt={`Captura ${i + 1}`}
                 className="w-full h-40 object-cover transition-transform duration-300"
               />
 
-              {/* Bolita de estado */}
+              
               <div
                 className={`absolute top-2 right-2 w-4 h-4 rounded-full shadow-md border-2 ${
                   c.Aprobado ? "bg-green-400 border-green-500" : "bg-gray-500 border-gray-600"
@@ -78,7 +78,7 @@ export default function ModuloCapturas({
                 title={c.Aprobado ? "Aprobada" : "No aprobada"}
               ></div>
 
-              {/* Overlay para seleccionar */}
+              
               <div
                 className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                 onClick={() => aprobarYMostrar(i)}

@@ -14,7 +14,7 @@ export default function SkeletonSidebar({ isCollapsed }) {
       </div>
 
       <nav className="px-2 space-y-3 mt-2">
-        {/* Vacantes */}
+        
         <div className="flex items-center gap-2 px-3">
           <div className="w-4 h-4 bg-gray-600 rounded-full" />
           {!isCollapsed && <div className="h-4 w-20 bg-gray-700 rounded" />}
@@ -26,19 +26,19 @@ export default function SkeletonSidebar({ isCollapsed }) {
           </div>
         )}
 
-        {/* Postulante */}
+        
         <div className="flex items-center gap-2 px-3">
           <div className="w-4 h-4 bg-gray-600 rounded-full" />
           {!isCollapsed && <div className="h-4 w-24 bg-gray-700 rounded" />}
         </div>
 
-        {/* Configuración */}
+        
         <div className="flex items-center gap-2 px-3">
           <div className="w-4 h-4 bg-gray-600 rounded-full" />
           {!isCollapsed && <div className="h-4 w-28 bg-gray-700 rounded" />}
         </div>
 
-        {/* Cerrar sesión */}
+        
         <div className="flex items-center gap-2 px-3 mt-6">
           <div className="w-4 h-4 bg-red-700 rounded-full" />
           {!isCollapsed && <div className="h-4 w-32 bg-red-800 rounded" />}

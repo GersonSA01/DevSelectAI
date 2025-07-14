@@ -9,7 +9,7 @@
   --background-end-rgb: 255, 255, 255;
 }
 
-/* Tema oscuro */
+
 @media (prefers-color-scheme: dark) {
   :root {
     --foreground-rgb: 255, 255, 255;
@@ -18,7 +18,7 @@
   }
 }
 
-/* Colores base en capas */
+
 @layer base {
   :root {
     --background: 10 10 35;
@@ -84,7 +84,7 @@
   }
 }
 
-/* ==== SweetAlert Personalizado ==== */
+
 .swal2-radio {
   @apply flex flex-col gap-3 items-start;
 }
@@ -96,7 +96,6 @@
   white-space: normal !important;
 }
 
-/* ==== Botones personalizados ==== */
 .custom-swal-btn {
   @apply py-2 px-5 rounded-full font-medium transition-colors duration-200;
   margin: 0 6px;
@@ -110,7 +109,7 @@
   @apply bg-gray-600 hover:bg-gray-700 text-white;
 }
 
-/* ==== Etiquetas de habilidades ==== */
+
 .badge-habilidad {
   @apply px-4 py-2 rounded-full text-sm md:text-base font-medium border shadow transition-all bg-cyan-500 text-white border-cyan-400 hover:bg-cyan-400;
 }
@@ -119,7 +118,7 @@
   @apply px-4 py-2 rounded-full text-sm md:text-base font-medium border shadow transition-all bg-white text-gray-800 border-gray-300 hover:bg-gray-100;
 }
 
-/* ==== Animación de entrada/salida ==== */
+
 @keyframes slideInOut {
   0% {
     transform: translateX(100%);
@@ -140,7 +139,7 @@
   animation: slideInOut 5s ease-in-out forwards;
 }
 
-/* ==== Barra de progreso para notificaciones ==== */
+
 [data-sonner-toast]::after {
   content: '';
   position: absolute;

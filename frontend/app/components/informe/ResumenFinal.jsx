@@ -6,9 +6,9 @@ import { FiCamera } from 'react-icons/fi';
 export default function ResumenFinal({ puntajeFinal, observacion, calificaciones }) {
   return (
     <div className="space-y-6">
-      {/* Sección principal en columnas */}
+      
 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Izquierda: Calificaciones por módulo */}
+        
         <div className="bg-[#1D1E33] p-4 rounded-lg  ">
           <p className="text-sm text-gray-400 font-semibold mb-3">Calificación por módulo</p>
           <ul className="text-sm text-white space-y-2">
@@ -31,7 +31,7 @@ export default function ResumenFinal({ puntajeFinal, observacion, calificaciones
           </ul>
         </div>
 
-        {/* Derecha: Puntaje final destacado */}
+        
         <div className="bg-[#1D1E33] p-6 rounded-lg flex items-center justify-center">
           <div className="text-center">
             <p className="text-lg text-gray-300 mb-1">Puntaje Final</p>
@@ -40,7 +40,7 @@ export default function ResumenFinal({ puntajeFinal, observacion, calificaciones
         </div>
       </div>
 
-      {/* Observaciones */}
+      
       <div className="bg-[#1D1E33] p-6 rounded-lg">
         <h2 className="text-xl font-semibold mb-2">Observaciones del Reclutador</h2>
         <p className="text-sm text-gray-300">

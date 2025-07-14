@@ -1,4 +1,4 @@
-// DescripcionSection.jsx
+
 import React from 'react';
 
 export default function DescripcionSection({ campos, formData, setFormData }) {

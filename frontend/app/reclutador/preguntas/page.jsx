@@ -3,6 +3,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Alert } from '../../components/alerts/Alerts';
 import Swal from 'sweetalert2';
+import { Sparkles, Plus, Code2, Edit, Trash2 } from 'lucide-react';
+import SkeletonPreguntas from '../../components/skeleton/SkeletonPreguntas';
 
 export default function PreguntasVacante() {
   const router = useRouter();
@@ -54,8 +56,13 @@ export default function PreguntasVacante() {
     try {
       await fetch(`http://localhost:5000/api/preguntas/${idPregunta}`, { method: 'DELETE' });
       await fetchPreguntas();
+      await fetchVacante(); 
     } catch (err) {
-      alert('Error al eliminar la pregunta: ' + err.message);
+      await Alert({
+  title: 'Error',
+  html: 'Error al eliminar la pregunta: ' + err.message,
+  icon: 'error'
+});
     }
   };
 
@@ -67,20 +74,9 @@ export default function PreguntasVacante() {
   }, [idVacante]);
 
   if (loading) {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-300 rounded mb-4"></div>
-          <div className="h-6 bg-gray-300 rounded mb-6"></div>
-          <div className="space-y-4">
-            {[1, 2, 3].map((n) => (
-              <div key={n} className="h-20 bg-gray-300 rounded"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  return <SkeletonPreguntas />;
+}
+
 
   if (error) {
     return (
@@ -105,21 +101,20 @@ export default function PreguntasVacante() {
   return (
     <div className="min-h-screen bg-[#0b1120] text-white px-4 py-8">
       <div className="rounded-lg shadow-lg p-12">
-        {/* Encabezado */}
+       
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Preguntas del Vacante</h1>
 
           {vacante && (
             <>
-              <h2 className="text-lg font-semibold text-gray-700 mb-1">{vacante.Descripcion}</h2>
+              <h2 className="text-lg font-semibold text-gray-300 mb-1">{vacante.Descripcion}</h2>
               <div className="text-sm mb-3">{preguntas.length} preguntas registradas</div>
-
             </>
           )}
 
           {habilidades.length > 0 && (
             <div className="mb-4">
-              <h3 className="font-medium text-gray-700 mb-2">Habilidades requeridas:</h3>
+              <h3 className="font-medium text-gray-300 mb-2">Habilidades requeridas:</h3>
               <div className="flex flex-wrap gap-2">
                 {habilidades.map((habilidad) => (
                   <span
@@ -134,79 +129,86 @@ export default function PreguntasVacante() {
           )}
         </div>
 
-        {/* Botones superiores */}
-        <div className="flex justify-end items-center mb-6 gap-4">
-<button
+        
+        <div className="flex justify-end items-center mb-6 gap-4 flex-wrap">
+         <button
   onClick={async () => {
     try {
       Swal.fire({
-  title: 'Generando preguntas con IA…',
-  didOpen: () => {
-    Swal.showLoading();
-  },
-  allowOutsideClick: false,
-  allowEscapeKey: false,
-  allowEnterKey: false,
-  showConfirmButton: false,
-  backdrop: true,
-  customClass: {
-    popup: 'bg-pageBackground text-white rounded-xl p-6',
-    title: 'text-2xl font-bold mb-2',
-  },});
-
-
+        title: 'Generando preguntas con IA…',
+        didOpen: () => {
+          Swal.showLoading();
+        },
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        backdrop: true,
+        customClass: {
+          popup: 'bg-pageBackground text-white rounded-xl p-6',
+          title: 'text-2xl font-bold mb-2',
+        },
+      });
 
       const res = await fetch(`http://localhost:5000/api/generar-preguntas/${idVacante}`, {
         method: 'POST'
       });
 
       const data = await res.json();
-      Swal.close(); // Cierra el loader
+      Swal.close();
 
-      await Alert({
-        title: 'Éxito',
-        text: data.mensaje,
-        icon: 'success',
-        showCancelButton: false
-      });
-
-      await fetchPreguntas();
+      if (!res.ok) {
+        await Alert({
+          title: 'Error',
+          html: data.error || 'Ocurrió un error al generar preguntas con IA.',
+          icon: 'error'
+        });
+      } else {
+        await Alert({
+          title: 'Éxito',
+          html: data.mensaje,
+          icon: 'success'
+        });
+        await fetchPreguntas();
+        await fetchVacante();
+      }
     } catch (err) {
       console.error(err);
-      Swal.close(); // Cierra el loader si hubo error
+      Swal.close();
       await Alert({
         title: 'Error',
-        text: 'No se pudieron generar preguntas con IA.',
-        icon: 'error',
-        showCancelButton: false
+        html: 'No se pudieron generar preguntas con IA.',
+        icon: 'error'
       });
     }
   }}
-  className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-4 py-2 text-sm rounded shadow hover:brightness-110 transition-all"
+  className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-4 py-2 text-sm rounded shadow hover:brightness-110 flex items-center gap-2"
 >
-  ✨ Generar preguntas con IA
+  <Sparkles size={16} /> Generar preguntas con IA
+  {vacante && (
+    <span className="ml-2 text-xs bg-gray-800 px-2 py-1 rounded text-gray-300">
+      {vacante.CantidadUsoIA || 0} / 3
+    </span>
+  )}
 </button>
-
 
           <button
             onClick={() => router.push(`/reclutador/preguntas/registrar?idVacante=${idVacante}`)}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm rounded"
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm rounded flex items-center gap-2"
           >
-            + Añadir pregunta
+            <Plus size={16} /> Añadir pregunta
           </button>
 
           <button
-  onClick={() => router.push(`/reclutador/preguntas/registrar/tecnica?idVacante=${idVacante}`)}
-  className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 text-sm rounded"
->
-  + Añadir pregunta técnica
-</button>
-
+            onClick={() => router.push(`/reclutador/preguntas/registrar/tecnica?idVacante=${idVacante}`)}
+            className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 text-sm rounded flex items-center gap-2"
+          >
+            <Code2 size={16} /> Añadir pregunta técnica
+          </button>
         </div>
 
-<div className="space-y-4 mb-6">
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
   {preguntas.length === 0 ? (
-    <div className="text-center py-8 text-gray-400">
+    <div className="text-center py-8 text-gray-400 col-span-full">
       <p>No hay preguntas registradas para esta vacante.</p>
       <button
         onClick={() => router.push(`/reclutador/preguntas/registrar?idVacante=${idVacante}`)}
@@ -217,69 +219,81 @@ export default function PreguntasVacante() {
     </div>
   ) : (
     preguntas.map((pregunta, index) => (
-<div key={pregunta.Id_Pregunta} className="border border-gray-700 bg-[#111827] rounded-lg px-4 py-4 text-white">
-  <div className="flex justify-between items-start">
-    <div>
-      <h3 className="font-semibold mb-1">
-        {index + 1}. {pregunta.Pregunta}
-{pregunta.preguntaTecnica && (
-  <div className="mt-4">
-    <p className="text-sm text-gray-300 font-semibold mb-1">Respuesta esperada (código):</p>
-    <pre className="bg-gray-800 p-3 rounded text-sm overflow-x-auto whitespace-pre-wrap font-mono text-green-300">
-      {pregunta.preguntaTecnica.Respuesta}
-    </pre>
-  </div>
-)}
+      <div
+        key={pregunta.Id_Pregunta}
+        className={`border border-gray-700 bg-[#111827] rounded-lg px-4 py-4 text-white relative
+          ${pregunta.preguntaTecnica ? 'col-span-full' : ''}`}
+      >
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="font-semibold mb-1">
+              {index + 1}. {pregunta.Pregunta}
+            </h3>
 
+            
+            {pregunta.esIA && (
+              <div className="absolute top-2 right-2 flex items-center gap-1 text-xs text-purple-400">
+                <Sparkles size={14} /> Generado con IA
+              </div>
+            )}
 
-      </h3>
+            
+            {pregunta.preguntaTecnica && (
+              <div className="mt-4">
+                <p className="text-sm text-gray-300 font-semibold mb-1">
+                  Respuesta esperada (código):
+                </p>
+                <pre className="bg-gray-800 p-3 rounded text-sm overflow-x-auto whitespace-pre-wrap font-mono text-green-300">
+                  {pregunta.preguntaTecnica.Respuesta}
+                </pre>
+              </div>
+            )}
 
-      {pregunta.opciones && pregunta.opciones.length > 0 && (
-        <div className="mt-3">
-          <p className="text-sm text-gray-300 font-semibold mb-1">Opciones:</p>
-          <ul className="space-y-1">
-            {pregunta.opciones.map((op, i) => (
-              <li
-                key={op.Id_Opcion}
-                className={`px-3 py-1 rounded text-sm ${
-                  op.Correcta
-                    ? 'bg-green-700 text-white font-semibold'
-                    : 'bg-gray-800 text-gray-300'
-                }`}
-              >
-                {String.fromCharCode(65 + i)}. {op.Opcion}
-              </li>
-            ))}
-          </ul>
+            
+            {pregunta.opciones && pregunta.opciones.length > 0 && (
+              <div className="mt-3">
+                <p className="text-sm text-gray-300 font-semibold mb-1">Opciones:</p>
+                <ul className="space-y-1">
+                  {pregunta.opciones.map((op, i) => (
+                    <li
+                      key={op.Id_Opcion}
+                      className={`px-3 py-1 rounded text-sm ${
+                        op.Correcta
+                          ? 'bg-green-700 text-white font-semibold'
+                          : 'bg-gray-800 text-gray-300'
+                      }`}
+                    >
+                      {String.fromCharCode(65 + i)}. {op.Opcion}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          
+          <div className="flex flex-col items-end gap-1">
+            <button
+              onClick={() =>
+                router.push(
+                  pregunta.preguntaTecnica
+                    ? `preguntas/registrar/tecnica?idVacante=${idVacante}&idPregunta=${pregunta.Id_Pregunta}`
+                    : `preguntas/registrar?idVacante=${idVacante}&idPregunta=${pregunta.Id_Pregunta}`
+                )
+              }
+              className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1"
+            >
+              <Edit size={14} /> Editar
+            </button>
+            <button
+              onClick={() => handleEliminarPregunta(pregunta.Id_Pregunta)}
+              className="text-red-400 hover:text-red-300 text-sm flex items-center gap-1"
+            >
+              <Trash2 size={14} /> Eliminar
+            </button>
+          </div>
         </div>
-      )}
-
-
-    </div>
-
-    <div className="flex flex-col items-end gap-1">
-      <button
-        onClick={() =>
-          router.push(
-            pregunta.preguntaTecnica
-              ? `preguntas/registrar/tecnica?idVacante=${idVacante}&idPregunta=${pregunta.Id_Pregunta}`
-              : `preguntas/registrar?idVacante=${idVacante}&idPregunta=${pregunta.Id_Pregunta}`
-          )
-        }
-        className="text-blue-400 hover:text-blue-300 text-sm flex items-center"
-      >
-        ✏️ Editar
-      </button>
-      <button
-        onClick={() => handleEliminarPregunta(pregunta.Id_Pregunta)}
-        className="text-red-400 hover:text-red-300 text-sm flex items-center"
-      >
-        🗑 Eliminar
-      </button>
-    </div>
-  </div>
-</div>
-
+      </div>
     ))
   )}
 </div>

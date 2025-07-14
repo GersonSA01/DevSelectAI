@@ -7,7 +7,7 @@ exports.getAll = async (req, res) => {
     const formatear = (fecha) => {
   const d = new Date(fecha);
 
-  // Ajusta para que siempre sea el mismo día en tu zona (por ejemplo +5 horas para Ecuador)
+  
   d.setHours(d.getHours() + 5);
 
   return new Intl.DateTimeFormat('es-EC', {

@@ -8,7 +8,7 @@ import Grafica from '../../components/informe/Grafica';
 import CapturasEvaluacion from '../../components/informe/CapturasEvaluacion';
 import ResumenFinal from '../../components/informe/ResumenFinal';
 import SkeletonInforme from '../../components/informe/SkeletonInforme';
-import InformePDF from '../../components/informe/InformePDF'; // ✅
+import InformePDF from '../../components/informe/InformePDF'; 
 
 export default function InformeEvaluacionTiempo() {
   const [datos, setDatos] = useState(null);

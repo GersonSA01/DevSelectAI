@@ -5,7 +5,7 @@ async function cargarDatosIniciales() {
   try {
     await db.sequelize.sync();
 
-    // Estados de postulación
+    
     const estados = await db.EstadoPostulacion.findAll();
     if (estados.length === 0) {
       await db.EstadoPostulacion.bulkCreate([
@@ -18,7 +18,7 @@ async function cargarDatosIniciales() {
       console.log('✅ Estados de postulación insertados.');
     }
 
-    // Itinerarios
+    
     const itinerarios = await db.Itinerario.findAll();
     if (itinerarios.length === 0) {
       await db.Itinerario.bulkCreate([
@@ -28,14 +28,14 @@ async function cargarDatosIniciales() {
       console.log('✅ Itinerarios insertados.');
     }
 
-    // Empresa UNEMI
+    
     const empresas = await db.Empresa.findAll();
     if (empresas.length === 0) {
       await db.Empresa.create({ Descripcion: 'UNEMI' });
       console.log('✅ Empresa UNEMI insertada.');
     }
 
-    // País, provincias y ciudades
+    
     const paisExistente = await db.Pais.findByPk(1);
     if (!paisExistente) {
       const pais = await db.Pais.create({ id_pais: 1, Descripcion: 'ECUADOR' });
@@ -74,7 +74,7 @@ async function cargarDatosIniciales() {
       console.log('✅ Habilidades insertadas.');
     }
 
-    // Estados de Itinerario
+    
     const estadosItinerario = await db.Estadoltinerario.findAll();
     if (estadosItinerario.length === 0) {
       await db.Estadoltinerario.bulkCreate([

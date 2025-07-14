@@ -1,6 +1,6 @@
 const db = require("../models");
 
-// 🔴 Calificar entrevista oral completa
+// Calificar entrevista oral completa
 const calificarEntrevistaOral = async (req, res) => {
   try {
     const { idEntrevista, calificaciones } = req.body;
@@ -9,7 +9,7 @@ const calificarEntrevistaOral = async (req, res) => {
       return res.status(400).json({ error: "Datos incompletos o mal formateados." });
     }
 
-    // Verificar existencia de la entrevista
+    
     const entrevista = await db.EntrevistaOral.findByPk(idEntrevista, {
       include: [{ model: db.PreguntaOral, as: "preguntasOrales" }]
     });
@@ -36,7 +36,6 @@ const calificarEntrevistaOral = async (req, res) => {
       console.log(`✅ Pregunta ${idPregunta} actualizada con nota ${calificacion}`);
     }
 
-    // Actualizar la retroalimentación de la entrevista
     await entrevista.update({
       RetroalimentacionIA: `Calificación manual: ${total}/6`,
     });
@@ -52,7 +51,7 @@ const calificarEntrevistaOral = async (req, res) => {
   }
 };
 
-// 🟢 Obtener entrevista oral con preguntas y sus IDs
+// Obtener entrevista oral con preguntas y sus IDs
 const getEntrevistaOral = async (req, res) => {
   try {
     const { idEntrevista } = req.params;
@@ -66,7 +65,7 @@ const getEntrevistaOral = async (req, res) => {
     }
 
     const preguntas = entrevista.preguntasOrales.map((p) => ({
-      idPregunta: p.Id_Pregunta_oral, // ✅ Necesario para guardar luego
+      idPregunta: p.Id_Pregunta_oral, 
       pregunta: p.PreguntaIA,
       respuesta: p.RespuestaPostulante,
       calificacion: p.CalificacionIA,
@@ -85,7 +84,7 @@ const getEntrevistaOral = async (req, res) => {
   }
 };
 
-// 🔴 Calificar evaluación técnica (código)
+// Calificar evaluación técnica (código)
 const calificarTecnico = async (req, res) => {
   try {
     const { idEvaluacion, idPregunta, subCalificaciones } = req.body;
@@ -99,7 +98,7 @@ const calificarTecnico = async (req, res) => {
       return res.status(400).json({ error: "Datos incompletos o mal formateados." });
     }
 
-    // 1️⃣ Cargo el registro existente
+    
     const registro = await db.PreguntaEvaluacion.findOne({
       where: { id_Evaluacion: idEvaluacion, Id_Pregunta: idPregunta }
     });
@@ -107,21 +106,21 @@ const calificarTecnico = async (req, res) => {
       return res.status(404).json({ error: "Registro PreguntaEvaluacion no encontrado." });
     }
 
-    // 2️⃣ Suma bruta de criterios (0–6)
+    
     const sumaBruta =
       subCalificaciones.calidad +
       subCalificaciones.compila +
       subCalificaciones.resolucion;
 
-    // 3️⃣ Ajuste según el usoIA recibido en el payload
+    
     const usoIApayload = Boolean(subCalificaciones.usoIA);
     const ajuste = usoIApayload ? 0 : +1;
 
-    // 4️⃣ Puntaje final y clamp entre 0 y 7
+    
     let puntaje = sumaBruta + ajuste;
     puntaje     = Math.max(0, Math.min(7, puntaje));
 
-    // 5️⃣ Actualizo Puntaje **y** guardo el nuevo UsoIA en BD
+    
     await registro.update({
       Puntaje: puntaje,
       UsoIA:   usoIApayload ? 1 : 0
@@ -141,24 +140,24 @@ const actualizarEvaluacionGeneral = async (req, res) => {
   try {
     const { idEvaluacion, ObservacionGeneral, PuntajeTotal } = req.body;
 
-    // 1️⃣ Validaciones básicas
+    
     if (typeof idEvaluacion !== "number") {
       return res.status(400).json({ error: "idEvaluacion inválido" });
     }
 
-    // 2️⃣ Busca la evaluación
+    
     const registro = await db.Evaluacion.findByPk(idEvaluacion);
     if (!registro) {
       return res.status(404).json({ error: "Evaluación no encontrada" });
     }
 
-    // 3️⃣ Actualiza campos de evaluación
+    
     await registro.update({
       ObservacionGeneral,
       PuntajeTotal,
     });
 
-    // 4️⃣ Actualiza estado del postulante a "Calificado" (id = 5)
+    
     const postulante = await db.Postulante.findByPk(registro.Id_postulante);
     if (postulante) {
       await postulante.update({ id_EstadoPostulacion: 5 });

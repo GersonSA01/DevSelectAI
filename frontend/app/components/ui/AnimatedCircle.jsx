@@ -5,7 +5,7 @@ import { Mic } from 'lucide-react';
 export default function AnimatedCircle({ letter, isPlaying, isRecording, onStop }) {
   return (
     <div className="relative group flex flex-col items-center">
-      {/* Aura animada */}
+      
       <div
         className={`absolute inset-0 w-24 h-24 rounded-full blur-xl transition-all
         ${isPlaying
@@ -14,7 +14,7 @@ export default function AnimatedCircle({ letter, isPlaying, isRecording, onStop 
         group-hover:scale-110 group-hover:opacity-80 group-hover:shadow-[0_0_30px_#3BDCF6]`}
       />
 
-      {/* Botón central */}
+      
       <button
         onClick={() => isRecording && onStop?.()}
         className={`relative w-24 h-24 rounded-full flex items-center justify-center text-black font-bold text-xl shadow-xl

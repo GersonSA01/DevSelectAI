@@ -98,7 +98,7 @@ export default function PracticaPage() {
       }
 
       setAyudaIA(data.sugerencia || '// No se pudo obtener ayuda.');
-      setUsoIA(true); // ✅ marcar ayuda como usada
+      setUsoIA(true); 
     } catch (err) {
       console.error('❌ Error al pedir ayuda a la IA:', err);
       await Alert({

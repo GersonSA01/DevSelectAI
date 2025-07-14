@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { validarCamposRegistro } from "./validacionesRegistro";
 import { Alert } from "./alerts/Alerts";
 
-// Puedes mover esto a un archivo de config
+
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -114,128 +114,104 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
     setOpenPerfil(true);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (!/^\d{10}$/.test(cedula)) {
-      await Alert({ title: "Cédula inválida", html: "Debe contener exactamente 10 dígitos.", icon: "error" });
-      return;
-    }
+  if (!/^\d{10}$/.test(cedula)) {
+    await Alert({ title: "Cédula inválida", html: "Debe contener exactamente 10 dígitos.", icon: "error" });
+    return;
+  }
 
-    if (telefono && !/^\d{7,10}$/.test(telefono)) {
-      await Alert({ title: "Teléfono inválido", html: "Entre 7 y 10 dígitos numéricos.", icon: "error" });
-      return;
-    }
+  if (telefono && !/^\d{7,10}$/.test(telefono)) {
+    await Alert({ title: "Teléfono inválido", html: "Entre 7 y 10 dígitos numéricos.", icon: "error" });
+    return;
+  }
 
-    if (contrasena.length < 8) {
-      await Alert({ title: "Contraseña débil", html: "Debe tener mínimo 8 caracteres.", icon: "error" });
-      return;
-    }
+  if (contrasena.length < 8) {
+    await Alert({ title: "Contraseña débil", html: "Debe tener mínimo 8 caracteres.", icon: "error" });
+    return;
+  }
 
-    if (contrasena !== confirmarContrasena) {
-      await Alert({ title: "Contraseñas no coinciden", html: "Verifica las contraseñas.", icon: "error" });
-      return;
-    }
+  if (contrasena !== confirmarContrasena) {
+    await Alert({ title: "Contraseñas no coinciden", html: "Verifica las contraseñas.", icon: "error" });
+    return;
+  }
 
-    if (rol.toLowerCase() !== "estudiante" && rol.toLowerCase() !== "docente") {
-      await Alert({ title: "Rol no válido", html: "El rol debe ser <b>Estudiante</b> o <b>Docente</b>.", icon: "error" });
-      return;
-    }
+  if (rol.toLowerCase() !== "estudiante" && rol.toLowerCase() !== "docente") {
+    await Alert({ title: "Rol no válido", html: "El rol debe ser <b>Estudiante</b> o <b>Docente</b>.", icon: "error" });
+    return;
+  }
 
-    if (rol.toLowerCase() === "estudiante") {
-      try {
-        const check = await fetch(`${BACKEND_URL}/api/postulante/cedula/${cedula}`);
-        if (check.ok) {
-          const existente = await check.json();
-          if (existente) {
-            await Alert({
-              title: "Ya estás registrado",
-              html: "Ya existe una cuenta asociada a esta cédula.",
-              icon: "info",
-            });
-            return;
-          }
-        }
-      } catch (err) {
-        console.error("Error al verificar existencia:", err);
-      }
-    }
+  const idCiudad = await validarCamposRegistro({
+    contrasena,
+    confirmarContrasena,
+    carrera,
+    itinerario,
+    ciudades,
+    ciudadNombre,
+  });
 
-    const idCiudad = await validarCamposRegistro({
-      contrasena,
-      confirmarContrasena,
-      carrera,
-      itinerario,
-      ciudades,
-      ciudadNombre,
+  if (!idCiudad) return;
+
+  let body = {};
+  let endpoint = "";
+
+  if (rol.toLowerCase() === "estudiante") {
+    endpoint = `${BACKEND_URL}/api/postulante`;
+    body = {
+      Cedula: cedula.trim(),
+      Nombre: nombres.trim(),
+      Apellido: apellidos.trim(),
+      Correo: correo.trim(),
+      Telefono: telefono.trim(),
+      Contrasena: contrasena,
+      ayuda: false,
+      cant_alert: 0,
+      FechPostulacion: new Date(),
+      id_ciudad: idCiudad,
+      id_EstadoPostulacion: 6,
+      ItinerarioExcel: itinerario,
+    };
+  } else {
+    endpoint = `${BACKEND_URL}/api/reclutador`;
+    body = {
+      Cedula: cedula.trim(),
+      Nombres: nombres.trim(),
+      Apellidos: apellidos.trim(),
+      Correo: correo.trim(),
+      Telefono: telefono.trim(),
+      Contrasena: contrasena,
+    };
+  }
+
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     });
 
-    if (!idCiudad) return;
-
-    let body = {};
-    let endpoint = "";
-
-    if (rol.toLowerCase() === "estudiante") {
-      endpoint = `${BACKEND_URL}/api/postulante`;
-      body = {
-        Cedula: cedula.trim(),
-        Nombre: nombres.trim(),
-        Apellido: apellidos.trim(),
-        Correo: correo.trim(),
-        Telefono: telefono.trim(),
-        Contrasena: contrasena,
-        ayuda: false,
-        cant_alert: 0,
-        FechPostulacion: new Date(),
-        id_ciudad: idCiudad,
-        id_EstadoPostulacion: 1,
-        ItinerarioExcel: itinerario,
-      };
-    } else {
-      endpoint = `${BACKEND_URL}/api/reclutador`;
-      body = {
-        Cedula: cedula.trim(),
-        Nombres: nombres.trim(),
-        Apellidos: apellidos.trim(),
-        Correo: correo.trim(),
-        Telefono: telefono.trim(),
-        Contrasena: contrasena,
-      };
-    }
-
-    try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        await Alert({
-          title: "Error al registrar",
-          html: data.error || "Verifica los datos ingresados.",
-          icon: "error",
-        });
-        return;
-      }
-
+    if (!res.ok) {
+      const data = await res.json();
       await Alert({
-        title: "Registro exitoso",
-        html: "Tu cuenta ha sido creada. Puedes iniciar sesión.",
-        icon: "success",
-      });
-
-      handleIrALogin();
-    } catch (error) {
-      console.error("Error en registro:", error);
-      await Alert({
-        title: "Error",
-        html: "No se pudo completar el registro. Intenta más tarde.",
+        title: "Error al registrar",
+        html: data.error || "Verifica los datos ingresados.",
         icon: "error",
       });
+      return;
     }
-  };
+
+    await Alert({
+      title: "Registro exitoso",
+      html: "Tu cuenta ha sido creada. Puedes iniciar sesión.",
+      icon: "success",
+    });
+
+    handleIrALogin();
+  } catch (error) {
+    console.error("Error en registro:", error);
+  }
+};
 
   if (!open) return null;
 
@@ -257,7 +233,7 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
         </p>
 
               <form className="grid grid-cols-1 md:grid-cols-2 gap-4" onSubmit={handleSubmit}>
-        {/* Cédula + Botón */}
+        
         <div className="md:col-span-2 flex gap-2">
           <input
             type="text"
@@ -281,7 +257,7 @@ export default function RegistroDialog({ open, setOpen, setOpenPerfil }) {
           </button>
         </div>
 
-        {/* Columna izquierda */}
+        
         <input
           type="text"
           placeholder="Nombres"

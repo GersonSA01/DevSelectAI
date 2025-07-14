@@ -1,12 +1,11 @@
 const { Pregunta, Opcion, PreguntaTecnica, Habilidad, Evaluacion, PostulanteVacante } = require('../models');
 
 const preguntasController = {
-  // ✅ Obtener preguntas teóricas respondidas por postulante
   getPreguntasTeoricasPorPostulante: async (req, res) => {
     const { id } = req.query;
 
     try {
-      // 1. Buscar vacante asignada al postulante
+      
       const relacion = await PostulanteVacante.findOne({
         where: { Id_Postulante: id }
       });
@@ -17,23 +16,17 @@ const preguntasController = {
 
       const idVacante = relacion.Id_Vacante;
 
-      // 2. Traer preguntas teóricas, sus opciones, habilidad y respuesta del postulante
-      const preguntas = await Pregunta.findAll({
-        where: {
-          Id_vacante: idVacante,
-          Id_TipoPregunta: 1 // 1 = opción múltiple
-        },
-        include: [
-          { model: Habilidad },
-          { model: Opcion, as: 'opciones' },
-          {
-            model: Evaluacion,
-            where: { Id_Postulante: id },
-            required: false
-          }
-        ],
-        order: [['Id_Pregunta', 'ASC']]
-      });
+      
+     const preguntas = await Pregunta.findAll({
+  where: { Id_vacante: idVacante },
+  attributes: ['Id_Pregunta', 'Pregunta', 'EsIA'],
+  include: [
+    { model: Opcion, as: 'opciones' },
+    { model: PreguntaTecnica, as: 'preguntaTecnica' }
+  ],
+  order: [['Id_Pregunta', 'ASC']]
+});
+
 
       const resultado = preguntas.map(p => {
         const evaluacion = p.Evaluacions?.[0];
@@ -54,7 +47,7 @@ const preguntasController = {
     }
   },
 
-  // Obtener preguntas por vacante
+  
   getPreguntasByVacante: async (req, res) => {
     try {
       const { idVacante } = req.params;
@@ -78,7 +71,7 @@ const preguntasController = {
     }
   },
 
-  // Obtener pregunta técnica por ID
+  
   getPreguntaTecnicaByPreguntaId: async (req, res) => {
     try {
       const { idPregunta } = req.params;
@@ -98,7 +91,7 @@ const preguntasController = {
     }
   },
 
-  // Crear pregunta técnica
+  
   createPreguntaTecnica: async (req, res) => {
     try {
       const { Respuesta, UsoIA, Id_Pregunta } = req.body;
@@ -116,7 +109,7 @@ const preguntasController = {
     }
   },
 
-  // Actualizar pregunta técnica
+  
   updatePreguntaTecnica: async (req, res) => {
     try {
       const { idPregunta } = req.params;
@@ -137,7 +130,7 @@ const preguntasController = {
     }
   },
 
-  // Obtener preguntas técnicas por vacante
+  
   getPreguntasTecnicasByVacante: async (req, res) => {
     try {
       const { idVacante } = req.params;
@@ -156,7 +149,7 @@ const preguntasController = {
     }
   },
 
-  // Crear nueva pregunta
+  
   createPregunta: async (req, res) => {
     try {
       const { Pregunta: preguntaTexto, RptaPregunta, Id_vacante, Id_TipoPregunta } = req.body;
@@ -179,7 +172,7 @@ const preguntasController = {
     }
   },
 
-  // Actualizar pregunta
+  
   updatePregunta: async (req, res) => {
     try {
       const { id } = req.params;
@@ -206,7 +199,7 @@ const preguntasController = {
     }
   },
 
-  // Obtener una pregunta por ID
+  
   getPreguntaById: async (req, res) => {
     try {
       const { id } = req.params;
@@ -226,7 +219,7 @@ const preguntasController = {
     }
   },
 
-  // Eliminar pregunta
+  
   deletePregunta: async (req, res) => {
     try {
       const { id } = req.params;

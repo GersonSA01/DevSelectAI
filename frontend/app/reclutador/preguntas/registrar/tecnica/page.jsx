@@ -7,7 +7,7 @@ export default function RegistrarPreguntaTecnica() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const idVacante = searchParams.get('idVacante');
-const idPregunta = searchParams.get('idPregunta'); // ✅ Nuevo
+const idPregunta = searchParams.get('idPregunta'); 
   const [pregunta, setPregunta] = useState('');
   const [respuesta, setRespuesta] = useState('');
   const [usoIA, setUsoIA] = useState(false);
@@ -16,7 +16,7 @@ const idPregunta = searchParams.get('idPregunta'); // ✅ Nuevo
 useEffect(() => {
   const fetchDatosPregunta = async () => {
     try {
-      // Cargar habilidades aunque no exista pregunta aún
+      
       if (idVacante) {
         const resHabs = await fetch(`http://localhost:5000/api/vacantes/${idVacante}/habilidades`);
         const dataHabs = await resHabs.json();
@@ -29,7 +29,7 @@ useEffect(() => {
       const dataPregunta = await resPregunta.json();
       setPregunta(dataPregunta.Pregunta || '');
 
-      // Ahora la parte técnica
+      a
       const resTecnica = await fetch(`http://localhost:5000/api/preguntas/tecnica/${idPregunta}`);
       if (resTecnica.ok) {
         const dataTecnica = await resTecnica.json();
@@ -55,7 +55,7 @@ const handleSubmit = async (e) => {
   try {
     let preguntaId = idPregunta;
 
-    // Crear o actualizar la pregunta
+    
     if (!idPregunta) {
       const resPregunta = await fetch('http://localhost:5000/api/preguntas', {
         method: 'POST',
@@ -80,10 +80,10 @@ const handleSubmit = async (e) => {
       });
     }
 
-    // Guardar o actualizar la parte técnica
+    
     const resTecnica = await fetch(`http://localhost:5000/api/preguntas/tecnica/${preguntaId}`);
     if (resTecnica.ok) {
-      // Ya existe → actualizar
+      
       await fetch(`http://localhost:5000/api/preguntas/tecnica/${preguntaId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -93,7 +93,7 @@ const handleSubmit = async (e) => {
         })
       });
     } else {
-      // No existe → crear
+      
       await fetch('http://localhost:5000/api/preguntas/tecnica', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -139,38 +139,42 @@ const handleSubmit = async (e) => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-[#111827] p-6 rounded shadow space-y-6">
-          <div>
-            <label className="block text-sm mb-1">Enunciado de la pregunta técnica:</label>
-            <textarea
-              className="w-full p-2 rounded text-black"
-              placeholder="Ej. Escribe una función en JavaScript que determine si un número es primo..."
-              value={pregunta}
-              onChange={(e) => setPregunta(e.target.value)}
-              required
-            />
-          </div>
+       <form onSubmit={handleSubmit} className="bg-[#111827] p-6 rounded-lg shadow space-y-6">
+  <div>
+    <label className="block text-sm text-gray-300 mb-1">
+      Enunciado de la pregunta técnica:
+    </label>
+    <textarea
+      className="w-full p-2 rounded-md text-sm bg-[#1f2937] text-white placeholder-gray-400 border border-gray-600"
+      placeholder="Ej. Escribe una función en JavaScript que determine si un número es primo..."
+      value={pregunta}
+      onChange={(e) => setPregunta(e.target.value)}
+      required
+    />
+  </div>
 
-          <div>
-            <label className="block text-sm mb-1">Respuesta esperada (código):</label>
-            <textarea
-              className="w-full p-2 rounded text-black font-mono"
-              placeholder="// Escribe la solución aquí..."
-              value={respuesta}
-              onChange={(e) => setRespuesta(e.target.value)}
-              required
-              rows={6}
-            />
-          </div>
+  <div>
+    <label className="block text-sm text-gray-300 mb-1">
+      Respuesta esperada (código):
+    </label>
+    <textarea
+      className="w-full p-2 rounded-md text-sm bg-[#1f2937] text-white placeholder-gray-400 font-mono border border-gray-600"
+      placeholder="// Escribe la solución aquí..."
+      value={respuesta}
+      onChange={(e) => setRespuesta(e.target.value)}
+      required
+      rows={6}
+    />
+  </div>
 
+  <button
+    type="submit"
+    className="w-full bg-green-500 hover:bg-green-600 px-4 py-2 rounded-md text-white font-medium"
+  >
+    Guardar pregunta técnica
+  </button>
+</form>
 
-          <button
-            type="submit"
-            className="w-full bg-green-500 hover:bg-green-600 px-4 py-2 rounded text-white"
-          >
-            Guardar pregunta técnica
-          </button>
-        </form>
       </div>
     </div>
   );

@@ -10,22 +10,29 @@ export default function TeoricaPage() {
   const router = useRouter();
   const { cameraStream } = useContext(StreamContext);
   const camRef = useRef(null);
+
   const [cameraVisible, setCameraVisible] = useState(true);
   const [respuestas, setRespuestas] = useState({});
   const [preguntas, setPreguntas] = useState([]);
   const [tiemposInicio, setTiemposInicio] = useState({});
   const [todoRespondido, setTodoRespondido] = useState(false);
+
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const idEvaluacion = preguntas[0]?.Id_Evaluacion || null;
 
+  const obtenerIdPostulante = () => {
+    const id = localStorage.getItem('id_postulante');
+    if (!id) {
+      console.error("❌ ID de postulante no encontrado en localStorage");
+    }
+    return id;
+  };
+
   useEffect(() => {
     const cargarPreguntas = async () => {
-      const idPostulante = localStorage.getItem('id_postulante');
-      if (!idPostulante) {
-        console.error("ID de postulante no encontrado en localStorage");
-        return;
-      }
+      const idPostulante = obtenerIdPostulante();
+      if (!idPostulante) return;
 
       try {
         const res = await fetch(`http://localhost:5000/api/evaluacion/obtener-evaluacion/${idPostulante}`);
@@ -35,7 +42,6 @@ export default function TeoricaPage() {
           const teoricas = data.filter(p => Array.isArray(p.opciones) && p.opciones.length > 0);
           setPreguntas(teoricas);
 
-          // ⏱️ Guardar el tiempo de inicio de cada pregunta
           const ahora = Date.now();
           const tiempos = {};
           teoricas.forEach(p => {
@@ -89,7 +95,7 @@ export default function TeoricaPage() {
         body: JSON.stringify({
           idOpcionSeleccionada: opcionSeleccionada.Id_Opcion,
           idPregunta: idPregunta,
-          tiempo: tiempoRespuesta // ⏱️ Enviar tiempo de respuesta
+          tiempo: tiempoRespuesta
         })
       });
 

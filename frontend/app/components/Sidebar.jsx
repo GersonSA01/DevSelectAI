@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import SkeletonSidebar from './skeleton/SkeletonSidebar';
+import { jwtDecode } from "jwt-decode";
+
 import {
   ChevronDown,
   ChevronUp,
@@ -37,21 +39,22 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
     return () => window.removeEventListener('resize', handleResize);
   }, [setIsCollapsed]);
 
-  useEffect(() => {
-    const reclutadorGuardado = localStorage.getItem('reclutador');
-    if (reclutadorGuardado) {
-      try {
-        const datos = JSON.parse(reclutadorGuardado);
-        const nombres = datos.nombres || datos.Nombres || '';
-        const apellidos = datos.apellidos || datos.Apellidos || '';
-        const id = datos.id || datos.Id_Reclutador || datos.Id_reclutador;
-        setDocente({ nombres, apellidos, id });
-      } catch (error) {
-        console.error("⚠️ Error al leer reclutador desde localStorage:", error);
-      }
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      const nombres = decoded.nombres || "";
+      const apellidos = decoded.apellidos || "";
+      const id = decoded.id || "";
+      setDocente({ nombres, apellidos, id });
+    } catch (error) {
+      console.error("⚠️ Error al decodificar token:", error);
     }
-    setLoading(false);
-  }, []);
+  }
+  setLoading(false);
+}, []);
+
 
   const toggleSection = (section) => {
     setOpenSection(openSection === section ? null : section);

@@ -44,7 +44,7 @@ db.DetalleHabilidad.belongsTo(db.Postulante, { foreignKey: 'Id_Postulante' });
 db.Evaluacion.hasMany(db.Capture, { foreignKey: 'id_Evaluacion' });
 db.Capture.belongsTo(db.Evaluacion, { foreignKey: 'id_Evaluacion' });
 
-// Postulante - Ciudad - EstadoPostulacion
+
 db.Postulante.belongsTo(db.Ciudad, {
   foreignKey: 'id_ciudad',
   as: 'ciudad'
@@ -63,7 +63,7 @@ db.EstadoPostulacion.hasMany(db.Postulante, {
   as: 'postulantes'
 });
 
-// Vacante - Empresa - Reclutador - Itinerario
+
 db.Vacante.belongsTo(db.Empresa, {
   foreignKey: 'Id_Empresa',
   as: 'empresa'
@@ -91,7 +91,7 @@ db.Itinerario.hasMany(db.Vacante, {
   as: 'vacantes'
 });
 
-// VacanteHabilidad - Vacante - Habilidad
+
 db.VacanteHabilidad.belongsTo(db.Vacante, {
   foreignKey: 'Id_Vacante',
   as: 'vacante'
@@ -110,7 +110,7 @@ db.Habilidad.hasMany(db.VacanteHabilidad, {
   as: 'vacantes'
 });
 
-// DetalleHabilidad - Postulante - Habilidad
+
 db.DetalleHabilidad.belongsTo(db.Postulante, {
   foreignKey: 'Id_Postulante',
   as: 'postulante'
@@ -129,7 +129,7 @@ db.Habilidad.hasMany(db.DetalleHabilidad, {
   as: 'detalles'
 });
 
-// Vacante - Pregunta
+
 db.Vacante.hasMany(db.Pregunta, {
   foreignKey: 'Id_vacante',
   as: 'preguntas'
@@ -139,7 +139,7 @@ db.Pregunta.belongsTo(db.Vacante, {
   as: 'vacante'
 });
 
-// Evaluacion - Pregunta a través de PreguntaEvaluacion
+
 db.Pregunta.belongsToMany(db.Evaluacion, {
   through: db.PreguntaEvaluacion,
   foreignKey: 'Id_Pregunta',
@@ -172,7 +172,7 @@ db.Pregunta.hasMany(db.PreguntaEvaluacion, {
   as: 'respuestas'
 });
 
-// ItinerarioPostulante -> Postulante
+
 db.ItinerarioPostulante.belongsTo(db.Postulante, {
   foreignKey: 'Id_Postulante',
   as: 'postulante'
@@ -182,7 +182,7 @@ db.Postulante.hasMany(db.ItinerarioPostulante, {
   as: 'itinerarios'
 });
 
-// ItinerarioPostulante -> Itinerario
+
 db.ItinerarioPostulante.belongsTo(db.Itinerario, {
   foreignKey: 'id_Itinerario',
   as: 'itinerario'
@@ -192,7 +192,7 @@ db.Itinerario.hasMany(db.ItinerarioPostulante, {
   as: 'postulantes'
 });
 
-// ItinerarioPostulante -> EstadoItinerario
+
 db.ItinerarioPostulante.belongsTo(db.Estadoltinerario, {
   foreignKey: 'Id_EstadoItinerario',
   as: 'estado'
@@ -213,7 +213,7 @@ db.Postulante.hasMany(db.Evaluacion, {
   as: 'evaluaciones'
 });
 
-// EntrevistaOral - Evaluacion
+
 db.Evaluacion.belongsTo(db.EntrevistaOral, {
   foreignKey: 'Id_Entrevista',
   as: 'entrevista'
@@ -223,7 +223,7 @@ db.EntrevistaOral.hasOne(db.Evaluacion, {
   as: 'evaluacion'
 });
 
-// PreguntaOral - EntrevistaOral
+
 db.PreguntaOral.belongsTo(db.EntrevistaOral, {
   foreignKey: 'Id_Entrevista',
   as: 'entrevista'
@@ -233,7 +233,7 @@ db.EntrevistaOral.hasMany(db.PreguntaOral, {
   as: 'preguntasOrales'
 });
 
-// Geografía: Ciudad - Provincia - País
+
 db.Ciudad.belongsTo(db.Provincia, {
   foreignKey: 'id_provincia',
   as: 'provincia'
@@ -252,7 +252,7 @@ db.Pais.hasMany(db.Provincia, {
   as: 'provincias'
 });
 
-// Pregunta - Opcion
+
 db.Pregunta.hasMany(db.Opcion, {
   foreignKey: 'Id_Pregunta',
   as: 'opciones'
@@ -262,7 +262,7 @@ db.Opcion.belongsTo(db.Pregunta, {
   as: 'pregunta'
 });
 
-// Pregunta - PreguntaTecnica
+
 db.Pregunta.hasOne(db.PreguntaTecnica, {
   foreignKey: 'Id_Pregunta',
   as: 'preguntaTecnica'
@@ -272,7 +272,7 @@ db.PreguntaTecnica.belongsTo(db.Pregunta, {
   as: 'pregunta'
 });
 
-// Asociaciones adicionales
+
 Object.keys(db).forEach(modelName => {
   if (db[modelName].associate) {
     db[modelName].associate(db);
@@ -298,7 +298,7 @@ db.Vacante.hasMany(db.PostulanteVacante, {
   as: 'postulantesSeleccionados'
 });
 
-// ✅ Evaluacion - Capture SOLO UNA VEZ
+
 
 db.Evaluacion.hasMany(db.Capture, {
   foreignKey: 'id_Evaluacion',
@@ -310,7 +310,7 @@ db.Capture.belongsTo(db.Evaluacion, {
 });
 
 
-// Programacion - ProgramacionPostulacion
+
 db.ProgramacionPostulacion.belongsTo(db.Programacion, {
   foreignKey: 'id_Programacion',
   as: 'programacion'
@@ -322,7 +322,7 @@ db.Programacion.hasMany(db.ProgramacionPostulacion, {
 });
 
 
-// ProgramacionPostulacion - Vacante
+
 db.ProgramacionPostulacion.belongsTo(db.Vacante, {
   foreignKey: 'Id_Vacante',
   as: 'vacante'
@@ -334,7 +334,7 @@ db.Vacante.hasMany(db.ProgramacionPostulacion, {
 });
 
 
-// PostulanteVacante - ProgramacionPostulacion
+
 db.PostulanteVacante.belongsTo(db.ProgramacionPostulacion, {
   foreignKey: 'id_ProgramacionPostulacion',
   as: 'programacionPostulacion'

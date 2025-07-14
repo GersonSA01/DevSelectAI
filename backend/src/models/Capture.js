@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
     File: {
-      type: DataTypes.STRING, // Puedes usar TEXT si es base64 o ruta larga
+      type: DataTypes.STRING, 
     },
     Aprobado: {
       type: DataTypes.BOOLEAN,
