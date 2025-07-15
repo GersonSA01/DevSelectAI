@@ -51,7 +51,6 @@ export default function ValidacionDispositivos() {
       });
 
       const dataEval = await resEval.json();
-      console.log("📥 Respuesta del backend evaluación:", dataEval);
 
       if (!resEval.ok) throw new Error(dataEval?.error || 'Error inesperado al crear evaluación');
 

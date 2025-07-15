@@ -17,24 +17,15 @@ export default function PostulacionesHeader({
 useEffect(() => {
   if (!programacionSeleccionada) {
     const hoy = getHoyLocalDate();
-    console.log('📅 Hoy es (local):', hoy.toISOString().split('T')[0]);
 
     const vigente = programaciones.find(p => {
       const enRangoPostulacion = estaEnRangoPostulacion(hoy, p);
       const enRangoAprobacion = estaEnRangoAprobacion(p);
 
-      console.log(
-        `🔍 Postulación: ${p.rangoPostulacion} (${p.FechIniPostulacion} → ${p.FechFinPostulacion}) => ${enRangoPostulacion}`
-      );
-      console.log(
-        `🔍 Aprobación: (${p.FechIniAprobacion} → ${p.FechFinAprobacion}) => ${enRangoAprobacion}`
-      );
-
       return enRangoPostulacion || enRangoAprobacion;
     });
 
     if (vigente) {
-      console.log('✅ Encontró vigente:', vigente);
       setProgramacionSeleccionada(vigente.id_Programacion);
     } else {
       console.log('⚠️ No encontró ninguna programación vigente.');

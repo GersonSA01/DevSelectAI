@@ -22,8 +22,13 @@ export default function EntrevistaLayout({ children }) {
         const res = await fetch(`http://localhost:5000/api/postulante/token/${token}`);
         if (!res.ok) throw new Error('Token inválido');
         const data = await res.json();
-        console.log('Respuesta del backend:', data);
-        setEstado(data.id_EstadoPostulacion === 2 ? 'ya-evaluado' : 'ok');
+
+        if (data.id_EstadoPostulacion === 1) {
+          setEstado('ok'); // Solo permite si está 'Por evaluar'
+        } else {
+          setEstado('ya-evaluado'); // cualquier otro estado ya no permite entrevista
+        }
+
       } catch (err) {
         console.error('Token inválido:', err);
         setEstado('invalido');
@@ -66,9 +71,9 @@ export default function EntrevistaLayout({ children }) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center bg-pageBackground text-white px-6 text-center">
         <CheckCircle className="w-20 h-20 text-green-400 mb-6 drop-shadow-xl" />
-        <h1 className="text-3xl font-bold text-green-400 mb-2 tracking-wide">Entrevista completada</h1>
+        <h1 className="text-3xl font-bold text-green-400 mb-2 tracking-wide">Entrevista no disponible</h1>
         <p className="text-muted text-lg max-w-xl">
-          Gracias por completar la entrevista técnica. Revisa tu correo institucional para conocer los siguientes pasos.
+          Ya has completado o no estás autorizado para realizar la entrevista técnica. Revisa tu correo institucional para más información.
         </p>
       </main>
     );
@@ -80,10 +85,8 @@ export default function EntrevistaLayout({ children }) {
         className="relative min-h-screen pt-16 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/fondo_pantalla.png')" }}
       >
-        
         <div className="absolute inset-0 bg-black/70 z-0"></div>
 
-        
         <div className="relative z-10">
           {children}
         </div>

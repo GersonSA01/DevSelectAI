@@ -14,64 +14,47 @@ export default function LoginEstudiante() {
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+const handleLogin = async (e) => {
+  e.preventDefault();
 
-    try {
-      const res = await fetch("http://localhost:5000/api/login-postulante", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ correo, contrasena }),
-      });
+  try {
+    const res = await fetch("http://localhost:5000/api/login-postulante", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ correo, contrasena }),
+    });
 
-      if (!res.ok) {
-        await Alert({
-          title: "Acceso denegado",
-          html: "Correo o contraseña incorrectos",
-          icon: "error",
-          confirmButtonText: "Intentar de nuevo",
-        });
-        return;
-      }
-
-      const { token } = await res.json();
-
-      if (!token) {
-        await Alert({
-          title: "Error",
-          html: "No se recibió token del servidor",
-          icon: "error",
-        });
-        return;
-      }
-
-      
-      const decoded = jwtDecode(token);
-      console.log("Usuario:", decoded);
-
-      
-      localStorage.setItem("token", token);
-
+    if (!res.ok) {
       await Alert({
-        title: "Bienvenido/a",
-        html: `<div class="text-xl font-semibold text-cyan-400 mt-2">${decoded.nombres || "Usuario"}</div>`,
-        icon: "success",
-        showConfirmButton: false,
-        timer: 1800,
-        timerProgressBar: true,
-      });
-
-      router.push("/postulador");
-
-    } catch (error) {
-      console.error("Error al iniciar sesión:", error);
-      await Alert({
-        title: "Error inesperado",
-        html: "Ocurrió un error al intentar iniciar sesión. Intenta nuevamente.",
+        title: "Acceso denegado",
+        html: "Correo o contraseña incorrectos",
         icon: "error",
+        confirmButtonText: "Intentar de nuevo",
       });
+      return;
     }
-  };
+
+    await Alert({
+      title: "Bienvenido/a",
+      html: `<div class="text-xl font-semibold text-cyan-400 mt-2">Estudiante</div>`,
+      icon: "success",
+      showConfirmButton: false,
+      timer: 1800,
+      timerProgressBar: true,
+    });
+
+    router.push("/postulador");
+
+  } catch (error) {
+    console.error("Error al iniciar sesión:", error);
+    await Alert({
+      title: "Error inesperado",
+      html: "Ocurrió un error al intentar iniciar sesión. Intenta nuevamente.",
+      icon: "error",
+    });
+  }
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">

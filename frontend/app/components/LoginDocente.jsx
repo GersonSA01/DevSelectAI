@@ -13,68 +13,47 @@ export default function LoginDocente() {
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+const handleLogin = async (e) => {
+  e.preventDefault();
 
-    try {
-      const res = await fetch("http://localhost:5000/api/login-reclutador", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ correo, contrasena }),
-      });
+  try {
+    const res = await fetch("http://localhost:5000/api/login-reclutador", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ correo, contrasena }),
+    });
 
-      if (!res.ok) {
-        await Alert({
-          title: "Error",
-          html: "Correo o contraseña incorrectos",
-          icon: "error",
-          confirmButtonText: "Intentar de nuevo",
-        });
-        return;
-      }
-
-      const { token } = await res.json();
-
-      if (!token) {
-        await Alert({
-          title: "Error",
-          html: "No se recibió token del servidor",
-          icon: "error",
-        });
-        return;
-      }
-
-      localStorage.setItem("token", token);
-
-      const decoded = jwtDecode(token);
-      console.log("Usuario:", decoded);
-
+    if (!res.ok) {
       await Alert({
-        title: "Bienvenido/a",
-        html: `<div class="text-xl font-semibold text-cyan-400 mt-2">${decoded.nombres || "Usuario"}</div>`,
-        icon: "success",
-        showConfirmButton: false,
-        timer: 1800,
-        timerProgressBar: true,
-        showClass: {
-          popup: "animate__animated animate__fadeInDown",
-        },
-        hideClass: {
-          popup: "animate__animated animate__fadeOutUp",
-        },
-      });
-
-      router.push("/reclutador");
-
-    } catch (error) {
-      console.error("Error al iniciar sesión:", error);
-      await Alert({
-        title: "Error inesperado",
-        html: "Ocurrió un error al intentar iniciar sesión. Intenta nuevamente.",
+        title: "Error",
+        html: "Correo o contraseña incorrectos",
         icon: "error",
+        confirmButtonText: "Intentar de nuevo",
       });
+      return;
     }
-  };
+
+    await Alert({
+      title: "Bienvenido/a",
+      html: `<div class="text-xl font-semibold text-cyan-400 mt-2">Docente</div>`,
+      icon: "success",
+      showConfirmButton: false,
+      timer: 1800,
+      timerProgressBar: true,
+    });
+
+    router.push("/reclutador");
+
+  } catch (error) {
+    console.error("Error al iniciar sesión:", error);
+    await Alert({
+      title: "Error inesperado",
+      html: "Ocurrió un error al intentar iniciar sesión. Intenta nuevamente.",
+      icon: "error",
+    });
+  }
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 text-white">
