@@ -151,7 +151,7 @@ export default function SeleccionHabilidades() {
 
       await Alert({
         title: '¡Proceso finalizado!',
-        html: 'Tu selección ha sido registrada correctamente. Serás redirigido al inicio.',
+        html: 'Tu selección ha sido registrada correctamente. Por favor revisa tu correo para más detalles.',
         icon: 'success'
       });
 

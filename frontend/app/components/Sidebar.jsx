@@ -77,10 +77,20 @@ useEffect(() => {
       <div className="p-4 flex items-center justify-between">
         {!isCollapsed && (
           <div>
-            <div className="text-sm font-semibold">
-              {docente ? `${docente.nombres} ${docente.apellidos}` : 'Cargando...'}
-            </div>
-            <div className="text-xs text-cyan-400">DOCENTE</div>
+<Link
+  href="/reclutador"
+  className="relative text-sm font-semibold text-white group transition-colors duration-300"
+>
+  <span className="group-hover:text-cyan-400 transition-colors duration-300">
+    {docente ? `${docente.nombres} ${docente.apellidos}` : 'Cargando...'}
+  </span>
+  <span
+    className="absolute left-0 -bottom-0.5 h-px w-0 bg-cyan-400 transition-all duration-300 group-hover:w-full"
+  />
+</Link>
+
+
+            <div className="text-xs text-cyan-400">Coordinador de práctica</div>
           </div>
         )}
         <button onClick={() => setIsCollapsed(!isCollapsed)} className="text-white ml-auto">

@@ -13,53 +13,46 @@ export async function mostrarTerminosYCondiciones(router, token) {
     </p>
 
     <ul class="list-disc list-inside space-y-1 text-sm text-white">
-      <li><strong>Pantalla completa</strong> compartida.</li>
-      <li><strong>Capturas automáticas</strong> activas.</li>
-      <li><strong>Presencia en cámara</strong> requerida.</li>
-      <li>Evita minimizar o cambiar de pestaña.</li>
+      <li>La entrevista se realizará en <strong>pantalla completa</strong>.</li>
+      <li>Se tomarán <strong>capturas automáticas</strong> durante el proceso.</li>
+      <li>Tu <strong>cámara y micrófono</strong> deben estar habilitados.</li>
+      <li>No debes minimizar ni cambiar de pestaña durante la entrevista.</li>
     </ul>
 
-    <div class="space-y-2 pt-2 text-sm">
-      <div class="text-primaryButton font-semibold">Aceptación:</div>
-      <label><input type="checkbox" id="chk1" /> Pantalla completa</label><br/>
-      <label><input type="checkbox" id="chk2" /> Cámara y micrófono</label><br/>
-      <label><input type="checkbox" id="chk3" /> Capturas automáticas</label>
+    <div class="space-y-2 pt-4 text-sm">
+      <label>
+        <input type="checkbox" id="chk_all" />
+        <span>He leído y acepto todas las condiciones anteriores</span>
+      </label>
     </div>
 
     <p class="text-yellow-400 text-xs pt-2">
-      Debes aceptar todos los puntos para continuar.
+      Debes aceptar las condiciones para continuar.
     </p>
   </div>
 `,
-
     icon: 'info',
     showCancelButton: true,
-    confirmButtonText: 'Sí, estoy listo',
+    confirmButtonText: 'Sí, acepto',
     cancelButtonText: 'Cancelar',
     didOpen: () => {
       const confirmBtn = document.querySelector('.swal2-confirm');
-      const chk1 = document.getElementById('chk1');
-      const chk2 = document.getElementById('chk2');
-      const chk3 = document.getElementById('chk3');
-
-      const toggleBtn = () => {
-        confirmBtn.disabled = !(chk1?.checked && chk2?.checked && chk3?.checked);
-      };
+      const chkAll = document.getElementById('chk_all');
 
       confirmBtn.disabled = true;
-      chk1?.addEventListener('change', toggleBtn);
-      chk2?.addEventListener('change', toggleBtn);
-      chk3?.addEventListener('change', toggleBtn);
+
+      chkAll?.addEventListener('change', () => {
+        confirmBtn.disabled = !chkAll.checked;
+      });
     },
     preConfirm: () => {
-      const chk1 = document.getElementById('chk1')?.checked;
-      const chk2 = document.getElementById('chk2')?.checked;
-      const chk3 = document.getElementById('chk3')?.checked;
+      const chkAll = document.getElementById('chk_all')?.checked;
 
-      if (!chk1 || !chk2 || !chk3) {
-        Swal.showValidationMessage('Debes aceptar todas las condiciones.');
+      if (!chkAll) {
+        Swal.showValidationMessage('Debes aceptar las condiciones para continuar.');
         return false;
       }
+
       return true;
     }
   });

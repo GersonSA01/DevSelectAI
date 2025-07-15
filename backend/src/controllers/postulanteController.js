@@ -77,7 +77,7 @@ const crearPostulante = async (req, res) => {
 
     await sendEmail(
       postulante.Correo,
-      "✅ Registro exitoso - DevSelectAI",
+      "Registro exitoso - DevSelectAI",
       Templates.registroExitoso()
     );
 
@@ -151,7 +151,9 @@ const seleccionarVacante = async (req, res) => {
     }
 
     const vacante = await db.Vacante.findByPk(idVacante, {
-      include: [{ model: db.ProgramacionPostulacion, as: "programacionesPostulacion" }],
+      include: [
+        { model: db.ProgramacionPostulacion, as: "programacionesPostulacion" },
+      ],
     });
     if (!vacante) return res.status(404).json({ error: "Vacante no encontrada." });
 
@@ -172,14 +174,22 @@ const seleccionarVacante = async (req, res) => {
 
     const postulante = await db.Postulante.findByPk(idPostulante);
 
+    const habilidadesVacante = await db.VacanteHabilidad.findAll({
+      where: { Id_Vacante: idVacante },
+      include: [{ model: db.Habilidad, as: 'habilidad' }]
+    });
+
+    const habilidades = habilidadesVacante.map(h => h.habilidad?.Descripcion || 'Sin descripción');
+
     await sendEmail(
       postulante.Correo,
-      "📌 Vacante asignada - DevSelectAI",
+      "Vacante asignada - DevSelectAI",
       Templates.vacanteAsignada({
         nombre: postulante.Nombre,
         apellido: postulante.Apellido,
         vacante: vacante.Descripcion,
         enlace: `${baseUrl}/postulador/entrevista/inicio?token=${postulante.token_entrevista}`,
+        habilidades
       })
     );
 
@@ -189,6 +199,10 @@ const seleccionarVacante = async (req, res) => {
     res.status(500).json({ error: "Error interno." });
   }
 };
+
+
+
+
 
 const aprobar = async (req, res) => {
   const { id } = req.params;

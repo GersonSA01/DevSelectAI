@@ -35,7 +35,8 @@ exports.getVacantesPorHabilidades = async (req, res) => {
 
     const hoy = new Date();
 
-    const vacantes = await Vacante.findAll({
+    // primero obtenemos las vacantes que tienen al menos una habilidad requerida
+    const vacantesFiltradas = await Vacante.findAll({
       where: {
         id_Itinerario: idItinerario,
         Cantidad: { [Op.gt]: 0 }
@@ -44,8 +45,6 @@ exports.getVacantesPorHabilidades = async (req, res) => {
         {
           model: VacanteHabilidad,
           as: 'habilidades',
-          required: true,
-          where: { Id_Habilidad: habilidades },
           include: [{ model: Habilidad, as: 'habilidad' }]
         },
         {
@@ -75,6 +74,10 @@ exports.getVacantesPorHabilidades = async (req, res) => {
       ]
     });
 
+    const vacantes = vacantesFiltradas.filter(v =>
+      v.habilidades.some(h => habilidades.includes(h.Id_Habilidad))
+    );
+
     const resultado = vacantes.map(v => {
       const habilidadesPlano = (v.habilidades || []).map(h => ({
         Id_Habilidad: h.Id_Habilidad,
@@ -88,7 +91,7 @@ exports.getVacantesPorHabilidades = async (req, res) => {
         Descripcion: v.Descripcion,
         Contexto: v.Contexto,
         Cantidad: v.Cantidad,
-        Habilidades: habilidadesPlano,
+        Habilidades: habilidadesPlano, // todas las habilidades de la vacante
         Empresa: v.empresa?.Nombre || null,
         Programacion: programacion
           ? {
@@ -108,6 +111,7 @@ exports.getVacantesPorHabilidades = async (req, res) => {
     res.status(500).json({ error: 'Error al buscar vacantes' });
   }
 };
+
 
 
 exports.getByItinerario = async (req, res) => {

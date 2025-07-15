@@ -138,7 +138,7 @@ const handleSubmit = async (e) => {
   }
 
   if (rol.toLowerCase() !== "estudiante" && rol.toLowerCase() !== "docente") {
-    await Alert({ title: "Rol no válido", html: "El rol debe ser <b>Estudiante</b> o <b>Docente</b>.", icon: "error" });
+    await Alert({ title: "Rol no válido", html: "El rol debe ser <b>Estudiante</b> o <b>Coordinador de práctica</b>.", icon: "error" });
     return;
   }
 

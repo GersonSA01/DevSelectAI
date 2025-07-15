@@ -1,6 +1,6 @@
 "use client";
 import { Alert } from "../alerts/Alerts";
-import Swal from 'sweetalert2';
+import Swal from "sweetalert2";
 
 export default async function mostrarVacantesModal({ vacantesData }) {
   const seleccion = await Alert({
@@ -17,7 +17,7 @@ export default async function mostrarVacantesModal({ vacantesData }) {
             </label>
             <div class="hidden peer-checked:block p-4 bg-gray-900 text-sm rounded-b-lg space-y-2">
               <p><strong>Contexto:</strong> ${v.Contexto}</p>
-              <p><strong>Habilidades:</strong> ${
+              <p><strong>Habilidades requeridas para la vacante:</strong> ${
                 (v.Habilidades || []).map(h => h.Descripcion).join(", ") || "No registradas"
               }</p>
               <p><strong>Postulación:</strong> ${
@@ -77,7 +77,7 @@ export default async function mostrarVacantesModal({ vacantesData }) {
     html: `
       <div class="text-white text-sm space-y-2">
         <p><strong>Contexto:</strong> ${vacante.Contexto}</p>
-        <p><strong>Habilidades:</strong> ${
+        <p><strong>Habilidades requeridas para la vacante:</strong> ${
           (vacante.Habilidades || []).map(h => h.Descripcion).join(", ") || "No registradas"
         }</p>
         <p><strong>Postulación:</strong> ${
