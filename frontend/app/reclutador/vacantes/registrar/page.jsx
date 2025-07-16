@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Alert } from '../../../components/alerts/Alerts';
-import { jwtDecode } from "jwt-decode";
+import { fetchWithCreds } from '../../../utils/fetchWithCreds';
+import { AiOutlineInfoCircle } from 'react-icons/ai';
 
 function formatearFecha(fecha) {
   if (!fecha) return '';
@@ -11,8 +12,6 @@ function formatearFecha(fecha) {
   const [a, m, d] = soloFecha.split('-');
   return `${d}/${m}/${a}`;
 }
-
-
 
 export default function RegistrarVacante() {
   const router = useRouter();
@@ -51,33 +50,38 @@ export default function RegistrarVacante() {
     fetchData();
   }, []);
 
-useEffect(() => {
-  try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.warn('⚠️ No hay token en localStorage');
-      return;
-    }
+  useEffect(() => {
+    const obtenerReclutador = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/me', {
+          credentials: 'include'
+        });
+        const data = await res.json();
 
-    const decoded = jwtDecode(token);
-    const id = Number(decoded.id || decoded.Id_Reclutador || decoded.Id_reclutador);
+        if (!res.ok || data.usuario.rol !== 'reclutador') {
+          throw new Error(data?.mensaje || 'No autenticado');
+        }
 
-    if (!isNaN(id)) {
-      setIdReclutador(id);
-      console.log(`✅ Reclutador ID obtenido del JWT: ${id}`);
-    } else {
-      console.error('⚠️ ID de reclutador no válido en el token');
-    }
-  } catch (err) {
-    console.error('❌ Error al decodificar JWT:', err);
-  }
-}, []);
+        setIdReclutador(data.usuario.id);
+        console.log(`✅ Reclutador ID obtenido del backend: ${data.usuario.id}`);
+      } catch (err) {
+        console.error('❌ Error al obtener reclutador:', err);
+        await Alert({
+          icon: 'error',
+          title: 'Error',
+          html: 'No se pudo identificar al reclutador. Vuelve a iniciar sesión.',
+        });
+        router.push('/auth/login_docente');
+      }
+    };
+    obtenerReclutador();
+  }, [router]);
 
   useEffect(() => {
     if (!idVacante) return;
     const cargarVacante = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/vacantes/${idVacante}`);
+        const res = await fetchWithCreds(`http://localhost:5000/api/vacantes/${idVacante}`);
         if (!res.ok) throw new Error(`Error ${res.status} al obtener vacante`);
         const vacante = await res.json();
 
@@ -136,6 +140,7 @@ useEffect(() => {
         method: metodo,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(nuevaVacante),
+        credentials: 'include'
       });
 
       const data = await res.json();
@@ -262,15 +267,27 @@ useEffect(() => {
             })}
           </div>
         </div>
+<div className="relative">
+  <label className="block mb-1 text-sm text-gray-300 flex items-center gap-1">
+    Contexto:
+    <div className="group relative">
+      <AiOutlineInfoCircle className="text-sky-300 cursor-pointer" />
+      <div className="absolute left-6 top-0 z-10 hidden group-hover:block bg-sky-900 text-sky-100 p-2 rounded shadow-lg text-xs w-64">
+        La pasantía será orientada a <strong>SQL</strong> y <strong>React</strong>.<br />
+        SQL: normalización, tipos de datos, consultas JOIN y subconsultas.<br />
+        React: hooks, componentes, manejo de estado y ciclo de vida.
+      </div>
+    </div>
+  </label>
 
-        <div>
-          <label className="block mb-1">Contexto:</label>
-          <textarea
-            className="w-full p-2 rounded bg-[#1e293b] text-white h-40 resize-y"
-            value={contexto}
-            onChange={(e) => setContexto(e.target.value)}
-          />
-        </div>
+  <textarea
+    className="w-full p-2 rounded bg-[#1e293b] text-white h-40 resize-y"
+    value={contexto}
+    onChange={(e) => setContexto(e.target.value)}
+  />
+</div>
+
+
 
         <button
           type="submit"

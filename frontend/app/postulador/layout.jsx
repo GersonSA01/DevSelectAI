@@ -1,12 +1,13 @@
 'use client';
 
 import Navbar from "../../app/components/navbar/Navbar";
+import { AuthProvider } from "../../context/AuthContext";
 
 export default function Layout({ children }) {
   return (
-    <div>
-      <Navbar/>
+    <AuthProvider>
+      <Navbar />
       {children}
-    </div>
+    </AuthProvider>
   );
 }

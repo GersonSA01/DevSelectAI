@@ -3,6 +3,7 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { StreamContext } from '../../../../context/StreamContext';
+import { useScreen } from '../../../../context/ScreenContext';
 import Temporizador from '../../../components/ui/Temporizador';
 import ValidadorEntorno from '../../../components/ValidadorEntorno';
 import { Alert } from '../../../components/alerts/Alerts';
@@ -12,6 +13,9 @@ import { FiBookOpen, FiAlertCircle } from 'react-icons/fi';
 
 export default function PracticaPage() {
   const { cameraStream, reiniciarCamara } = useContext(StreamContext);
+  const { extraScreenDetected } = useScreen();
+  const [alertShown, setAlertShown] = useState(false);
+
   const camRef = useRef(null);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,6 +45,19 @@ export default function PracticaPage() {
   useEffect(() => {
     tiempoInicioRef.current = Date.now();
   }, []);
+
+  useEffect(() => {
+    if (extraScreenDetected && !alertShown) {
+      setAlertShown(true);
+      Alert({
+        icon: 'warning',
+        title: 'Pantalla adicional detectada',
+        html: `<p>Parece que hay otra pantalla conectada a tu sistema.</p>
+               <p>Por favor, desconéctala para continuar.</p>`,
+        confirmButtonText: 'Entendido',
+      }).then(() => setAlertShown(false));
+    }
+  }, [extraScreenDetected, alertShown]);
 
   useEffect(() => {
     const cargarPreguntaTecnica = async () => {
@@ -82,7 +99,6 @@ export default function PracticaPage() {
             title: 'Ayuda ya solicitada',
             html: 'Ya utilizaste la ayuda de la IA para esta pregunta técnica.',
             icon: 'warning',
-            showCancelButton: false,
             confirmButtonText: 'Entendido'
           });
         } else {
@@ -90,7 +106,6 @@ export default function PracticaPage() {
             title: 'Error al obtener ayuda',
             html: 'No se pudo obtener la sugerencia de la IA. Intenta nuevamente más tarde.',
             icon: 'error',
-            showCancelButton: false,
             confirmButtonText: 'Cerrar'
           });
         }
@@ -98,14 +113,13 @@ export default function PracticaPage() {
       }
 
       setAyudaIA(data.sugerencia || '// No se pudo obtener ayuda.');
-      setUsoIA(true); 
+      setUsoIA(true);
     } catch (err) {
       console.error('❌ Error al pedir ayuda a la IA:', err);
       await Alert({
         title: 'Error de conexión',
         html: 'Hubo un problema al conectar con el servidor. Intenta más tarde.',
         icon: 'error',
-        showCancelButton: false,
         confirmButtonText: 'Cerrar'
       });
     } finally {
@@ -114,6 +128,16 @@ export default function PracticaPage() {
   };
 
   const handleEnviar = async () => {
+    if (extraScreenDetected) {
+      Alert({
+        icon: 'error',
+        title: 'No puedes continuar',
+        html: 'Por favor, desconecta la pantalla adicional para poder enviar tu respuesta.',
+        confirmButtonText: 'Ok',
+      });
+      return;
+    }
+
     const idPostulante = localStorage.getItem('id_postulante');
 
     try {
@@ -156,7 +180,7 @@ export default function PracticaPage() {
       </div>
 
       <div className="flex flex-col lg:flex-row w-full max-w-7xl gap-8">
-        <div className="w-full lg:w-1/2 bg-[#1D1E33] rounded-2xl p-6 space-y-6 shadow-2xl transition hover:shadow-cyan-500/20">
+        <div className="w-full lg:w-1/2 bg-[#1D1E33] rounded-2xl p-6 space-y-6 shadow-2xl">
           <div className="space-y-3">
             <p className="text-sm uppercase tracking-wide text-cyan-400 font-semibold">Enunciado</p>
             <p className="text-base leading-relaxed text-gray-200 whitespace-pre-wrap">
@@ -179,23 +203,25 @@ export default function PracticaPage() {
           </div>
         </div>
 
-        <div className="w-full lg:w-1/2 bg-[#1D1E33] rounded-2xl p-6 space-y-6 shadow-2xl transition hover:shadow-green-400/10">
+        <div className="w-full lg:w-1/2 bg-[#1D1E33] rounded-2xl p-6 space-y-6 shadow-2xl">
           <textarea
             value={codigo}
             onChange={(e) => setCodigo(e.target.value)}
             placeholder="// Escribe tu código aquí..."
-            className="w-full min-h-[250px] bg-[#2B2C3F] text-white text-sm p-4 rounded-xl font-mono resize-y border border-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+            disabled={extraScreenDetected}
+            className={`w-full min-h-[250px] bg-[#2B2C3F] text-white text-sm p-4 rounded-xl font-mono resize-y border border-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-400 
+            ${extraScreenDetected ? 'opacity-50 cursor-not-allowed' : ''}`}
           />
 
           <p className="text-sm text-yellow-300 font-semibold">
-            Uso de IA: {usoIA ? '1 / 1 ' : '0 / 1'}
+            Uso de IA: {usoIA ? '1 / 1' : '0 / 1'}
           </p>
 
           <div className="flex flex-wrap gap-4 justify-start">
             <button
               onClick={handlePedirAyuda}
-              className="px-5 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black font-semibold rounded-lg shadow-md transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={cargandoAyuda || usoIA}
+              className="px-5 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black font-semibold rounded-lg shadow-md flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={cargandoAyuda || usoIA || extraScreenDetected}
             >
               {cargandoAyuda ? (
                 <>
@@ -217,7 +243,8 @@ export default function PracticaPage() {
 
             <button
               onClick={handleEnviar}
-              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg shadow-md transition-all duration-200 flex items-center gap-2"
+              disabled={extraScreenDetected}
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg shadow-md flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <HiOutlinePaperAirplane size={18} />
               Enviar código

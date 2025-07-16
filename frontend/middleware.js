@@ -5,19 +5,16 @@ export function middleware(req) {
   const { pathname } = req.nextUrl;
   const token = req.cookies.get('token')?.value;
 
-  console.log("🔎 Pathname:", pathname);
-  console.log("🔎 Token:", token);
-
-  const clearAndRedirect = (destination) => {
-    const res = NextResponse.redirect(new URL(destination, req.url));
-    res.cookies.delete('token');
-    return res;
+  const redirectToLogin = (role) => {
+    const path = role === 'postulante' ? '/auth/login_estudiante' : '/auth/login_docente';
+    return NextResponse.redirect(new URL(path, req.url));
   };
 
-  // Sin token → redirige a login general
   if (!token) {
-    console.log("🚫 No token encontrado, redirigiendo a /auth/login");
-    return clearAndRedirect('/auth/login');
+    console.log("🚫 No token encontrado.");
+    if (pathname.startsWith('/postulador')) return redirectToLogin('postulante');
+    if (pathname.startsWith('/reclutador')) return redirectToLogin('reclutador');
+    return redirectToLogin('reclutador');
   }
 
   try {
@@ -26,25 +23,45 @@ export function middleware(req) {
 
     if (decoded.exp * 1000 < Date.now()) {
       console.log("🚫 Token expirado.");
-      return clearAndRedirect('/auth/login');
+      if (pathname.startsWith('/postulador')) return redirectToLogin('postulante');
+      if (pathname.startsWith('/reclutador')) return redirectToLogin('reclutador');
+      return redirectToLogin('reclutador');
     }
 
-    if (decoded.rol !== 'reclutador') {
-      console.log(`🚫 Rol no autorizado (${decoded.rol}), se esperaba 'reclutador'`);
-      return clearAndRedirect('/auth/login-reclutador');
+    if (pathname.startsWith('/postulador')) {
+      if (decoded.rol !== 'postulante') {
+        console.log("🚫 Acceso denegado a POSTULANTE, rol actual:", decoded.rol);
+        return redirectToLogin('postulante');
+      }
+      console.log("✅ Acceso permitido a POSTULANTE");
+      return NextResponse.next();
     }
 
-    console.log("✅ Acceso PERMITIDO para RECLUTADOR.");
+    if (pathname.startsWith('/reclutador')) {
+      if (decoded.rol !== 'reclutador') {
+        console.log("🚫 Acceso denegado a RECLUTADOR, rol actual:", decoded.rol);
+        return redirectToLogin('reclutador');
+      }
+      console.log("✅ Acceso permitido a RECLUTADOR");
+      return NextResponse.next();
+    }
+
+    console.log("✅ Ruta no protegida, acceso permitido.");
     return NextResponse.next();
 
   } catch (err) {
     console.error("🚫 Error al decodificar token:", err);
-    return clearAndRedirect('/auth/login');
+    if (pathname.startsWith('/postulador')) return redirectToLogin('postulante');
+    if (pathname.startsWith('/reclutador')) return redirectToLogin('reclutador');
+    return redirectToLogin('reclutador');
   }
 }
 
 export const config = {
   matcher: [
+    '/postulador',
+    '/postulador/:path((?!entrevista).*)',
     '/reclutador/:path*',
+    '/reclutador',
   ],
 };

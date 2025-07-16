@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const informeController = require('../controllers/informeController');
+const auth = require("../../middlewares/auth");
+const {obtenerInformePostulante} = require('../controllers/informeController');
 
-router.get('/:idPostulante', informeController.obtenerInformePostulante);
+router.get('/:idPostulante', auth("reclutador"), obtenerInformePostulante);
 
 module.exports = router;

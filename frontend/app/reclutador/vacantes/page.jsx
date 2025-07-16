@@ -6,6 +6,7 @@ import { Alert } from '../../components/alerts/Alerts';
 import TablaGeneral from '../../components/TablaGeneral';
 import SkeletonVacantes from '../../components/skeleton/SkeletonVacantes';
 import { motion, AnimatePresence } from 'framer-motion';
+import { fetchWithCreds } from '../../utils/fetchWithCreds';
 
 export default function VacantesPage() {
   const router = useRouter();
@@ -34,7 +35,7 @@ export default function VacantesPage() {
     const fetchVacantes = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`http://localhost:5000/api/vacantes/itinerario/${idItinerario}`);
+        const res = await fetchWithCreds(`http://localhost:5000/api/vacantes/itinerario/${idItinerario}`);
         const data = await res.json();
         setVacantes(Array.isArray(data) ? data : []);
       } catch (err) {
@@ -49,7 +50,7 @@ export default function VacantesPage() {
 
   const fetchPreguntas = async (idVacante) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/preguntas/vacante/${idVacante}`);
+      const res = await fetchWithCreds(`http://localhost:5000/api/preguntas/vacante/${idVacante}`);
       const data = await res.json();
       setPreguntasPorVacante(prev => ({
         ...prev,
@@ -207,7 +208,7 @@ export default function VacantesPage() {
 
                       if (result.isConfirmed) {
                         try {
-                          const res = await fetch(`http://localhost:5000/api/vacantes/${v.Id_Vacante}`, {
+                          const res = await fetchWithCreds(`http://localhost:5000/api/vacantes/${v.Id_Vacante}`, {
                             method: 'DELETE'
                           });
 

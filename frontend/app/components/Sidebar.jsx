@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import SkeletonSidebar from './skeleton/SkeletonSidebar';
-import { jwtDecode } from "jwt-decode";
 
 import {
   ChevronDown,
@@ -25,6 +24,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   const { itinerarios } = useItinerarios();
   const [loading, setLoading] = useState(true);
 
+  // Detectar tamaño de pantalla para colapsar sidebar
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768) {
@@ -33,35 +33,48 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
         setIsCollapsed(false);
       }
     };
-
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [setIsCollapsed]);
 
-useEffect(() => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    try {
-      const decoded = jwtDecode(token);
-      const nombres = decoded.nombres || "";
-      const apellidos = decoded.apellidos || "";
-      const id = decoded.id || "";
-      setDocente({ nombres, apellidos, id });
-    } catch (error) {
-      console.error("⚠️ Error al decodificar token:", error);
-    }
-  }
-  setLoading(false);
-}, []);
+  // Obtener usuario autenticado desde backend (/api/me)
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/me', {
+          method: 'GET',
+          credentials: 'include', // 👈 importante para que se envíen cookies
+        });
 
+        if (!res.ok) throw new Error('No autenticado');
+
+        const data = await res.json();
+        setDocente({
+          nombres: data.usuario.nombres,
+          correo: data.usuario.correo,
+          id: data.usuario.id,
+        });
+      } catch (error) {
+        console.error('🔒 No autenticado:', error);
+        router.push('/auth/login_docente');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, [router]);
 
   const toggleSection = (section) => {
     setOpenSection(openSection === section ? null : section);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('reclutador');
+  const handleLogout = async () => {
+    await fetch('http://localhost:5000/api/logout', {
+      method: 'POST',
+      credentials: 'include',
+    });
     router.push('/');
   };
 
@@ -77,19 +90,15 @@ useEffect(() => {
       <div className="p-4 flex items-center justify-between">
         {!isCollapsed && (
           <div>
-<Link
-  href="/reclutador"
-  className="relative text-sm font-semibold text-white group transition-colors duration-300"
->
-  <span className="group-hover:text-cyan-400 transition-colors duration-300">
-    {docente ? `${docente.nombres} ${docente.apellidos}` : 'Cargando...'}
-  </span>
-  <span
-    className="absolute left-0 -bottom-0.5 h-px w-0 bg-cyan-400 transition-all duration-300 group-hover:w-full"
-  />
-</Link>
-
-
+            <Link
+              href="/reclutador"
+              className="relative text-sm font-semibold text-white group transition-colors duration-300"
+            >
+              <span className="group-hover:text-cyan-400 transition-colors duration-300">
+                {docente ? `${docente.nombres}` : 'Cargando...'}
+              </span>
+              <span className="absolute left-0 -bottom-0.5 h-px w-0 bg-cyan-400 transition-all duration-300 group-hover:w-full" />
+            </Link>
             <div className="text-xs text-cyan-400">Coordinador de práctica</div>
           </div>
         )}
@@ -116,10 +125,7 @@ useEffect(() => {
           </button>
 
           {openSection === 'vacantes' && (
-            <div
-              className={`${isCollapsed ? 'ml-0 flex flex-col items-center' : 'ml-7'} 
-              space-y-1 transition-all`}
-            >
+            <div className={`${isCollapsed ? 'ml-0 flex flex-col items-center' : 'ml-7'} space-y-1 transition-all`}>
               {Array.isArray(itinerarios) && itinerarios.length > 0 ? (
                 itinerarios.map((itinerario, idx) => (
                   <Link

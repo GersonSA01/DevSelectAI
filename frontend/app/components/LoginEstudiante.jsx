@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { jwtDecode } from "jwt-decode"; 
 import RegistroDialog from "../components/RegistroDialog";
 import SeleccionarPerfilDialog from "../components/SeleccionarPerfilDialog";
 import { Alert } from "./alerts/Alerts";
@@ -10,55 +9,63 @@ export default function LoginEstudiante() {
   const router = useRouter();
   const [openRegistro, setOpenRegistro] = useState(false);
   const [openPerfil, setOpenPerfil] = useState(false);
-
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
 
-const handleLogin = async (e) => {
-  e.preventDefault();
+  const handleLogin = async (e) => {
+    e.preventDefault();
 
-  try {
-    const res = await fetch("http://localhost:5000/api/login-postulante", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ correo, contrasena }),
-    });
-
-    if (!res.ok) {
-      await Alert({
-        title: "Acceso denegado",
-        html: "Correo o contraseña incorrectos",
-        icon: "error",
-        confirmButtonText: "Intentar de nuevo",
+    try {
+      const res = await fetch("/api/login-postulante", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ correo, contrasena }),
       });
-      return;
+
+      if (!res.ok) {
+        await Alert({
+          title: "Acceso denegado",
+          html: "Correo o contraseña incorrectos",
+          icon: "error",
+          confirmButtonText: "Intentar de nuevo",
+        });
+        return;
+      }
+
+      const data = await res.json();
+      const nombre = data.nombres || "Estudiante";
+
+      await Alert({
+        title: "Bienvenido/a",
+        html: `<div class="text-xl font-semibold text-cyan-400 mt-2">${nombre}</div>`,
+        icon: "success",
+        showConfirmButton: false,
+        timer: 1800,
+        timerProgressBar: true,
+      });
+
+      router.push("/postulador");
+    } catch (error) {
+      console.error("Error al iniciar sesión:", error);
+      await Alert({
+        title: "Error inesperado",
+        html: "Ocurrió un error al intentar iniciar sesión. Intenta nuevamente.",
+        icon: "error",
+      });
     }
-
-    await Alert({
-      title: "Bienvenido/a",
-      html: `<div class="text-xl font-semibold text-cyan-400 mt-2">Estudiante</div>`,
-      icon: "success",
-      showConfirmButton: false,
-      timer: 1800,
-      timerProgressBar: true,
-    });
-
-    router.push("/postulador");
-
-  } catch (error) {
-    console.error("Error al iniciar sesión:", error);
-    await Alert({
-      title: "Error inesperado",
-      html: "Ocurrió un error al intentar iniciar sesión. Intenta nuevamente.",
-      icon: "error",
-    });
-  }
-};
-
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="bg-[#0B0F24] p-8 rounded-2xl w-full max-w-md shadow-[0_0_30px_rgba(0,191,255,0.15)] border border-[#1E293B]">
+        <button
+          onClick={() => router.push("/")}
+          className="text-[#38bdf8] hover:text-[#0ea5e9] text-sm mb-4"
+        >
+          ← Regresar al inicio
+        </button>
+
         <h2 className="text-center text-2xl font-bold text-white mb-2">
           Accede a DevSelectAI como Estudiante
         </h2>
@@ -102,16 +109,12 @@ const handleLogin = async (e) => {
         </p>
       </div>
 
-      
       <RegistroDialog
         open={openRegistro}
         setOpen={setOpenRegistro}
         setOpenPerfil={setOpenPerfil}
       />
-      <SeleccionarPerfilDialog
-        open={openPerfil}
-        setOpen={setOpenPerfil}
-      />
+      <SeleccionarPerfilDialog open={openPerfil} setOpen={setOpenPerfil} />
     </div>
   );
 }

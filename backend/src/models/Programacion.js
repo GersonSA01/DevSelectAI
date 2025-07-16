@@ -20,7 +20,9 @@ module.exports = (sequelize, DataTypes) => {
     FechFinAprobacion: {
       type: DataTypes.DATEONLY,
       allowNull: false
-    }
+    },
+    Activo: { type: DataTypes.BOOLEAN, defaultValue: true }
+
   }, {
     tableName: 'DAI_P_Programacion',
     timestamps: false

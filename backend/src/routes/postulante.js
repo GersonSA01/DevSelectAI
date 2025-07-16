@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+const auth = require("../../middlewares/auth");
+
 const {
   crearPostulante,
   guardarHabilidades,
@@ -17,26 +19,25 @@ const {
   aprobar,
   rechazar
 } = require("../controllers/postulanteController");
-const postulanteController = require('../controllers/postulanteController');
-router.get("/", getAllPostulantes);
+
+// 🔷 Rutas públicas
 router.post("/", crearPostulante);
-router.post("/habilidades", guardarHabilidades);
 router.get("/token/:token", obtenerPorToken);
-router.post('/seleccionar-vacante', seleccionarVacante);
-router.put('/:id/cambiar-estado', cambiarEstado);
 router.get("/cedula/:cedula", verificarPostulantePorCedula);
-
-
-
-router.get("/preguntas-teoricas", getPreguntasTeoricas);
 router.get("/entrevista", getEntrevistaOral);
-router.get("/preguntas-orales", getPreguntasOrales);
-router.get("/pregunta-tecnica", getPreguntaTecnica);
-router.get("/:id", obtenerPorId);
-router.get('/estado/:id', verificarEstadoPostulacion);
+router.get("/preguntas-teoricas",  getPreguntasTeoricas);
+router.get("/preguntas-orales",  getPreguntasOrales);
+// 🔷 Rutas para RECLUTADOR
+router.get("/", auth("reclutador"), getAllPostulantes);
+router.get("/:id", auth(["postulante", "reclutador"]), obtenerPorId);
+router.put('/:id/aceptar', auth("reclutador"), aprobar);
+router.put('/:id/rechazar', auth("reclutador"), rechazar);
 
-router.put('/:id/aceptar', aprobar);
-router.put('/:id/rechazar', rechazar);
-
+// 🔷 Rutas para POSTULANTE
+router.post("/habilidades", auth("postulante"), guardarHabilidades);
+router.post('/seleccionar-vacante', auth("postulante"), seleccionarVacante);
+router.put('/:id/cambiar-estado', auth("postulante"), cambiarEstado);
+router.get("/pregunta-tecnica", auth("postulante"), getPreguntaTecnica);
+router.get('/estado/:id', auth("postulante"), verificarEstadoPostulacion);
 
 module.exports = router;

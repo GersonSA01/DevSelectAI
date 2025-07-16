@@ -8,6 +8,7 @@ import PostulacionesStats from '../../components/postulaciones/PostulacionesStat
 import PostulacionesFiltros from '../../components/postulaciones/PostulacionesFiltros';
 import PostulacionesTabla from '../../components/postulaciones/PostulacionesTabla';
 import PostulacionesSkeleton from '../../components/skeleton/SkeletonPostulaciones';
+import { fetchWithCreds } from '../../utils/fetchWithCreds';
 
 export default function PostulacionesPage() {
   const router = useRouter();
@@ -24,26 +25,34 @@ export default function PostulacionesPage() {
     (p) => p.id_Programacion == programacionSeleccionada
   );
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [resPostulantes, resItinerarios, resProgramaciones] =
-          await Promise.all([
-            fetch('http://localhost:5000/api/postulante'),
-            fetch('http://localhost:5000/api/itinerarios'),
-            fetch('http://localhost:5000/api/programaciones'),
-          ]);
-        setPostulantes(await resPostulantes.json());
-        setItinerarios(await resItinerarios.json());
-        setProgramaciones(await resProgramaciones.json());
-      } catch (err) {
-        console.error('Error al cargar datos', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const [resPostulantes, resItinerarios, resProgramaciones] =
+        await Promise.all([
+          fetchWithCreds('http://localhost:5000/api/postulante'),
+          fetchWithCreds('http://localhost:5000/api/itinerarios'),
+          fetchWithCreds('http://localhost:5000/api/programaciones'),
+        ]);
+
+      const dataPostulantes = await resPostulantes.json();
+      const dataItinerarios = await resItinerarios.json();
+      const dataProgramaciones = await resProgramaciones.json();
+
+      setPostulantes(
+        Array.isArray(dataPostulantes) ? dataPostulantes : dataPostulantes.postulantes || []
+      );
+      setItinerarios(dataItinerarios);
+      setProgramaciones(dataProgramaciones);
+    } catch (err) {
+      console.error('Error al cargar datos', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, []);
 
   if (loading) return <PostulacionesSkeleton />;
 
@@ -58,29 +67,40 @@ export default function PostulacionesPage() {
         programacionActual={programacionActual}
       />
 
-      <PostulacionesStats
-  postulantes={postulantes}
-  programacionActual={programacionActual}
-/>
+      {/* si no hay postulantes */}
+      {(!postulantes || postulantes.length === 0) && (
+        <div className="text-center text-gray-400 my-8">
+          No se encontraron postulantes.
+        </div>
+      )}
 
+      {/* si hay postulantes, renderiza el resto */}
+      {postulantes.length > 0 && (
+        <>
+          <PostulacionesStats
+            postulantes={postulantes}
+            programacionActual={programacionActual}
+          />
 
-      <PostulacionesFiltros
-        itinerarios={itinerarios}
-        filtroNombre={filtroNombre}
-        setFiltroNombre={setFiltroNombre}
-        itinerario={itinerario}
-        setItinerario={setItinerario}
-      />
+          <PostulacionesFiltros
+            itinerarios={itinerarios}
+            filtroNombre={filtroNombre}
+            setFiltroNombre={setFiltroNombre}
+            itinerario={itinerario}
+            setItinerario={setItinerario}
+          />
 
-      <PostulacionesTabla
-        postulantes={postulantes}
-        filtroNombre={filtroNombre}
-        itinerario={itinerario}
-        programacionActual={programacionActual}
-        programacionSeleccionada={programacionSeleccionada}
-        router={router}
-        setPostulantes={setPostulantes}
-      />
+          <PostulacionesTabla
+            postulantes={postulantes}
+            filtroNombre={filtroNombre}
+            itinerario={itinerario}
+            programacionActual={programacionActual}
+            programacionSeleccionada={programacionSeleccionada}
+            router={router}
+            setPostulantes={setPostulantes}
+          />
+        </>
+      )}
     </div>
   );
 }

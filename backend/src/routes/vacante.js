@@ -1,22 +1,25 @@
 const express = require('express');
 const router = express.Router();
-const vacanteController = require('../controllers/vacanteController');
+const auth = require("../../middlewares/auth");
+const {
+  getVacantesPorHabilidades,
+  getHabilidadesByVacante,
+  getByItinerario,
+  crearVacante,
+  getById,
+  actualizarVacante,
+  eliminarVacante
+} = require('../controllers/vacanteController');
 
+//Publica
+router.post('/por-habilidades', getVacantesPorHabilidades);
+router.get('/:idVacante/habilidades', getHabilidadesByVacante);
 
-router.post('/por-habilidades', vacanteController.getVacantesPorHabilidades);
-
-
-router.get('/itinerario/:idItinerario', vacanteController.getByItinerario);
-
-
-router.get('/:idVacante/habilidades', vacanteController.getHabilidadesByVacante);
-
-
-router.post('/', vacanteController.crearVacante);
-
-
-router.get('/:id', vacanteController.getById);
-router.put('/:id', vacanteController.actualizarVacante);
-router.delete('/:id', vacanteController.eliminarVacante);
+//Privada
+router.get('/itinerario/:idItinerario', auth("reclutador"), getByItinerario);
+router.post('/', auth("reclutador"), crearVacante);
+router.get('/:id', auth("reclutador"), getById);
+router.put('/:id', auth("reclutador"), actualizarVacante);
+router.delete('/:id', auth("reclutador"), eliminarVacante);
 
 module.exports = router;

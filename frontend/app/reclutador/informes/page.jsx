@@ -1,16 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import PreguntasEvaluacion from '../../components/informe/PreguntasEvaluacion';
 import ResumenGeneral from '../../components/informe/ResumenGeneral';
 import Grafica from '../../components/informe/Grafica';
 import CapturasEvaluacion from '../../components/informe/CapturasEvaluacion';
 import ResumenFinal from '../../components/informe/ResumenFinal';
 import SkeletonInforme from '../../components/informe/SkeletonInforme';
-import InformePDF from '../../components/informe/InformePDF'; 
+import InformePDF from '../../components/informe/InformePDF';
+import { fetchWithCreds } from '../../utils/fetchWithCreds';
 
 export default function InformeEvaluacionTiempo() {
+  const router = useRouter();
   const [datos, setDatos] = useState(null);
   const searchParams = useSearchParams();
   const idPostulante = searchParams.get('id');
@@ -18,7 +20,7 @@ export default function InformeEvaluacionTiempo() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/informe/${idPostulante}`);
+        const res = await fetchWithCreds(`http://localhost:5000/api/informe/${idPostulante}`);
         const json = await res.json();
         setDatos(json);
       } catch (error) {
@@ -49,7 +51,13 @@ export default function InformeEvaluacionTiempo() {
 
   return (
     <div className="min-h-screen bg-[#0A0A23] text-white px-4 sm:px-6 md:px-8 py-6 space-y-10">
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center mb-4">
+        <button
+          onClick={() => router.push('/reclutador/postuladores')}
+          className="text-[#38bdf8] hover:text-[#0ea5e9] text-sm"
+        >
+          ← Regresar a postulantes
+        </button>
         <InformePDF datos={datos} />
       </div>
 

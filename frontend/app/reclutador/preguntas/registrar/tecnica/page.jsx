@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Swal from 'sweetalert2';
+import { Alert } from '../../../../components/alerts/Alerts';
+import { fetchWithCreds } from '../../../../utils/fetchWithCreds';
 
 export default function RegistrarPreguntaTecnica() {
   const router = useRouter();
@@ -25,12 +26,12 @@ useEffect(() => {
 
       if (!idPregunta) return;
 
-      const resPregunta = await fetch(`http://localhost:5000/api/preguntas/${idPregunta}`);
+      const resPregunta = await fetchWithCreds(`http://localhost:5000/api/preguntas/${idPregunta}`);
       const dataPregunta = await resPregunta.json();
       setPregunta(dataPregunta.Pregunta || '');
 
-      a
-      const resTecnica = await fetch(`http://localhost:5000/api/preguntas/tecnica/${idPregunta}`);
+      
+      const resTecnica = await fetchWithCreds(`http://localhost:5000/api/preguntas/tecnica/${idPregunta}`);
       if (resTecnica.ok) {
         const dataTecnica = await resTecnica.json();
         setRespuesta(dataTecnica.Respuesta || '');
@@ -49,15 +50,19 @@ const handleSubmit = async (e) => {
   e.preventDefault();
 
   if (!pregunta.trim() || !respuesta.trim()) {
-    return Swal.fire('Campos incompletos', 'Debes llenar tanto la pregunta como la respuesta esperada.', 'warning');
+    await Alert({
+      title: 'Campos incompletos',
+      html: 'Debes llenar tanto la pregunta como la respuesta esperada.',
+      icon: 'warning'
+    });
+    return;
   }
 
   try {
     let preguntaId = idPregunta;
 
-    
     if (!idPregunta) {
-      const resPregunta = await fetch('http://localhost:5000/api/preguntas', {
+      const resPregunta = await fetchWithCreds('http://localhost:5000/api/preguntas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -70,7 +75,7 @@ const handleSubmit = async (e) => {
       const nuevaPregunta = await resPregunta.json();
       preguntaId = nuevaPregunta.Id_Pregunta;
     } else {
-      await fetch(`http://localhost:5000/api/preguntas/${idPregunta}`, {
+      await fetchWithCreds(`http://localhost:5000/api/preguntas/${idPregunta}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -80,11 +85,9 @@ const handleSubmit = async (e) => {
       });
     }
 
-    
-    const resTecnica = await fetch(`http://localhost:5000/api/preguntas/tecnica/${preguntaId}`);
+    const resTecnica = await fetchWithCreds(`http://localhost:5000/api/preguntas/tecnica/${preguntaId}`);
     if (resTecnica.ok) {
-      
-      await fetch(`http://localhost:5000/api/preguntas/tecnica/${preguntaId}`, {
+      await fetchWithCreds(`http://localhost:5000/api/preguntas/tecnica/${preguntaId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -93,8 +96,7 @@ const handleSubmit = async (e) => {
         })
       });
     } else {
-      
-      await fetch('http://localhost:5000/api/preguntas/tecnica', {
+      await fetchWithCreds('http://localhost:5000/api/preguntas/tecnica', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -105,19 +107,22 @@ const handleSubmit = async (e) => {
       });
     }
 
-    Swal.fire({
+    await Alert({
       icon: 'success',
       title: idPregunta ? 'Pregunta técnica actualizada' : 'Pregunta técnica registrada',
-      confirmButtonColor: '#22c55e'
-    }).then(() => {
-      router.push(`/reclutador/preguntas?idVacante=${idVacante}`);
+      confirmButtonText: 'Aceptar'
     });
+
+    router.push(`/reclutador/preguntas?idVacante=${idVacante}`);
   } catch (err) {
     console.error('Error al guardar pregunta técnica:', err);
-    Swal.fire('Error', 'No se pudo guardar la pregunta técnica.', 'error');
+    await Alert({
+      title: 'Error',
+      html: 'No se pudo guardar la pregunta técnica.',
+      icon: 'error'
+    });
   }
 };
-
 
   return (
     <div className="min-h-screen bg-[#0b1120] text-white px-4 py-8">

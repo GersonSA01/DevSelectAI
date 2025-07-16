@@ -56,7 +56,7 @@ vacanteAsignada: ({ nombre, apellido, vacante, enlace, habilidades = [] }) => `
       <p>Hola <strong>${nombre} ${apellido}</strong>,</p>
 
       <p>¡Felicidades! Has sido asignado a la vacante:</p>
-      <p style="font-weight: bold; color: #4b0082; font-size: 1.1em;">${vacante}</p>
+      <p style="font-weight: bold; font-size: 1.1em;">${vacante}</p>
 
       <p>Las siguientes <strong>habilidades requeridas</strong> serán evaluadas durante tu proceso:</p>
 

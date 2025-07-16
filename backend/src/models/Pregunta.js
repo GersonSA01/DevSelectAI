@@ -19,7 +19,9 @@ module.exports = (sequelize, DataTypes) => {
     },
     Id_vacante: {
       type: DataTypes.INTEGER
-    }
+    },
+    Activo: { type: DataTypes.BOOLEAN, defaultValue: true }
+
   }, {
     tableName: 'DAI_M_Pregunta',
     timestamps: false

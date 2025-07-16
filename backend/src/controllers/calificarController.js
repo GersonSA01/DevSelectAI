@@ -1,6 +1,5 @@
 const db = require("../models");
 
-// Calificar entrevista oral completa
 const calificarEntrevistaOral = async (req, res) => {
   try {
     const { idEntrevista, calificaciones } = req.body;
@@ -51,7 +50,6 @@ const calificarEntrevistaOral = async (req, res) => {
   }
 };
 
-// Obtener entrevista oral con preguntas y sus IDs
 const getEntrevistaOral = async (req, res) => {
   try {
     const { idEntrevista } = req.params;
@@ -84,7 +82,6 @@ const getEntrevistaOral = async (req, res) => {
   }
 };
 
-// Calificar evaluación técnica (código)
 const calificarTecnico = async (req, res) => {
   try {
     const { idEvaluacion, idPregunta, subCalificaciones } = req.body;

@@ -217,7 +217,7 @@ export default function PanelEntrevista({
                 <span className="animate-bounce delay-200">.</span>
               </span>
             ) : (
-              <span className="text-gray-400 italic">Esperando acción...</span>
+              <span className="text-gray-400 italic">Esperando a iniciar la entrevista...</span>
             )}
           </p>
         </div>
@@ -228,7 +228,7 @@ export default function PanelEntrevista({
             disabled={bloqueado || isPlayingAudio}
             className="px-6 py-3 rounded-md w-full bg-green-600 hover:bg-green-700"
           >
-            Iniciar Presentación
+            Iniciar Entrevista
           </button>
         )}
 

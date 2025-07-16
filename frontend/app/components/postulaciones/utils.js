@@ -199,20 +199,24 @@ function renderHabilidades(p) {
  * Renderiza el estado y la calificación
  */
 function renderEstado(p) {
+  const estado = p.estadoPostulacion?.descripcion;
+  const puntaje = p.evaluaciones?.[0]?.PuntajeTotal;
+
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-      <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium shadow ${estadoClase(p.estadoPostulacion?.descripcion)}`}>
-        {p.estadoPostulacion?.descripcion || '—'}
+      <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium shadow ${estadoClase(estado)}`}>
+        {estado || '—'}
       </span>
-      {p.estadoPostulacion?.descripcion === 'Calificado' && p.evaluaciones?.[0]?.PuntajeTotal !== undefined && (
+
+      {['Calificado', 'Aprobado', 'Rechazado'].includes(estado) && puntaje !== undefined && (
         <div className={`text-xs font-semibold px-2 py-1 rounded shadow-inner ${
-          p.evaluaciones[0].PuntajeTotal >= 16
+          puntaje >= 16
             ? 'bg-green-100 text-green-800'
-            : p.evaluaciones[0].PuntajeTotal >= 10
+            : puntaje >= 10
             ? 'bg-yellow-100 text-yellow-800'
             : 'bg-red-100 text-red-800'
         }`}>
-          Nota: {p.evaluaciones[0].PuntajeTotal}/20
+          Nota: {puntaje}/20
         </div>
       )}
     </div>
@@ -251,15 +255,16 @@ function renderAcciones(p, programacionActual, router, setPostulantes) {
   return (
     <div className="flex justify-center gap-6 text-2xl">
       {/* Ver informe cuando está Aprobado o Rechazado */}
-      {['Aprobado', 'Rechazado'].includes(estado) && (
-        <div
-          className="flex flex-col items-center cursor-pointer"
-          onClick={() => router.push(`/reclutador/informes?id=${p.Id_Postulante}`)}
-        >
-          <FiEye className="text-yellow-400 hover:text-yellow-300" />
-          <span className="text-xs text-gray-300 mt-1 text-center">Ver informe</span>
-        </div>
-      )}
+     {['Aprobado', 'Rechazado', 'Calificado'].includes(estado) && (
+  <div
+    className="flex flex-col items-center cursor-pointer"
+    onClick={() => router.push(`/reclutador/informes?id=${p.Id_Postulante}`)}
+  >
+    <FiEye className="text-yellow-400 hover:text-yellow-300" />
+    <span className="text-xs text-gray-300 mt-1 text-center">Ver informe</span>
+  </div>
+)}
+
 
       {/* Calificar cuando está Evaluado */}
       {estado === 'Evaluado' && (

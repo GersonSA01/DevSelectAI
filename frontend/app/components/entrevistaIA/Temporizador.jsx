@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 export default function Temporizador({
   onFinish,
@@ -9,16 +9,28 @@ export default function Temporizador({
   recorder = null
 }) {
   const [tiempoRestante, setTiempoRestante] = useState(tiempoInicial);
+  const intervalRef = useRef(null);
+
+  const detenerTemporizador = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
 
   useEffect(() => {
-    if (detenerAlGrabar && (!recorder || recorder.state !== 'recording')) return;
+    // Si hay que detener al grabar y no se está grabando, no arrancar
+    if (detenerAlGrabar && (!recorder || recorder.state !== 'recording')) {
+      return;
+    }
 
+    // Reset y arranca
     setTiempoRestante(tiempoInicial);
 
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       setTiempoRestante(prev => {
         if (prev <= 1) {
-          clearInterval(interval);
+          detenerTemporizador();
 
           if (detenerAlGrabar && recorder?.state === 'recording') {
             recorder.stop();
@@ -32,8 +44,8 @@ export default function Temporizador({
       });
     }, 1000);
 
-    return () => clearInterval(interval);
-  }, [recorder, onFinish, tiempoInicial, detenerAlGrabar]);
+    return detenerTemporizador;
+  }, [tiempoInicial, detenerAlGrabar, recorder?.state]); 
 
   return (
     <p className="text-center text-sm text-yellow-400 mb-2">

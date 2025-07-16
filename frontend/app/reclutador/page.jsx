@@ -1,5 +1,5 @@
 'use client';
-import jwtDecode from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
 import Link from 'next/link';
 import { User2, CheckCircle2, Settings, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';

@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { StreamContext } from '../../../../context/StreamContext';
 import Temporizador from '../../../components/ui/Temporizador';
 import ValidadorEntorno from '../../../components/ValidadorEntorno';
+import { useScreen } from '../../../../context/ScreenContext';
+import { Alert } from '../../../components/alerts/Alerts';
 
 export default function TeoricaPage() {
   const router = useRouter();
@@ -16,6 +18,9 @@ export default function TeoricaPage() {
   const [preguntas, setPreguntas] = useState([]);
   const [tiemposInicio, setTiemposInicio] = useState({});
   const [todoRespondido, setTodoRespondido] = useState(false);
+  const [alertShown, setAlertShown] = useState(false);
+
+  const { extraScreenDetected } = useScreen();
 
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -77,7 +82,33 @@ export default function TeoricaPage() {
     setTodoRespondido(Object.keys(respuestas).length === preguntas.length);
   }, [respuestas, preguntas]);
 
+  useEffect(() => {
+    if (extraScreenDetected && !alertShown) {
+      setAlertShown(true);
+      Alert({
+        icon: 'warning',
+        title: 'Pantalla adicional detectada',
+        html: `
+          <p>Parece que hay otra pantalla conectada a tu sistema.</p>
+          <p>Por favor, desconéctala para continuar.</p>
+        `,
+        showCancelButton: false,
+        confirmButtonText: 'Entendido',
+      }).then(() => setAlertShown(false));
+    }
+  }, [extraScreenDetected, alertShown]);
+
   const manejarSeleccion = async (idPregunta, indexOpcion) => {
+    if (extraScreenDetected) {
+      Alert({
+        icon: 'error',
+        title: 'No puedes responder',
+        html: 'Por favor, desconecta la pantalla adicional antes de continuar.',
+        confirmButtonText: 'Ok',
+      });
+      return;
+    }
+
     const pregunta = preguntas.find(p => p.Id_Pregunta === idPregunta);
     const opcionSeleccionada = pregunta.opciones[indexOpcion];
     const tiempoInicio = tiemposInicio[idPregunta];
@@ -106,6 +137,19 @@ export default function TeoricaPage() {
     } catch (error) {
       console.error('❌ Error al guardar la respuesta:', error);
     }
+  };
+
+  const handleContinuar = () => {
+    if (extraScreenDetected) {
+      Alert({
+        icon: 'error',
+        title: 'No puedes continuar',
+        html: 'Por favor, desconecta la pantalla adicional antes de continuar.',
+        confirmButtonText: 'Ok',
+      });
+      return;
+    }
+    router.push(`/postulador/entrevista/practica?token=${token}`);
   };
 
   return (
@@ -153,7 +197,7 @@ export default function TeoricaPage() {
 
       <div className="flex justify-center mt-10">
         <button
-          onClick={() => router.push(`/postulador/entrevista/practica?token=${token}`)}
+          onClick={handleContinuar}
           disabled={!todoRespondido}
           className={`px-6 py-3 rounded-full font-semibold text-sm w-64 ${
             todoRespondido

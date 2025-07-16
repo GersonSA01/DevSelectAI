@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
-import Swal from 'sweetalert2';
+import { Alert } from '../../../components/alerts/Alerts';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { fetchWithCreds } from '../../../utils/fetchWithCreds';
 
 export default function RegistrarPregunta() {
   const router = useRouter();
@@ -34,13 +35,13 @@ export default function RegistrarPregunta() {
       if (!idPregunta) return;
 
       try {
-        const resPregunta = await fetch(`http://localhost:5000/api/preguntas/${idPregunta}`);
+        const resPregunta = await fetchWithCreds(`http://localhost:5000/api/preguntas/${idPregunta}`);
         const preguntaData = await resPregunta.json();
         console.log('Pregunta cargada:', preguntaData); // 👈 agrega esto
 
         setPregunta(preguntaData.Pregunta || preguntaData.pregunta || '');
 
-        const resOpciones = await fetch(`http://localhost:5000/api/opciones/pregunta/${idPregunta}`);
+        const resOpciones = await fetchWithCreds(`http://localhost:5000/api/opciones/pregunta/${idPregunta}`);
         const opcionesData = await resOpciones.json();
 
         setOpciones(
@@ -82,7 +83,12 @@ export default function RegistrarPregunta() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!opciones.some(op => op.correcta)) {
-      Swal.fire('Advertencia', 'Debes seleccionar una opción correcta.', 'warning');
+      await Alert({
+  icon: 'warning',
+  title: 'Advertencia',
+  html: 'Debes seleccionar una opción correcta.'
+});
+
       return;
     }
 
@@ -90,7 +96,7 @@ export default function RegistrarPregunta() {
       let idPreguntaActual = idPregunta;
 
       if (!idPregunta) {
-        const res = await fetch('http://localhost:5000/api/preguntas', {
+        const res = await fetchWithCreds('http://localhost:5000/api/preguntas', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -102,19 +108,19 @@ export default function RegistrarPregunta() {
         const nueva = await res.json();
         idPreguntaActual = nueva.Id_Pregunta;
       } else {
-        await fetch(`http://localhost:5000/api/preguntas/${idPregunta}`, {
+        await fetchWithCreds(`http://localhost:5000/api/preguntas/${idPregunta}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ Pregunta: pregunta })
         });
-        await fetch(`http://localhost:5000/api/opciones/pregunta/${idPregunta}`, { method: 'DELETE' });
+        await fetchWithCreds(`http://localhost:5000/api/opciones/pregunta/${idPregunta}`, { method: 'DELETE' });
       }
 
       await Promise.all(
         opciones
           .filter(op => op.texto.trim())
           .map(op =>
-            fetch('http://localhost:5000/api/opciones', {
+            fetchWithCreds('http://localhost:5000/api/opciones', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -126,17 +132,21 @@ export default function RegistrarPregunta() {
           )
       );
 
-      Swal.fire({
-        icon: 'success',
-        title: idPregunta ? '¡Pregunta actualizada!' : '¡Pregunta registrada!',
-        confirmButtonColor: '#22c55e'
-      }).then(() => {
-        router.push(`/reclutador/preguntas?idVacante=${idVacante}`);
-      });
+   await Alert({
+  icon: 'success',
+  title: idPregunta ? '¡Pregunta actualizada!' : '¡Pregunta registrada!',
+  confirmButtonColor: '#22c55e'
+}).then(() => {
+  router.push(`/reclutador/preguntas?idVacante=${idVacante}`);
+});
 
     } catch (err) {
       console.error(err);
-      Swal.fire('Error', 'No se pudo guardar la pregunta.', 'error');
+await Alert({
+  icon: 'error',
+  title: 'Error',
+  html: 'No se pudo guardar la pregunta.'
+});
     }
   };
 

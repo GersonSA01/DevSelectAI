@@ -2,13 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useScreen } from '../../../../context/ScreenContext';
+import { Alert } from '../../../components/alerts/Alerts';
 
 export default function InicioEntrevista() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
+  const { extraScreenDetected } = useScreen();
 
   const [nombrePostulante, setNombrePostulante] = useState('');
+  const [alertShown, setAlertShown] = useState(false);
 
   const fetchPostulantePorToken = async () => {
     if (!token) return;
@@ -33,13 +37,40 @@ export default function InicioEntrevista() {
     fetchPostulantePorToken();
   }, [token]);
 
+  useEffect(() => {
+    if (extraScreenDetected && !alertShown) {
+      setAlertShown(true);
+      Alert({
+        icon: 'warning',
+        title: 'Pantalla adicional detectada',
+        html: `
+          <p>Parece que hay otra pantalla conectada a tu sistema.</p>
+          <p>Por favor, desconéctala para continuar.</p>
+        `,
+        showCancelButton: false,
+        confirmButtonText: 'Entendido',
+      }).then(() => {
+        // Cuando cierra el modal, si sigue detectada, vuelve a mostrarlo
+        setAlertShown(false);
+      });
+    }
+  }, [extraScreenDetected, alertShown]);
+
   const handleStart = () => {
+    if (extraScreenDetected) {
+      Alert({
+        icon: 'error',
+        title: 'No puedes continuar',
+        html: 'Por favor, desconecta la pantalla adicional para poder continuar con la entrevista.',
+        confirmButtonText: 'Ok',
+      });
+      return;
+    }
     router.push(`/postulador/entrevista/validacion-dispositivos?token=${token}`);
   };
 
   return (
-    
-    <div className="flex flex-col items-center justify-center min-h-screen px-4 text-white text-center ">
+    <div className="flex flex-col items-center justify-center min-h-screen px-4 text-white text-center">
       <h1 className="text-3xl sm:text-4xl font-bold mb-6">DevSelectAI</h1>
 
       {nombrePostulante && (
@@ -53,7 +84,11 @@ export default function InicioEntrevista() {
 
       <button
         onClick={handleStart}
-        className="px-6 py-3 bg-[#3BDCF6] text-black font-semibold rounded-md hover:bg-[#34cbe1] transition"
+        className={`mt-6 px-6 py-3 rounded-md font-semibold transition ${
+          extraScreenDetected
+            ? 'bg-gray-600 cursor-not-allowed'
+            : 'bg-[#3BDCF6] text-black hover:bg-[#34cbe1]'
+        }`}
       >
         Comenzar
       </button>

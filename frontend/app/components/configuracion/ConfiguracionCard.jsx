@@ -7,6 +7,8 @@ import { useItinerarios } from '../../../context/ItinerarioContext';
 import { es } from 'date-fns/locale';
 import FechasSection from './FechasSection';
 import DescripcionSection from './DescripcionSection';
+import { fetchWithCreds } from '../../utils/fetchWithCreds';
+import { Alert } from '../../components/alerts/Alerts';
 
 export default function ConfiguracionCard({ titulo, entidad, campos, expanded, onExpand }) {
   const API_URL = `http://localhost:5000/api/configuracion`;
@@ -28,7 +30,7 @@ export default function ConfiguracionCard({ titulo, entidad, campos, expanded, o
 
   const cargarRegistros = async () => {
     try {
-      const res = await fetch(`${API_URL}/${entidad}`);
+      const res = await fetchWithCreds(`${API_URL}/${entidad}`);
       const data = await res.json();
       setRegistros(data);
     } catch (err) {
@@ -40,78 +42,138 @@ export default function ConfiguracionCard({ titulo, entidad, campos, expanded, o
     if (expanded) cargarRegistros();
     
   }, [expanded]);
+const handleGuardar = async () => {
+  const normalizar = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
-  const handleGuardar = async () => {
-    
-    const normalizar = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const fechaPostIni = new Date(formData['FechIniPostulacion']);
+  const fechaPostFin = new Date(formData['FechFinPostulacion']);
+  const fechaAprobIni =
+    formData['FechIniAprobacion'] && new Date(formData['FechIniAprobacion']);
 
-    const fechaPostIni = new Date(formData['FechIniPostulacion']);
-    const fechaPostFin = new Date(formData['FechFinPostulacion']);
-    const fechaAprobIni =
-      formData['FechIniAprobacion'] && new Date(formData['FechIniAprobacion']);
+  if (normalizar(fechaPostIni) < normalizar(new Date())) {
+    await Alert({
+      title: 'Fecha inválida',
+      html: 'La fecha de inicio de postulación no puede ser menor a hoy.',
+      icon: 'warning'
+    });
+    return;
+  }
 
-    
-    if (normalizar(fechaPostIni) < normalizar(new Date())) {
-      alert('La fecha de inicio de postulación no puede ser menor a hoy.');
-      return;
-    }
+  if (normalizar(fechaPostIni) > normalizar(fechaPostFin)) {
+    await Alert({
+      title: 'Fechas incoherentes',
+      html: 'La fecha de inicio de postulación no puede ser posterior a la fecha fin de postulación.',
+      icon: 'warning'
+    });
+    return;
+  }
 
-    if (normalizar(fechaPostIni) > normalizar(fechaPostFin)) {
-      alert('La fecha de inicio de postulación no puede ser posterior a la fecha fin de postulación.');
-      return;
-    }
-
-    if (fechaAprobIni && normalizar(fechaAprobIni) < normalizar(fechaPostFin)) {
-      alert('Las fechas de aprobación no pueden ser anteriores a la fecha fin de postulación.');
-      return;
-    }
+  if (fechaAprobIni && normalizar(fechaAprobIni) < normalizar(fechaPostFin)) {
+    await Alert({
+      title: 'Fechas incoherentes',
+      html: 'Las fechas de aprobación no pueden ser anteriores a la fecha fin de postulación.',
+      icon: 'warning'
+    });
+    return;
+  }
 
   const prepararPayload = () => {
-  const payload = { ...formData };
-  Object.keys(payload).forEach((key) => {
-    if (payload[key] instanceof Date) {
-      
-      let date = new Date(payload[key]);
+    const payload = { ...formData };
+    Object.keys(payload).forEach((key) => {
+      if (payload[key] instanceof Date) {
+        const date = new Date(payload[key]);
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        payload[key] = `${yyyy}-${mm}-${dd}`;
+      }
+    });
+    return payload;
+  };
 
-      const yyyy = date.getFullYear();
-      const mm = String(date.getMonth() + 1).padStart(2, '0');
-      const dd = String(date.getDate()).padStart(2, '0');
-      payload[key] = `${yyyy}-${mm}-${dd}`;
-    }
-  });
-  return payload;
+  try {
+    const metodo = editandoId ? 'PUT' : 'POST';
+    const url = editandoId
+      ? `${API_URL}/${entidad}/${editandoId}`
+      : `${API_URL}/${entidad}`;
+    const res = await fetchWithCreds(url, {
+      method: metodo,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(prepararPayload()),
+    });
+
+    if (!res.ok) throw new Error('Error en guardado');
+
+    await cargarRegistros();
+    await cargarItinerarios();
+
+    setFormData({});
+    setEditandoId(null);
+
+    await Alert({
+      title: editandoId ? 'Actualizado' : 'Registrado',
+      html: editandoId
+        ? 'El registro se actualizó correctamente.'
+        : 'El registro se creó correctamente.',
+      icon: 'success'
+    });
+  } catch (err) {
+    console.error('Error al guardar:', err);
+    await Alert({
+      title: 'Error',
+      html: 'No se pudo guardar el registro.',
+      icon: 'error'
+    });
+  }
 };
 
 
-    try {
-      const metodo = editandoId ? 'PUT' : 'POST';
-      const url = editandoId
-        ? `${API_URL}/${entidad}/${editandoId}`
-        : `${API_URL}/${entidad}`;
-      const res = await fetch(url, {
-        method: metodo,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(prepararPayload()),
-      });
-      if (!res.ok) throw new Error('Error en guardado');
-      await cargarRegistros();
-      await cargarItinerarios();
-      setFormData({});
-      setEditandoId(null);
-    } catch (err) {
-      console.error('Error al guardar:', err);
-    }
-  };
 
-  const handleEliminar = async (id) => {
-    try {
-      await fetch(`${API_URL}/${entidad}/${id}`, { method: 'DELETE' });
+
+
+const handleEliminar = async (id) => {
+  const result = await Alert({
+    title: '¿Estás seguro?',
+    html: 'Esta acción desactivará el registro.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, desactivar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    const res = await fetchWithCreds(`${API_URL}/${entidad}/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+
+    if (!res.ok) {
+      // si el backend devuelve error
+      await Alert({
+        title: 'Error',
+        html: data?.error || 'No se pudo desactivar el registro.',
+        icon: 'error'
+      });
+    } else {
+      // éxito
       await cargarRegistros();
       await cargarItinerarios();
-    } catch (err) {
-      console.error('Error al eliminar:', err);
+
+      await Alert({
+        title: 'Desactivado',
+        html: data?.mensaje || 'El registro fue desactivado correctamente.',
+        icon: 'success'
+      });
     }
-  };
+  } catch (err) {
+    console.error('Error al eliminar:', err);
+    await Alert({
+      title: 'Error',
+      html: 'Ocurrió un error al intentar desactivar el registro.',
+      icon: 'error'
+    });
+  }
+};
 
   const setFecha = (campo, fecha) => {
     setFormData((prev) => ({
@@ -238,7 +300,6 @@ export default function ConfiguracionCard({ titulo, entidad, campos, expanded, o
             )}
 
             <h3 className="text-cyan-400 font-semibold mb-2 mt-4">
-              Otros datos
             </h3>
             <DescripcionSection
               campos={campos}

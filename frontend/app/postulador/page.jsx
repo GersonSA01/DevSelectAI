@@ -1,31 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert } from "../components/alerts/alerts";
-import { jwtDecode } from "jwt-decode";
+import { useAuth } from "../../context/AuthContext";
+import { fetchWithCreds } from '../utils/fetchWithCreds';
+
 
 export default function Entrevistas() {
+  const router = useRouter();
+  const { usuario, loading, logout } = useAuth(); // 👈
   const [itinerario, setItinerario] = useState('');
-  const [nombrePostulante, setNombrePostulante] = useState('');
-  const [cargando, setCargando] = useState(true);
   const [bloqueado, setBloqueado] = useState(false);
   const [mensajeFinal, setMensajeFinal] = useState('');
-  const router = useRouter();
-
-  const getIdPostulante = () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) return null;
-      const decoded = jwtDecode(token);
-      return decoded.id;
-    } catch (err) {
-      console.error('❌ Error al decodificar token:', err);
-      return null;
-    }
-  };
 
   useEffect(() => {
+    if (loading) return; // espera que termine la validación
+    if (!usuario) {
+      router.push('/');
+      return;
+    }
+
     const formatearFecha = (fecha) => {
       if (!fecha) return '';
       const [y, m, d] = fecha.split('-');
@@ -33,32 +28,20 @@ export default function Entrevistas() {
     };
 
     const verificarEstadoPostulante = async () => {
-      const idPostulante = getIdPostulante();
-      if (!idPostulante) {
-        await Alert({
-          title: 'Error',
-          text: 'No se encontró el ID del postulante. Inicia sesión de nuevo.',
-          icon: 'error'
-        });
-        router.push('/');
-        return;
-      }
-
       try {
         console.log('📌 Verificando datos del postulante...');
-        const res = await fetch(`http://localhost:5000/api/postulante/${idPostulante}`);
+        const res = await fetchWithCreds(`http://localhost:5000/api/postulante/${usuario.id}`);
         const data = await res.json();
 
         if (!res.ok || !data?.Nombre || !data?.Apellido || !data?.Itinerario) {
           throw new Error(data?.error || "No se pudo obtener los datos completos del postulante");
         }
 
-        setNombrePostulante(`${data.Nombre} ${data.Apellido}`);
         setItinerario(data.Itinerario);
 
         console.log('✅ Datos obtenidos:', data);
 
-        const estadoRes = await fetch(`http://localhost:5000/api/postulante/estado/${idPostulante}`);
+        const estadoRes = await fetchWithCreds(`http://localhost:5000/api/postulante/estado/${usuario.id}`);
         const estadoData = await estadoRes.json();
 
         if (!estadoRes.ok || !estadoData?.estado) {
@@ -90,13 +73,11 @@ export default function Entrevistas() {
           text: 'Ocurrió un error al obtener los datos. Intenta más tarde.',
           icon: 'error'
         });
-      } finally {
-        setCargando(false);
       }
     };
 
     verificarEstadoPostulante();
-  }, [router]);
+  }, [loading, usuario, router]);
 
   const handleContinuar = () => {
     if (!bloqueado) {
@@ -105,21 +86,19 @@ export default function Entrevistas() {
   };
 
   const handleCerrarSesion = async () => {
-    localStorage.removeItem('token');
-    await Alert({
-      title: 'Sesión cerrada',
-      text: 'Has cerrado sesión correctamente.',
-      icon: 'success',
-    });
-    router.push('/');
+    await logout();
   };
 
-  if (cargando) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-white">
         Cargando...
       </div>
     );
+  }
+
+  if (!usuario) {
+    return null; // ya redirige en el useEffect
   }
 
   return (
@@ -129,7 +108,6 @@ export default function Entrevistas() {
     >
       <div className="absolute inset-0 bg-black/70 z-0"></div>
 
-      
       <div className="absolute top-4 right-4 z-50">
         <button
           onClick={handleCerrarSesion}
@@ -143,7 +121,7 @@ export default function Entrevistas() {
         {!bloqueado ? (
           <>
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-5">
-              Bienvenido/a {nombrePostulante} a <span className="text-cyan-400">DevSelectAI</span>
+              Bienvenido/a {usuario.nombres} a <span className="text-cyan-400">DevSelectAI</span>
             </h1>
 
             <p className="text-lg text-gray-300 leading-relaxed mb-3">
@@ -166,7 +144,7 @@ export default function Entrevistas() {
         ) : (
           <>
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-5">
-              Estimado/a {nombrePostulante}
+              Estimado/a {usuario.nombres}
             </h1>
 
             <p className="text-lg text-gray-300 leading-relaxed whitespace-pre-line">

@@ -7,6 +7,9 @@ const {
   calificarTecnico,
   actualizarEvaluacionGeneral,
 } = require("../controllers/calificarController");
+const auth = require("../../middlewares/auth");
+
+router.use(auth("reclutador"));
 
 router.put("/entrevista-oral", calificarEntrevistaOral);
 router.get("/entrevista-oral/:idEntrevista", getEntrevistaOral);

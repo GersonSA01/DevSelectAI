@@ -7,7 +7,9 @@ module.exports = (sequelize, DataTypes) => {
     CantidadUsoIA: DataTypes.INTEGER,
     Id_Empresa: DataTypes.INTEGER,
     Id_reclutador: DataTypes.INTEGER,
-    id_Itinerario: DataTypes.INTEGER
+    id_Itinerario: DataTypes.INTEGER,
+    Activo: { type: DataTypes.BOOLEAN, defaultValue: true }
+
   }, {
     tableName: 'DAI_T_Vacante',
     timestamps: false

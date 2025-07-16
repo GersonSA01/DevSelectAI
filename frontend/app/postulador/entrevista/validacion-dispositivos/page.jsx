@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useStream } from '../../../../context/StreamContext';
 import { mostrarTerminosYCondiciones } from '../../../components/modals/TerminosEntrevista';
+import { useScreen } from '../../../../context/ScreenContext';
+import { Alert } from '../../../components/alerts/Alerts';
 
 export default function ValidacionDispositivos() {
   const router = useRouter();
@@ -18,6 +20,9 @@ export default function ValidacionDispositivos() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
+  const { extraScreenDetected } = useScreen();
+  const [alertShown, setAlertShown] = useState(false);
+
   const [camReady, setCamReady] = useState(false);
   const [micReady, setMicReady] = useState(false);
   const [camaras, setCamaras] = useState([]);
@@ -31,11 +36,8 @@ export default function ValidacionDispositivos() {
     yaGenerado.current = true;
 
     try {
-      console.log("📌 Token detectado, buscando postulante...");
       const resId = await fetch(`http://localhost:5000/api/postulante/token/${token}`);
       const dataId = await resId.json();
-
-      console.log("✔️ Postulante encontrado:", dataId);
 
       if (!resId.ok || !dataId?.Id_Postulante) {
         console.warn("⛔ Postulante no encontrado correctamente:", dataId?.error || dataId);
@@ -43,8 +45,6 @@ export default function ValidacionDispositivos() {
       }
 
       const idPostulante = dataId.Id_Postulante;
-
-      console.log("📤 Enviando POST a evaluación con ID:", idPostulante);
 
       const resEval = await fetch(`http://localhost:5000/api/evaluacion/inicial/${idPostulante}`, {
         method: 'POST'
@@ -67,6 +67,22 @@ export default function ValidacionDispositivos() {
   }, [token]);
 
   useEffect(() => {
+    if (extraScreenDetected && !alertShown) {
+      setAlertShown(true);
+      Alert({
+        icon: 'warning',
+        title: 'Pantalla adicional detectada',
+        html: `
+          <p>Parece que hay otra pantalla conectada a tu sistema.</p>
+          <p>Por favor, desconéctala para continuar.</p>
+        `,
+        showCancelButton: false,
+        confirmButtonText: 'Entendido',
+      }).then(() => setAlertShown(false));
+    }
+  }, [extraScreenDetected, alertShown]);
+
+  useEffect(() => {
     const listarDispositivos = async () => {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoInputs = devices.filter(d => d.kind === 'videoinput');
@@ -86,10 +102,7 @@ export default function ValidacionDispositivos() {
       if (!selectedCam) return;
 
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { deviceId: selectedCam },
-        });
-
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: selectedCam } });
         if (videoRef.current) videoRef.current.srcObject = stream;
         setCameraStream(stream);
         window.copiaCamara = stream;
@@ -117,9 +130,7 @@ export default function ValidacionDispositivos() {
       }
 
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: { deviceId: selectedMic },
-        });
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: selectedMic } });
 
         currentMicStream.current = stream;
 
@@ -187,12 +198,26 @@ export default function ValidacionDispositivos() {
     };
   }, []);
 
+  const iniciarEntrevista = () => {
+    if (extraScreenDetected) {
+      Alert({
+        icon: 'error',
+        title: 'No puedes continuar',
+        html: 'Por favor, desconecta la pantalla adicional para poder continuar con la entrevista.',
+        confirmButtonText: 'Ok',
+      });
+      return;
+    }
+
+    mostrarTerminosYCondiciones(router, token);
+  };
+
   return (
     <div className="min-h-screen bg-[#0A0A23] text-white px-6 py-10 flex flex-col items-center">
       <h2 className="text-2xl font-bold mb-8">Verifica tu cámara, micrófono y comparte pantalla</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl mb-6">
-        
+        {/* Cámara */}
         <div className="bg-[#1D1E33] p-6 rounded-lg shadow-md">
           <label className="block mb-2 text-sm text-gray-300">Selecciona tu cámara</label>
           <select
@@ -212,7 +237,7 @@ export default function ValidacionDispositivos() {
           <p className="mt-2 text-sm">{camReady ? 'Cámara detectada ✔️' : 'Cámara no detectada ❌'}</p>
         </div>
 
-        
+        {/* Micrófono */}
         <div className="bg-[#1D1E33] p-6 rounded-lg shadow-md">
           <label className="block mb-2 text-sm text-gray-300">Selecciona tu micrófono</label>
           <select
@@ -237,10 +262,10 @@ export default function ValidacionDispositivos() {
       </div>
 
       <button
-        onClick={() => mostrarTerminosYCondiciones(router, token)}
-        disabled={!camReady || !micReady}
+        onClick={iniciarEntrevista}
+        disabled={!camReady || !micReady || extraScreenDetected}
         className={`px-6 py-3 text-sm rounded-full font-semibold ${
-          camReady && micReady
+          camReady && micReady && !extraScreenDetected
             ? 'bg-white text-black hover:bg-gray-200'
             : 'bg-gray-500 text-gray-300 cursor-not-allowed'
         }`}

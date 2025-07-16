@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { FaBrain, FaCode, FaCheckCircle, FaTools, FaRobot } from "react-icons/fa";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { fetchWithCreds } from '../../utils/fetchWithCreds';
 
 export default function ModuloTecnico({
   idEvaluacion,
@@ -70,7 +71,7 @@ export default function ModuloTecnico({
     };
 
     try {
-      const res = await fetch("http://localhost:5000/api/calificar/tecnica", {
+      const res = await fetchWithCreds("http://localhost:5000/api/calificar/tecnica", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

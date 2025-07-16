@@ -8,13 +8,15 @@ async function cargarDatosIniciales() {
     
     const estados = await db.EstadoPostulacion.findAll();
     if (estados.length === 0) {
-      await db.EstadoPostulacion.bulkCreate([
-        { id_EstadoPostulacion: 1, descripcion: 'Por evaluar' },
-        { id_EstadoPostulacion: 2, descripcion: 'Evaluado' },
-        { id_EstadoPostulacion: 3, descripcion: 'Aprobado' },
-        { id_EstadoPostulacion: 4, descripcion: 'Rechazado' },
-        { id_EstadoPostulacion: 5, descripcion: 'Calificado' }
-      ]);
+      await db.Habilidad.bulkCreate([
+  { Id_Habilidad: 1, Descripcion: 'SQL', Activo: true },
+  { Id_Habilidad: 2, Descripcion: 'Machine Learning', Activo: true },
+  { Id_Habilidad: 3, Descripcion: 'Python', Activo: true },
+  { Id_Habilidad: 4, Descripcion: 'NodeJS', Activo: true },
+  { Id_Habilidad: 5, Descripcion: 'NextJS', Activo: true },
+  { Id_Habilidad: 6, Descripcion: 'React', Activo: true }
+]);
+
       console.log('✅ Estados de postulación insertados.');
     }
 
@@ -22,16 +24,17 @@ async function cargarDatosIniciales() {
     const itinerarios = await db.Itinerario.findAll();
     if (itinerarios.length === 0) {
       await db.Itinerario.bulkCreate([
-        { id_Itinerario: 1, descripcion: 'Itinerario 1: Análisis de entorno para agropecuaria, turismo e industria' },
-        { id_Itinerario: 2, descripcion: 'Itinerario 2: Desarrollo de Aplicaciones' }
-      ]);
+  { id_Itinerario: 1, descripcion: 'Itinerario 1: Análisis de entorno para agropecuaria, turismo e industria', Activo: true },
+  { id_Itinerario: 2, descripcion: 'Itinerario 2: Desarrollo de Aplicaciones', Activo: true }
+]);
+
       console.log('✅ Itinerarios insertados.');
     }
 
     
     const empresas = await db.Empresa.findAll();
     if (empresas.length === 0) {
-      await db.Empresa.create({ Descripcion: 'UNEMI' });
+      await db.Empresa.create({ Descripcion: 'UNEMI', Activo: true });
       console.log('✅ Empresa UNEMI insertada.');
     }
 

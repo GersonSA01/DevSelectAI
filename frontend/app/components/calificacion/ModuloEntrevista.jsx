@@ -2,31 +2,35 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { fetchWithCreds } from "../../utils/fetchWithCreds";
 
 export default function ModuloEntrevista({
-  preguntasOrales,
+  preguntasOrales = [],
   entrevista,
-  calificacion,
+  calificacion = 0,
   confirmadas,
   setConfirmadas,
   actualizarCalificacion,
 }) {
   const [editando, setEditando] = useState(false);
-  const [preguntas, setPreguntas] = useState(preguntasOrales);
+  const [preguntas, setPreguntas] = useState([]);
+  const [subNotas, setSubNotas] = useState([]);
 
+  // Inicializa preguntas y subNotas cuando llegan las props
   useEffect(() => {
-    setPreguntas(preguntasOrales);
-  }, [preguntasOrales]);
+    const inicial = preguntasOrales ?? [];
+    setPreguntas(inicial);
 
-  const [subNotas, setSubNotas] = useState(
-    preguntasOrales.map((p) => {
-      const nota = p.calificacion || 0;
-      return {
-        respuesta: nota >= 1 ? 1 : 0,
-        lenguaje: nota === 2 ? 1 : 0,
-      };
-    })
-  );
+    setSubNotas(
+      inicial.map((p) => {
+        const nota = p.calificacion || 0;
+        return {
+          respuesta: nota >= 1 ? 1 : 0,
+          lenguaje: nota === 2 ? 1 : 0,
+        };
+      })
+    );
+  }, [preguntasOrales]);
 
   useEffect(() => {
     if (editando) {
@@ -36,7 +40,7 @@ export default function ModuloEntrevista({
       );
       actualizarCalificacion("entrevista", suma);
     }
-  }, [subNotas]);
+  }, [subNotas, editando, actualizarCalificacion]);
 
   const puntajeTemporal = subNotas.reduce(
     (acc, nota) => acc + nota.respuesta + nota.lenguaje,
@@ -54,7 +58,7 @@ export default function ModuloEntrevista({
         calificacion: subNotas[i].respuesta + subNotas[i].lenguaje,
       }));
 
-      const res = await fetch(
+      const res = await fetchWithCreds(
         "http://localhost:5000/api/calificar/entrevista-oral",
         {
           method: "PUT",
@@ -141,49 +145,53 @@ export default function ModuloEntrevista({
       </div>
 
       <div className="text-sm text-gray-300 space-y-4 mt-4">
-        {preguntas.map((p, i) => (
-          <div key={i}>
-            <p className="text-[#3BDCF6] text-sm md:text-base">
-              <strong>Pregunta {i + 1}:</strong> {p.pregunta}
-            </p>
-            <p className="text-white ml-4 text-sm md:text-base">
-              <strong>Respuesta:</strong> {p.respuesta}
-            </p>
-            <p className="text-yellow-300 ml-4 text-sm md:text-base">
-              <strong>Nota IA:</strong>{" "}
-              {p.calificacion ?? "Sin calificación"}
-            </p>
+        {Array.isArray(preguntas) && preguntas.length > 0 ? (
+          preguntas.map((p, i) => (
+            <div key={i}>
+              <p className="text-[#3BDCF6] text-sm md:text-base">
+                <strong>Pregunta {i + 1}:</strong> {p.pregunta}
+              </p>
+              <p className="text-white ml-4 text-sm md:text-base">
+                <strong>Respuesta:</strong> {p.respuesta}
+              </p>
+              <p className="text-yellow-300 ml-4 text-sm md:text-base">
+                <strong>Nota IA:</strong>{" "}
+                {p.calificacion ?? "Sin calificación"}
+              </p>
 
-            {editando && (
-              <div className="ml-6 mt-2 space-y-1">
-                <label className="flex items-center gap-2 text-sm md:text-base">
-                  <input
-                    type="checkbox"
-                    checked={subNotas[i].respuesta === 1}
-                    onChange={(e) => {
-                      const nuevo = [...subNotas];
-                      nuevo[i].respuesta = e.target.checked ? 1 : 0;
-                      setSubNotas(nuevo);
-                    }}
-                  />
-                  +1 Responde bien
-                </label>
-                <label className="flex items-center gap-2 text-sm md:text-base">
-                  <input
-                    type="checkbox"
-                    checked={subNotas[i].lenguaje === 1}
-                    onChange={(e) => {
-                      const nuevo = [...subNotas];
-                      nuevo[i].lenguaje = e.target.checked ? 1 : 0;
-                      setSubNotas(nuevo);
-                    }}
-                  />
-                  +1 Usa lenguaje técnico
-                </label>
-              </div>
-            )}
-          </div>
-        ))}
+              {editando && (
+                <div className="ml-6 mt-2 space-y-1">
+                  <label className="flex items-center gap-2 text-sm md:text-base">
+                    <input
+                      type="checkbox"
+                      checked={subNotas[i].respuesta === 1}
+                      onChange={(e) => {
+                        const nuevo = [...subNotas];
+                        nuevo[i].respuesta = e.target.checked ? 1 : 0;
+                        setSubNotas(nuevo);
+                      }}
+                    />
+                    +1 Responde bien
+                  </label>
+                  <label className="flex items-center gap-2 text-sm md:text-base">
+                    <input
+                      type="checkbox"
+                      checked={subNotas[i].lenguaje === 1}
+                      onChange={(e) => {
+                        const nuevo = [...subNotas];
+                        nuevo[i].lenguaje = e.target.checked ? 1 : 0;
+                        setSubNotas(nuevo);
+                      }}
+                    />
+                    +1 Usa lenguaje técnico
+                  </label>
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
+          <p className="text-red-400">No hay preguntas para mostrar</p>
+        )}
 
         {entrevista?.RetroalimentacionIA && (
           <>

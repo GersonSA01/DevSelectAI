@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { jwtDecode } from "jwt-decode";
-
 import { Alert } from "../../components/alerts/Alerts";
 import mostrarVacantesModal from '../../components/modals/VacanteModal';
+import { useAuth } from "../../../context/AuthContext"; // 👈 usa el contexto
+import { fetchWithCreds } from '../../utils/fetchWithCreds';
 
 const formatearFecha = (fecha) => {
   const d = new Date(fecha);
@@ -19,6 +19,7 @@ const formatearFecha = (fecha) => {
 
 export default function SeleccionHabilidades() {
   const router = useRouter();
+  const { usuario } = useAuth(); // 👈 obtenemos el usuario desde el contexto
   const [habilidades, setHabilidades] = useState([]);
   const [habilidadesSeleccionadas, setHabilidadesSeleccionadas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +27,7 @@ export default function SeleccionHabilidades() {
   useEffect(() => {
     const obtenerHabilidades = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/configuracion/habilidad');
+        const res = await fetchWithCreds('http://localhost:5000/api/configuracion/habilidad');
         const data = await res.json();
         if (!Array.isArray(data)) throw new Error('La respuesta no es un array');
         setHabilidades(data);
@@ -57,6 +58,14 @@ export default function SeleccionHabilidades() {
       return;
     }
 
+    if (!usuario) {
+      await Alert({ title: "Error", text: "No hay sesión. Inicia nuevamente.", icon: "error" });
+      router.push('/');
+      return;
+    }
+
+    const idPostulante = usuario.id;
+
     const confirm = await Alert({
       title: '¿Estás seguro que quieres continuar?',
       html: `
@@ -72,21 +81,8 @@ export default function SeleccionHabilidades() {
 
     if (!confirm.isConfirmed) return;
 
-    let idPostulante = null;
     try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No hay token");
-      const decoded = jwtDecode(token);
-      idPostulante = decoded.id;
-      if (!idPostulante) throw new Error("ID no encontrado en el token");
-    } catch (err) {
-      console.error("Error al decodificar token:", err);
-      await Alert({ title: "Error", text: "Token inválido. Inicia sesión nuevamente.", icon: "error" });
-      return;
-    }
-
-    try {
-      await fetch('http://localhost:5000/api/postulante/habilidades', {
+      await fetchWithCreds('http://localhost:5000/api/postulante/habilidades', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -95,6 +91,7 @@ export default function SeleccionHabilidades() {
         })
       });
 
+      
       const resVacantes = await fetch('http://localhost:5000/api/vacantes/por-habilidades', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -143,7 +140,7 @@ export default function SeleccionHabilidades() {
       const vacanteSeleccionada = await mostrarVacantesModal({ vacantesData: vacantesFiltradas });
       if (!vacanteSeleccionada) return;
 
-      await fetch('http://localhost:5000/api/postulante/seleccionar-vacante', {
+      await fetchWithCreds('http://localhost:5000/api/postulante/seleccionar-vacante', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idPostulante, idVacante: vacanteSeleccionada.Id_Vacante })
