@@ -27,7 +27,7 @@ export default function SeleccionHabilidades() {
   useEffect(() => {
     const obtenerHabilidades = async () => {
       try {
-        const res = await fetchWithCreds('http://localhost:5000/api/configuracion/habilidad');
+        const res = await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/configuracion/habilidad`);
         const data = await res.json();
         if (!Array.isArray(data)) throw new Error('La respuesta no es un array');
         setHabilidades(data);
@@ -82,7 +82,7 @@ export default function SeleccionHabilidades() {
     if (!confirm.isConfirmed) return;
 
     try {
-      await fetchWithCreds('http://localhost:5000/api/postulante/habilidades', {
+      await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/postulante/habilidades`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -92,7 +92,8 @@ export default function SeleccionHabilidades() {
       });
 
       
-      const resVacantes = await fetch('http://localhost:5000/api/vacantes/por-habilidades', {
+      const resVacantes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/vacantes/por-habilidades`
+, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -140,7 +141,7 @@ export default function SeleccionHabilidades() {
       const vacanteSeleccionada = await mostrarVacantesModal({ vacantesData: vacantesFiltradas });
       if (!vacanteSeleccionada) return;
 
-      await fetchWithCreds('http://localhost:5000/api/postulante/seleccionar-vacante', {
+      await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/postulante/seleccionar-vacante`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idPostulante, idVacante: vacanteSeleccionada.Id_Vacante })

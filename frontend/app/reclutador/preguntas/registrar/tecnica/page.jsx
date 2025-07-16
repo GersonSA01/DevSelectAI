@@ -19,19 +19,19 @@ useEffect(() => {
     try {
       
       if (idVacante) {
-        const resHabs = await fetch(`http://localhost:5000/api/vacantes/${idVacante}/habilidades`);
+        const resHabs = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/vacantes/${idVacante}/habilidades`);
         const dataHabs = await resHabs.json();
         setHabilidades(dataHabs);
       }
 
       if (!idPregunta) return;
 
-      const resPregunta = await fetchWithCreds(`http://localhost:5000/api/preguntas/${idPregunta}`);
+      const resPregunta = await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/preguntas/${idPregunta}`);
       const dataPregunta = await resPregunta.json();
       setPregunta(dataPregunta.Pregunta || '');
 
       
-      const resTecnica = await fetchWithCreds(`http://localhost:5000/api/preguntas/tecnica/${idPregunta}`);
+      const resTecnica = await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/preguntas/tecnica/${idPregunta}`);
       if (resTecnica.ok) {
         const dataTecnica = await resTecnica.json();
         setRespuesta(dataTecnica.Respuesta || '');
@@ -62,7 +62,7 @@ const handleSubmit = async (e) => {
     let preguntaId = idPregunta;
 
     if (!idPregunta) {
-      const resPregunta = await fetchWithCreds('http://localhost:5000/api/preguntas', {
+      const resPregunta = await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/preguntas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -75,7 +75,7 @@ const handleSubmit = async (e) => {
       const nuevaPregunta = await resPregunta.json();
       preguntaId = nuevaPregunta.Id_Pregunta;
     } else {
-      await fetchWithCreds(`http://localhost:5000/api/preguntas/${idPregunta}`, {
+      await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/preguntas/${idPregunta}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -85,9 +85,9 @@ const handleSubmit = async (e) => {
       });
     }
 
-    const resTecnica = await fetchWithCreds(`http://localhost:5000/api/preguntas/tecnica/${preguntaId}`);
+    const resTecnica = await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/preguntas/tecnica/${preguntaId}`);
     if (resTecnica.ok) {
-      await fetchWithCreds(`http://localhost:5000/api/preguntas/tecnica/${preguntaId}`, {
+      await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/preguntas/tecnica/${preguntaId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -96,7 +96,7 @@ const handleSubmit = async (e) => {
         })
       });
     } else {
-      await fetchWithCreds('http://localhost:5000/api/preguntas/tecnica', {
+      await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/preguntas/tecnica`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

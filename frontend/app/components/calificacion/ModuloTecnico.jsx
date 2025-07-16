@@ -71,7 +71,7 @@ export default function ModuloTecnico({
     };
 
     try {
-      const res = await fetchWithCreds("http://localhost:5000/api/calificar/tecnica", {
+      const res = await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/calificar/tecnica`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

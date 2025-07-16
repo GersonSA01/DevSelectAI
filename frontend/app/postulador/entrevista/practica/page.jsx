@@ -62,7 +62,7 @@ export default function PracticaPage() {
   useEffect(() => {
     const cargarPreguntaTecnica = async () => {
       const idPostulante = localStorage.getItem('id_postulante');
-      const res = await fetch(`http://localhost:5000/api/evaluacion/pregunta-tecnica-asignada/${idPostulante}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/evaluacion/pregunta-tecnica-asignada/${idPostulante}`);
       const data = await res.json();
       setPreguntaTecnica(data);
       setUsoIA(data.usoIA === true || data.usoIA === 1);
@@ -85,7 +85,7 @@ export default function PracticaPage() {
     try {
       const idPostulante = localStorage.getItem('id_postulante');
 
-      const res = await fetch('http://localhost:5000/api/evaluacion/pedir-ayuda', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/evaluacion/pedir-ayuda`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idPostulante })
@@ -144,7 +144,7 @@ export default function PracticaPage() {
       const tiempoFinal = Date.now();
       const tiempoTranscurridoSegundos = Math.floor((tiempoFinal - tiempoInicioRef.current) / 1000);
 
-      await fetch('http://localhost:5000/api/evaluacion/guardar-respuesta-tecnica', {
+      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/evaluacion/guardar-respuesta-tecnica`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -155,7 +155,7 @@ export default function PracticaPage() {
         })
       });
 
-      await fetch(`http://localhost:5000/api/postulante/${idPostulante}/cambiar-estado`, {
+      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/postulante/${idPostulante}/cambiar-estado`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nuevoEstado: 2 })

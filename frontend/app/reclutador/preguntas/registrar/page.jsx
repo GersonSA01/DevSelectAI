@@ -20,7 +20,7 @@ export default function RegistrarPregunta() {
   useEffect(() => {
     const fetchHabilidades = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/vacantes/${idVacante}/habilidades`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/vacantes/${idVacante}/habilidades`);
         const data = await res.json();
         setHabilidades(data);
       } catch (error) {
@@ -35,13 +35,13 @@ export default function RegistrarPregunta() {
       if (!idPregunta) return;
 
       try {
-        const resPregunta = await fetchWithCreds(`http://localhost:5000/api/preguntas/${idPregunta}`);
+        const resPregunta = await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/preguntas/${idPregunta}`);
         const preguntaData = await resPregunta.json();
         console.log('Pregunta cargada:', preguntaData); // 👈 agrega esto
 
         setPregunta(preguntaData.Pregunta || preguntaData.pregunta || '');
 
-        const resOpciones = await fetchWithCreds(`http://localhost:5000/api/opciones/pregunta/${idPregunta}`);
+        const resOpciones = await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/opciones/pregunta/${idPregunta}`);
         const opcionesData = await resOpciones.json();
 
         setOpciones(
@@ -96,7 +96,7 @@ export default function RegistrarPregunta() {
       let idPreguntaActual = idPregunta;
 
       if (!idPregunta) {
-        const res = await fetchWithCreds('http://localhost:5000/api/preguntas', {
+        const res = await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/preguntas`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -108,19 +108,19 @@ export default function RegistrarPregunta() {
         const nueva = await res.json();
         idPreguntaActual = nueva.Id_Pregunta;
       } else {
-        await fetchWithCreds(`http://localhost:5000/api/preguntas/${idPregunta}`, {
+        await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/preguntas/${idPregunta}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ Pregunta: pregunta })
         });
-        await fetchWithCreds(`http://localhost:5000/api/opciones/pregunta/${idPregunta}`, { method: 'DELETE' });
+        await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/opciones/pregunta/${idPregunta}`, { method: 'DELETE' });
       }
 
       await Promise.all(
         opciones
           .filter(op => op.texto.trim())
           .map(op =>
-            fetchWithCreds('http://localhost:5000/api/opciones', {
+            fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/opciones`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({

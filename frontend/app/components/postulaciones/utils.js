@@ -91,7 +91,7 @@ export async function aceptarPostulante(id, nombre, vacante, programacionActual,
   if (!confirm.isConfirmed) return;
 
   try {
-    const res = await fetch(`http://localhost:5000/api/postulante/${id}/aceptar`, { method: 'PUT' });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/postulante/${id}/aceptar`, { method: 'PUT' });
     if (!res.ok) throw new Error();
 
     await Alert({
@@ -126,7 +126,7 @@ export async function rechazarPostulante(id, setPostulantes) {
   if (!confirm.isConfirmed) return;
 
   try {
-    const res = await fetch(`http://localhost:5000/api/postulante/${id}/rechazar`, { method: 'PUT' });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/postulante/${id}/rechazar`, { method: 'PUT' });
     if (!res.ok) throw new Error();
 
     await Alert({

@@ -10,7 +10,7 @@ export const ItinerarioProvider = ({ children }) => {
   const [itinerarios, setItinerarios] = useState([]);
 
  const cargarItinerarios = async () => {
-  const res = await fetchWithCreds('http://localhost:5000/api/itinerarios');
+  const res = await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/itinerarios`);
   const data = await res.json();
   if (Array.isArray(data)) {
     setItinerarios(data);

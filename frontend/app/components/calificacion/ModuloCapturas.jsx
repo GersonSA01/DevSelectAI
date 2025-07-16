@@ -65,7 +65,7 @@ export default function ModuloCapturas({
             >
               
               <img
-                src={`http://localhost:5000/uploads/${c.File}`}
+                src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/uploads/${c.File}`}
                 alt={`Captura ${i + 1}`}
                 className="w-full h-40 object-cover transition-transform duration-300"
               />

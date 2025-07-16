@@ -24,6 +24,8 @@ export default function PanelEntrevista({
   const [bloqueado, setBloqueado] = useState(false);
   const [inicioGrabacion, setInicioGrabacion] = useState(null);
   const [audioTimeout, setAudioTimeout] = useState(null);
+  const [respuestaTimeout, setRespuestaTimeout] = useState(null);
+  const [tiempoRespuesta, setTiempoRespuesta] = useState(null);
 
   const pensarRef = useRef(null);
 
@@ -88,29 +90,37 @@ export default function PanelEntrevista({
   };
 
   const startRecording = async (currentStep) => {
-    if (pensarRef.current) {
-      clearInterval(pensarRef.current);
-      pensarRef.current = null;
-      setMostrarPensar(false);
-    }
+  if (respuestaTimeout) {
+  clearTimeout(respuestaTimeout);
+  setRespuestaTimeout(null);
+  }
+  setTiempoRespuesta(null);
 
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const recorder = new MediaRecorder(stream);
-    const chunks = [];
 
-    recorder.ondataavailable = e => chunks.push(e.data);
-    recorder.onstop = async () => {
-      setRecording(false);
-      const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-      const duracion = Math.round((Date.now() - inicioGrabacion) / 1000);
-      await procesarAudio(audioBlob, duracion, currentStep);
-    };
+  if (pensarRef.current) {
+    clearInterval(pensarRef.current);
+    pensarRef.current = null;
+    setMostrarPensar(false);
+  }
 
-    recorder.start();
-    setMediaRecorder(recorder);
-    setRecording(true);
-    setInicioGrabacion(Date.now());
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const recorder = new MediaRecorder(stream);
+  const chunks = [];
+
+  recorder.ondataavailable = e => chunks.push(e.data);
+  recorder.onstop = async () => {
+    setRecording(false);
+    const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+    const duracion = Math.round((Date.now() - inicioGrabacion) / 1000);
+    await procesarAudio(audioBlob, duracion, currentStep);
   };
+
+  recorder.start();
+  setMediaRecorder(recorder);
+  setRecording(true);
+  setInicioGrabacion(Date.now());
+};
+
 
   const stopRecording = () => {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
@@ -139,7 +149,8 @@ export default function PanelEntrevista({
       formData.append('idPostulante', localStorage.getItem('id_postulante'));
       formData.append('tiempoRespuesta', tiempoRespuesta);
 
-      const response = await fetch('http://localhost:5000/api/entrevista/procesar-audio', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/entrevista/procesar-audio`
+, {
         method: 'POST',
         body: formData,
       });
@@ -168,7 +179,36 @@ export default function PanelEntrevista({
             audioEl.onended = () => {
               desbloquearInterfaz(currentStep);
               setInicioGrabacion(Date.now());
-            };
+
+              // iniciar temporizador de 10s
+              if (respuestaTimeout) clearTimeout(respuestaTimeout);
+
+          setTiempoRespuesta(10); // iniciar contador visual
+
+          const cuentaRegresiva = setInterval(() => {
+            setTiempoRespuesta(prev => {
+              if (prev <= 1) {
+                clearInterval(cuentaRegresiva);
+                return null;
+              }
+              return prev - 1;
+            });
+          }, 1000);
+
+          const timeout = setTimeout(() => {
+            console.log('⛔ Tiempo agotado sin respuesta');
+            setBloqueado(true);
+            setRespuestaAnimada(
+              'No se detectó respuesta en el tiempo establecido. La entrevista ha finalizado.'
+            );
+            setStep(999); // step especial para indicar finalización
+            setTiempoRespuesta(null); // ocultar contador
+            clearInterval(cuentaRegresiva);
+          }, 10_000);
+
+          setRespuestaTimeout(timeout);
+        }
+
           })
           .catch(err => {
             console.error('Error al iniciar audio:', err);
@@ -220,7 +260,15 @@ export default function PanelEntrevista({
               <span className="text-gray-400 italic">Esperando a iniciar la entrevista...</span>
             )}
           </p>
+
+          {/* aquí mostramos el temporizador */}
+          {tiempoRespuesta !== null && (
+            <div className="text-center text-red-500 font-bold text-lg mt-2">
+              Tiempo para responder: {tiempoRespuesta}s
+            </div>
+          )}
         </div>
+
 
         {step === 0 && (
           <button
@@ -244,10 +292,16 @@ export default function PanelEntrevista({
         {step > 0 && step < 4 && !recording && !bloqueado && (
           <button
             onClick={() => startRecording(step)}
-            className="px-6 py-3 rounded-md w-full bg-green-600 hover:bg-green-700 mt-4"
+            disabled={bloqueado}
+            className={`px-6 py-3 rounded-md w-full mt-4 ${
+              bloqueado
+                ? 'bg-gray-500 cursor-not-allowed'
+                : 'bg-green-600 hover:bg-green-700'
+            }`}
           >
             Iniciar grabación
           </button>
+
         )}
 
         {recording && (

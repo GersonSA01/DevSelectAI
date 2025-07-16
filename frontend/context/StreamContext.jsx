@@ -48,7 +48,7 @@ export function StreamProvider({ children }) {
     const base64Image = canvas.toDataURL('image/jpeg', 0.7);
 
     try {
-      const response = await fetch('http://localhost:5000/api/capturas', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/capturas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

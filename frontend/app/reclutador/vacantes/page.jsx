@@ -20,22 +20,24 @@ export default function VacantesPage() {
   const [programaciones, setProgramaciones] = useState([]);
   const [programacionSeleccionada, setProgramacionSeleccionada] = useState('');
 
-  const formatearFecha = (fechaStr) => {
-    if (!fechaStr) return '';
-    const fecha = new Date(fechaStr);
-    return fecha.toLocaleDateString('es-ES', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
+ const formatearFecha = (fechaStr) => {
+  if (!fechaStr) return '';
+  const [y, m, d] = fechaStr.split('-');
+  const fecha = new Date(Number(y), Number(m) - 1, Number(d));
+  return fecha.toLocaleDateString('es-ES', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+};
+
 
   useEffect(() => {
     if (!idItinerario) return;
     const fetchVacantes = async () => {
       setIsLoading(true);
       try {
-        const res = await fetchWithCreds(`http://localhost:5000/api/vacantes/itinerario/${idItinerario}`);
+        const res = await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/vacantes/itinerario/${idItinerario}`);
         const data = await res.json();
         setVacantes(Array.isArray(data) ? data : []);
       } catch (err) {
@@ -50,7 +52,7 @@ export default function VacantesPage() {
 
   const fetchPreguntas = async (idVacante) => {
     try {
-      const res = await fetchWithCreds(`http://localhost:5000/api/preguntas/vacante/${idVacante}`);
+      const res = await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/preguntas/vacante/${idVacante}`);
       const data = await res.json();
       setPreguntasPorVacante(prev => ({
         ...prev,
@@ -79,7 +81,7 @@ export default function VacantesPage() {
   useEffect(() => {
     const fetchProgramaciones = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/programaciones');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/programaciones`);
         const data = await res.json();
         setProgramaciones(data);
       } catch (err) {
@@ -197,50 +199,50 @@ export default function VacantesPage() {
     <FiTrash2
       className="text-red-500 cursor-pointer hover:text-red-400"
       size={18}
-       onClick={async () => {
-                      const result = await Alert({
-                        title: '¿Estás seguro?',
-                        text: 'Esta acción eliminará la vacante (solo si no tiene preguntas).',
-                        icon: 'warning',
-                        confirmButtonText: 'Sí, eliminar',
-                        cancelButtonText: 'Cancelar',
-                      });
+   onClick={async () => {
+  const result = await Alert({
+    title: '¿Estás seguro?',
+    html: 'Esta acción eliminará la vacante (solo si no tiene preguntas).',
+    icon: 'warning',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar',
+    showCancelButton: true
+  });
 
-                      if (result.isConfirmed) {
-                        try {
-                          const res = await fetchWithCreds(`http://localhost:5000/api/vacantes/${v.Id_Vacante}`, {
-                            method: 'DELETE'
-                          });
+  if (result.isConfirmed) {
+    try {
+      const res = await fetchWithCreds(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/vacantes/${v.Id_Vacante}`,
+        { method: 'DELETE' }
+      );
 
-                          const data = await res.json();
+      const data = await res.json();
 
-                          if (res.ok) {
-                            await Alert({
-                              title: 'Eliminado',
-                              text: 'La vacante fue eliminada exitosamente.',
-                              icon: 'success',
-                              confirmButtonText: 'Ok'
-                            });
-                            setVacantes(prev => prev.filter(vac => vac.Id_Vacante !== v.Id_Vacante));
-                          } else {
-                            await Alert({
-                              title: 'Error',
-                              text: data.mensaje || 'No se pudo eliminar la vacante.',
-                              icon: 'error',
-                              confirmButtonText: 'Cerrar'
-                            });
-                          }
-                        } catch (err) {
-                          console.error('Error al eliminar vacante:', err);
-                          await Alert({
-                            title: 'Error',
-                            text: 'Ocurrió un error inesperado al intentar eliminar la vacante.',
-                            icon: 'error',
-                            confirmButtonText: 'Cerrar'
-                          });
-                        }
-                      }
-                    }}
+      await Alert({
+        title: res.ok ? 'Eliminado' : 'Error',
+        html: data.mensaje || (res.ok
+          ? 'La vacante fue eliminada exitosamente.'
+          : 'No se pudo eliminar la vacante.'),
+        icon: res.ok ? 'success' : 'error',
+        confirmButtonText: 'Ok'
+      });
+
+      if (res.ok) {
+        setVacantes(prev => prev.filter(vac => vac.Id_Vacante !== v.Id_Vacante));
+      }
+
+    } catch (err) {
+      console.error('Error al eliminar vacante:', err);
+      await Alert({
+        title: 'Error',
+        html: 'Ocurrió un error inesperado al intentar eliminar la vacante.',
+        icon: 'error',
+        confirmButtonText: 'Cerrar'
+      });
+    }
+  }
+}}
+
     />
     <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-black text-xs text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition">
       Eliminar

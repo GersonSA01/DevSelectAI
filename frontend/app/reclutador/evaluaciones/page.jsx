@@ -58,19 +58,19 @@ export default function CalificacionPage() {
           resCapturas,
         ] = await Promise.all([
           fetchWithCreds(
-            `http://localhost:5000/api/postulante/preguntas-teoricas?id=${idPostulante}`
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/postulante/preguntas-teoricas?id=${idPostulante}`
           ),
           fetchWithCreds(
-            `http://localhost:5000/api/postulante/entrevista?id=${idPostulante}`
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/postulante/entrevista?id=${idPostulante}`
           ),
           fetchWithCreds(
-            `http://localhost:5000/api/postulante/preguntas-orales?id=${idPostulante}`
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/postulante/preguntas-orales?id=${idPostulante}`
           ),
           fetchWithCreds(
-            `http://localhost:5000/api/evaluacion/pregunta-tecnica-asignada/${idPostulante}`
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/evaluacion/pregunta-tecnica-asignada/${idPostulante}`
           ),
           fetchWithCreds(
-            `http://localhost:5000/api/capturas/postulante/${idPostulante}`
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/capturas/postulante/${idPostulante}`
           ),
         ]);
 
@@ -117,7 +117,7 @@ export default function CalificacionPage() {
   const guardarCaptura = async (captura) => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/capturas/${captura.id_Capture}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/capturas/${captura.id_Capture}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -150,7 +150,7 @@ const handleFinalizar = async () => {
     };
 
     const res = await fetchWithCreds(
-      "http://localhost:5000/api/calificar/general",
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/calificar/general`,
       {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

@@ -54,7 +54,7 @@ export default function ZoomCaptura({ captura, setZoomImagen, guardarCaptura, ca
     <div className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50 p-4">
       <div className="bg-[#1D1E33] rounded-lg p-4 flex flex-col md:flex-row gap-4 max-w-5xl w-full">
         <img
-          src={`http://localhost:5000/uploads/${captura.File}`}
+          src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/uploads/${captura.File}`}
           alt="Captura ampliada"
           className="max-h-[70vh] rounded-lg object-contain w-full md:w-2/3"
         />

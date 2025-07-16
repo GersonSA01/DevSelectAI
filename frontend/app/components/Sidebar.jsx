@@ -42,7 +42,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/me', {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/me`, {
           method: 'GET',
           credentials: 'include', // 👈 importante para que se envíen cookies
         });
@@ -71,7 +71,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   };
 
   const handleLogout = async () => {
-    await fetch('http://localhost:5000/api/logout', {
+    await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/logout`, {
       method: 'POST',
       credentials: 'include',
     });

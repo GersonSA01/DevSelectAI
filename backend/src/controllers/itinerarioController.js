@@ -2,7 +2,10 @@ const db = require('../models');
 
 const getItinerarios = async (req, res) => {
   try {
-    const itinerarios = await db.Itinerario.findAll();
+    const itinerarios = await db.Itinerario.findAll({
+      where: { Activo: true }
+    });
+
     res.json(itinerarios);
   } catch (error) {
     console.error('Error al obtener itinerarios:', error);

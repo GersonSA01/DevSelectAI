@@ -11,7 +11,7 @@ import { fetchWithCreds } from '../../utils/fetchWithCreds';
 import { Alert } from '../../components/alerts/Alerts';
 
 export default function ConfiguracionCard({ titulo, entidad, campos, expanded, onExpand }) {
-  const API_URL = `http://localhost:5000/api/configuracion`;
+  const API_URL = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/configuracion`;
   const [formData, setFormData] = useState({});
   const [registros, setRegistros] = useState([]);
   const [editandoId, setEditandoId] = useState(null);

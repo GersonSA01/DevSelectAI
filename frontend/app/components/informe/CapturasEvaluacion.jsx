@@ -33,7 +33,7 @@ const CapturasEvaluacion = ({ capturas, calificacion }) => {
       onClick={() => setZoomImagen(c)}
     >
       <img
-        src={`http://localhost:5000/uploads/${c.File}`}
+        src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/uploads/${c.File}`}
         alt={`Captura ${c.id_Capture}`}
         className="object-cover w-full h-48 hover:opacity-90"
       />
@@ -58,7 +58,7 @@ const CapturasEvaluacion = ({ capturas, calificacion }) => {
           onClick={() => setZoomImagen(null)}
         >
           <img
-            src={`http://localhost:5000/uploads/${zoomImagen.File}`}
+            src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/uploads/${zoomImagen.File}`}
             alt="Zoom"
             className="max-w-[90%] max-h-[90%] rounded shadow-lg"
           />

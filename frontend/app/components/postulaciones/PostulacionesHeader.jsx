@@ -7,13 +7,11 @@ export default function PostulacionesHeader({
   setProgramacionSeleccionada,
   programacionActual
 }) {
-  // función para obtener la fecha local sin horas
   const getHoyLocalDate = () => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   };
 
-  // al montar, selecciona automáticamente si hay una vigente
 useEffect(() => {
   if (!programacionSeleccionada) {
     const hoy = getHoyLocalDate();

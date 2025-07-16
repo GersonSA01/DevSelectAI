@@ -7,7 +7,6 @@ exports.crearEvaluacionInicial = async (req, res) => {
     const idPostulante = parseInt(req.params.idPostulante);
     console.log('▶️ ID Postulante recibido:', idPostulante);
 
-    
     const relacion = await db.PostulanteVacante.findOne({
       where: { Id_Postulante: idPostulante },
       include: {
@@ -25,12 +24,11 @@ exports.crearEvaluacionInicial = async (req, res) => {
     const itinerarioVacante = relacion.vacante.id_Itinerario;
     console.log('✅ Vacante:', idVacante, '| Itinerario:', itinerarioVacante);
 
-
     const evaluacionesPrevias = await db.Evaluacion.findAll({
       where: { Id_postulante: idPostulante },
       include: {
         model: db.PreguntaEvaluacion,
-        as: 'respuestas', 
+        as: 'respuestas',
         include: {
           model: db.Pregunta,
           as: 'pregunta',
@@ -43,22 +41,25 @@ exports.crearEvaluacionInicial = async (req, res) => {
       }
     });
 
-
     if (evaluacionesPrevias.length > 0) {
       return res.status(409).json({ error: 'Ya existe una evaluación para este itinerario' });
     }
 
-    
     const preguntasTeoricas = await db.Pregunta.findAll({
-      where: { Id_vacante: idVacante },
+      where: {
+        Id_vacante: idVacante,
+        Activo: true
+      },
       include: [{ model: db.Opcion, as: 'opciones', required: true }],
       order: db.sequelize.random(),
       limit: 5
     });
 
-    
     const preguntasTecnicas = await db.Pregunta.findAll({
-      where: { Id_vacante: idVacante },
+      where: {
+        Id_vacante: idVacante,
+        Activo: true
+      },
       include: [{ model: db.PreguntaTecnica, as: 'preguntaTecnica', required: true }]
     });
 
@@ -69,10 +70,8 @@ exports.crearEvaluacionInicial = async (req, res) => {
     console.log('📋 Preguntas teóricas:', preguntasTeoricas.map(p => p.Id_Pregunta));
     console.log('🧠 Pregunta técnica:', preguntaTecnica?.Id_Pregunta || 'Ninguna');
 
-    
     const entrevista = await db.EntrevistaOral.create({ RetroalimentacionIA: null });
 
-    
     const evaluacion = await db.Evaluacion.create({
       Id_postulante: idPostulante,
       Id_Entrevista: entrevista.Id_Entrevista,
@@ -81,7 +80,6 @@ exports.crearEvaluacionInicial = async (req, res) => {
       RptaPostulante: ''
     });
 
-    
     const insertadas = [];
 
     for (const pregunta of preguntasTeoricas) {
@@ -101,7 +99,6 @@ exports.crearEvaluacionInicial = async (req, res) => {
       }
     }
 
-    
     if (preguntaTecnica) {
       try {
         const insert = await db.PreguntaEvaluacion.create({

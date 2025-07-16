@@ -40,7 +40,7 @@ export default function TeoricaPage() {
       if (!idPostulante) return;
 
       try {
-        const res = await fetch(`http://localhost:5000/api/evaluacion/obtener-evaluacion/${idPostulante}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/evaluacion/obtener-evaluacion/${idPostulante}`);
         const data = await res.json();
 
         if (res.ok && Array.isArray(data)) {
@@ -120,7 +120,7 @@ export default function TeoricaPage() {
     }
 
     try {
-      await fetch(`http://localhost:5000/api/evaluacion/responder/${pregunta.Id_Evaluacion}`, {
+      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/evaluacion/responder/${pregunta.Id_Evaluacion}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

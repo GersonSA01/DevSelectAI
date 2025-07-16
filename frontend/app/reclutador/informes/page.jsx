@@ -20,7 +20,7 @@ export default function InformeEvaluacionTiempo() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetchWithCreds(`http://localhost:5000/api/informe/${idPostulante}`);
+        const res = await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/informe/${idPostulante}`);
         const json = await res.json();
         setDatos(json);
       } catch (error) {

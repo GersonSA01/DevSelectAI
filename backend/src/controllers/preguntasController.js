@@ -1,95 +1,109 @@
 const { Pregunta, Opcion, PreguntaTecnica, Habilidad, Evaluacion, PostulanteVacante } = require('../models');
 
 const preguntasController = {
-  getPreguntasTeoricasPorPostulante: async (req, res) => {
-    const { id } = req.query;
+getPreguntasTeoricasPorPostulante: async (req, res) => {
+  const { id } = req.query;
 
-    try {
-      
-      const relacion = await PostulanteVacante.findOne({
-        where: { Id_Postulante: id }
-      });
+  try {
+    const relacion = await PostulanteVacante.findOne({
+      where: { Id_Postulante: id }
+    });
 
-      if (!relacion) {
-        return res.status(404).json({ error: 'No se encontró vacante asignada para el postulante.' });
-      }
-
-      const idVacante = relacion.Id_Vacante;
-
-      
-     const preguntas = await Pregunta.findAll({
-  where: { Id_vacante: idVacante },
-  attributes: ['Id_Pregunta', 'Pregunta', 'EsIA'],
-  include: [
-    { model: Opcion, as: 'opciones' },
-    { model: PreguntaTecnica, as: 'preguntaTecnica' }
-  ],
-  order: [['Id_Pregunta', 'ASC']]
-});
-
-
-      const resultado = preguntas.map(p => {
-        const evaluacion = p.Evaluacions?.[0];
-        const opcionSeleccionada = p.opciones?.find(o => o.Id_Opcion === evaluacion?.Id_OpcionSeleccionada);
-
-        return {
-          pregunta: p.Pregunta,
-          habilidad: p.Habilidad?.Descripcion || '',
-          respuesta: opcionSeleccionada?.Descripcion || 'No respondida',
-          correcta: opcionSeleccionada?.EsCorrecta || false
-        };
-      });
-
-      res.json(resultado);
-    } catch (error) {
-      console.error('❌ Error en getPreguntasTeoricasPorPostulante:', error);
-      res.status(500).json({ error: 'Error interno del servidor', message: error.message });
+    if (!relacion) {
+      return res.status(404).json({ error: 'No se encontró vacante asignada para el postulante.' });
     }
-  },
+
+    const idVacante = relacion.Id_Vacante;
+
+    const preguntas = await Pregunta.findAll({
+      where: {
+        Id_vacante: idVacante,
+        Activo: true
+      },
+      attributes: ['Id_Pregunta', 'Pregunta', 'EsIA'],
+      include: [
+        { model: Opcion, as: 'opciones' },
+        { model: PreguntaTecnica, as: 'preguntaTecnica' }
+      ],
+      order: [['Id_Pregunta', 'ASC']]
+    });
+
+    const resultado = preguntas.map(p => {
+      const evaluacion = p.Evaluacions?.[0];
+      const opcionSeleccionada = p.opciones?.find(o => o.Id_Opcion === evaluacion?.Id_OpcionSeleccionada);
+
+      return {
+        pregunta: p.Pregunta,
+        habilidad: p.Habilidad?.Descripcion || '',
+        respuesta: opcionSeleccionada?.Descripcion || 'No respondida',
+        correcta: opcionSeleccionada?.EsCorrecta || false
+      };
+    });
+
+    res.json(resultado);
+  } catch (error) {
+    console.error('❌ Error en getPreguntasTeoricasPorPostulante:', error);
+    res.status(500).json({ error: 'Error interno del servidor', message: error.message });
+  }
+}
+
+  ,
 
   
-  getPreguntasByVacante: async (req, res) => {
-    try {
-      const { idVacante } = req.params;
+getPreguntasByVacante: async (req, res) => {
+  try {
+    const { idVacante } = req.params;
 
-      const preguntas = await Pregunta.findAll({
-        where: { Id_vacante: idVacante },
-        include: [
-          { model: Opcion, as: 'opciones' },
-          { model: PreguntaTecnica, as: 'preguntaTecnica' }
-        ],
-        order: [['Id_Pregunta', 'ASC']]
-      });
+    const preguntas = await Pregunta.findAll({
+      where: {
+        Id_vacante: idVacante,
+        Activo: true
+      },
+      include: [
+        { model: Opcion, as: 'opciones' },
+        { model: PreguntaTecnica, as: 'preguntaTecnica' }
+      ],
+      order: [['Id_Pregunta', 'ASC']]
+    });
 
-      res.json(preguntas);
-    } catch (error) {
-      console.error('Error al obtener preguntas:', error);
-      res.status(500).json({
-        error: 'Error interno del servidor',
-        message: error.message
-      });
-    }
-  },
+    res.json(preguntas);
+  } catch (error) {
+    console.error('Error al obtener preguntas:', error);
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      message: error.message
+    });
+  }
+}
+
+  ,
 
   
-  getPreguntaTecnicaByPreguntaId: async (req, res) => {
-    try {
-      const { idPregunta } = req.params;
+ getPreguntaTecnicaByPreguntaId: async (req, res) => {
+  try {
+    const { idPregunta } = req.params;
 
-      const tecnica = await PreguntaTecnica.findOne({
-        where: { Id_Pregunta: idPregunta }
-      });
-
-      if (!tecnica) {
-        return res.status(404).json({ error: 'Pregunta técnica no encontrada' });
+    const tecnica = await PreguntaTecnica.findOne({
+      where: { Id_Pregunta: idPregunta },
+      include: {
+        model: Pregunta,
+        as: 'pregunta',
+        where: { Activo: true }
       }
+    });
 
-      res.json(tecnica);
-    } catch (error) {
-      console.error('Error al obtener la pregunta técnica:', error);
-      res.status(500).json({ error: 'Error al obtener la pregunta técnica' });
+    if (!tecnica) {
+      return res.status(404).json({ error: 'Pregunta técnica no encontrada o pregunta inactiva' });
     }
-  },
+
+    res.json(tecnica);
+  } catch (error) {
+    console.error('Error al obtener la pregunta técnica:', error);
+    res.status(500).json({ error: 'Error al obtener la pregunta técnica' });
+  }
+}
+
+  ,
 
   
   createPreguntaTecnica: async (req, res) => {
@@ -147,7 +161,8 @@ const preguntasController = {
       console.error('Error al obtener preguntas técnicas:', error);
       res.status(500).json({ error: 'Error al obtener preguntas técnicas' });
     }
-  },
+  }
+  ,
 
   
   createPregunta: async (req, res) => {
@@ -200,45 +215,56 @@ const preguntasController = {
   },
 
   
-  getPreguntaById: async (req, res) => {
-    try {
-      const { id } = req.params;
-      const pregunta = await Pregunta.findByPk(id);
+getPreguntaById: async (req, res) => {
+  try {
+    const { id } = req.params;
 
-      if (!pregunta) {
-        return res.status(404).json({ error: 'Pregunta no encontrada' });
+    const pregunta = await Pregunta.findOne({
+      where: {
+        Id_Pregunta: id,
+        Activo: true
       }
+    });
 
-      res.json(pregunta);
-    } catch (error) {
-      console.error('Error al obtener la pregunta:', error);
-      res.status(500).json({
-        error: 'Error interno del servidor',
-        message: error.message
-      });
+    if (!pregunta) {
+      return res.status(404).json({ error: 'Pregunta no encontrada o inactiva' });
     }
-  },
+
+    res.json(pregunta);
+  } catch (error) {
+    console.error('Error al obtener la pregunta:', error);
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      message: error.message
+    });
+  }
+}
+
+  ,
 
   
-  deletePregunta: async (req, res) => {
-    try {
-      const { id } = req.params;
+ deletePregunta: async (req, res) => {
+  try {
+    const { id } = req.params;
 
-      const pregunta = await Pregunta.findByPk(id);
-      if (!pregunta) {
-        return res.status(404).json({ error: 'Pregunta no encontrada' });
-      }
-
-      await pregunta.destroy();
-      res.json({ message: 'Pregunta eliminada correctamente' });
-    } catch (error) {
-      console.error('Error al eliminar pregunta:', error);
-      res.status(500).json({
-        error: 'Error interno del servidor',
-        message: error.message
-      });
+    const pregunta = await Pregunta.findByPk(id);
+    if (!pregunta) {
+      return res.status(404).json({ error: 'Pregunta no encontrada' });
     }
+
+    // Aquí desactivamos en vez de borrar:
+    await pregunta.update({ Activo: false });
+
+    res.json({ mensaje: 'Pregunta desactivada correctamente.' });
+  } catch (error) {
+    console.error('❌ Error al desactivar pregunta:', error);
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      message: error.message
+    });
   }
+}
+
 };
 
 

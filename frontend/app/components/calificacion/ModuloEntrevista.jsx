@@ -59,7 +59,7 @@ export default function ModuloEntrevista({
       }));
 
       const res = await fetchWithCreds(
-        "http://localhost:5000/api/calificar/entrevista-oral",
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/calificar/entrevista-oral`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

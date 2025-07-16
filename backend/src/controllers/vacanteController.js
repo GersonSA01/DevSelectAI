@@ -32,28 +32,27 @@ exports.getVacantesPorHabilidades = async (req, res) => {
     }
 
     const idItinerario = relacion.itinerario.id_Itinerario;
-
     const hoy = new Date();
 
-    // primero obtenemos las vacantes que tienen al menos una habilidad requerida
-    const vacantesFiltradas = await Vacante.findAll({
+    const vacantes = await db.Vacante.findAll({
       where: {
         id_Itinerario: idItinerario,
-        Cantidad: { [Op.gt]: 0 }
+        Cantidad: { [Op.gt]: 0 },
+        Activo: true
       },
       include: [
         {
-          model: VacanteHabilidad,
+          model: db.VacanteHabilidad,
           as: 'habilidades',
-          include: [{ model: Habilidad, as: 'habilidad' }]
+          include: [{ model: db.Habilidad, as: 'habilidad' }]
         },
         {
-          model: ProgramacionPostulacion,
+          model: db.ProgramacionPostulacion,
           as: 'programacionesPostulacion',
           required: true,
           include: [
             {
-              model: Programacion,
+              model: db.Programacion,
               as: 'programacion',
               required: true,
               where: {
@@ -63,55 +62,80 @@ exports.getVacantesPorHabilidades = async (req, res) => {
             }
           ]
         },
-        {
-          model: Empresa,
-          as: 'empresa'
-        },
-        {
-          model: db.Itinerario,
-          as: 'itinerario'
-        }
+        { model: db.Empresa, as: 'empresa' },
+        { model: db.Itinerario, as: 'itinerario' }
       ]
     });
 
-    const vacantes = vacantesFiltradas.filter(v =>
-      v.habilidades.some(h => habilidades.includes(h.Id_Habilidad))
-    );
+    const resultado = [];
 
-    const resultado = vacantes.map(v => {
-      const habilidadesPlano = (v.habilidades || []).map(h => ({
-        Id_Habilidad: h.Id_Habilidad,
-        Descripcion: h.habilidad?.Descripcion || 'Sin descripción'
-      }));
+    for (const v of vacantes) {
+      const tieneHabilidad = v.habilidades.some(h => habilidades.includes(h.Id_Habilidad));
+      if (!tieneHabilidad) continue;
 
-      const programacion = v.programacionesPostulacion?.[0]?.programacion;
+      // Contar teoricas activas (preguntas activas con opciones activas)
+      const teoricas = await db.Pregunta.findAll({
+        where: {
+          Id_vacante: v.Id_Vacante,
+          Activo: true
+        },
+        include: [
+          {
+            model: db.Opcion,
+            as: 'opciones',
+            required: true
+          }
+        ]
+      });
 
-      return {
-        Id_Vacante: v.Id_Vacante,
-        Descripcion: v.Descripcion,
-        Contexto: v.Contexto,
-        Cantidad: v.Cantidad,
-        Habilidades: habilidadesPlano, // todas las habilidades de la vacante
-        Empresa: v.empresa?.Nombre || null,
-        Programacion: programacion
-          ? {
-              FechIniPostulacion: programacion.FechIniPostulacion,
-              FechFinPostulacion: programacion.FechFinPostulacion,
-              FechIniAprobacion: programacion.FechIniAprobacion,
-              FechFinAprobacion: programacion.FechFinAprobacion
-            }
-          : null
-      };
-    });
+      const tecnicas = await db.Pregunta.findAll({
+        where: {
+          Id_vacante: v.Id_Vacante,
+          Activo: true
+        },
+        include: [
+          {
+            model: db.PreguntaTecnica,
+            as: 'preguntaTecnica',
+            required: true
+          }
+        ]
+      });
+
+      if (teoricas.length >= 5 && tecnicas.length >= 1) {
+        const habilidadesPlano = (v.habilidades || []).map(h => ({
+          Id_Habilidad: h.Id_Habilidad,
+          Descripcion: h.habilidad?.Descripcion || 'Sin descripción'
+        }));
+
+        const programacion = v.programacionesPostulacion?.[0]?.programacion;
+
+        resultado.push({
+          Id_Vacante: v.Id_Vacante,
+          Descripcion: v.Descripcion,
+          Contexto: v.Contexto,
+          Cantidad: v.Cantidad,
+          Habilidades: habilidadesPlano,
+          Empresa: v.empresa?.Nombre || null,
+          Programacion: programacion
+            ? {
+                FechIniPostulacion: programacion.FechIniPostulacion,
+                FechFinPostulacion: programacion.FechFinPostulacion,
+                FechIniAprobacion: programacion.FechIniAprobacion,
+                FechFinAprobacion: programacion.FechFinAprobacion
+              }
+            : null
+        });
+      }
+    }
 
     res.json(resultado);
 
   } catch (error) {
-    console.error('❌ Error al obtener vacantes por habilidades + itinerario:', error);
+    console.error('❌ Error al obtener vacantes por habilidades + preguntas:', error);
     res.status(500).json({ error: 'Error al buscar vacantes' });
   }
 };
-
 
 
 exports.getByItinerario = async (req, res) => {
@@ -119,7 +143,10 @@ exports.getByItinerario = async (req, res) => {
 
   try {
     const vacantes = await db.Vacante.findAll({
-      where: { id_Itinerario: idItinerario },
+      where: { 
+        id_Itinerario: idItinerario,
+        Activo: true
+      },
       include: [
         { model: db.Empresa, as: 'empresa' },
         {
@@ -143,6 +170,7 @@ exports.getByItinerario = async (req, res) => {
     const resultado = vacantes.map(v => {
       const habilidadesPlano = (v.habilidades || []).map(h => h.habilidad);
       const programacion = v.programacionesPostulacion?.[0]?.programacion;
+
       return {
         ...v.toJSON(),
         Habilidades: habilidadesPlano,
@@ -314,13 +342,15 @@ exports.actualizarVacante = async (req, res) => {
   }
 };
 
-
 exports.getHabilidadesByVacante = async (req, res) => {
   try {
     const { idVacante } = req.params;
 
     const habilidades = await VacanteHabilidad.findAll({
-      where: { Id_Vacante: idVacante },
+      where: {
+        Id_Vacante: idVacante,
+        Activo: true
+      },
       include: {
         model: Habilidad,
         as: 'habilidad',
@@ -335,11 +365,16 @@ exports.getHabilidadesByVacante = async (req, res) => {
   }
 };
 
+
 exports.getById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const vacante = await Vacante.findByPk(id, {
+    const vacante = await Vacante.findOne({
+      where: {
+        Id_Vacante: id,
+        Activo: true
+      },
       include: [
         {
           model: VacanteHabilidad,
@@ -350,9 +385,12 @@ exports.getById = async (req, res) => {
       ]
     });
 
-    if (!vacante) return res.status(404).json({ error: 'Vacante no encontrada' });
+    if (!vacante) {
+      return res.status(404).json({ error: 'Vacante no encontrada o inactiva' });
+    }
 
     const habilidades = vacante.habilidades.map(vh => vh.Id_Habilidad);
+
     const programacion = await ProgramacionPostulacion.findOne({
       where: { Id_Vacante: id }
     });
@@ -369,26 +407,45 @@ exports.getById = async (req, res) => {
 };
 
 
+
 exports.eliminarVacante = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const preguntas = await Pregunta.findAll({ where: { Id_vacante: id } });
+    const preguntasActivas = await Pregunta.count({
+      where: {
+        Id_vacante: id,
+        Activo: true
+      }
+    });
 
-    if (preguntas.length > 0) {
-      return res.status(400).json({ mensaje: 'No se puede eliminar la vacante porque tiene preguntas asociadas.' });
+    if (preguntasActivas > 0) {
+      return res.status(400).json({
+        mensaje: `No se puede eliminar la vacante porque tiene ${preguntasActivas} pregunta(s) activa(s) asociada(s).`
+      });
     }
 
-    await VacanteHabilidad.destroy({ where: { Id_Vacante: id } });
-    await ProgramacionPostulacion.destroy({ where: { Id_Vacante: id } });
-    await Vacante.destroy({ where: { Id_Vacante: id } });
+    await Vacante.update(
+      { Activo: false },
+      { where: { Id_Vacante: id } }
+    );
 
-    res.json({ mensaje: 'Vacante eliminada correctamente.' });
+    await VacanteHabilidad.update(
+      { Activo: false },
+      { where: { Id_Vacante: id } }
+    );
+    await ProgramacionPostulacion.update(
+      { Activo: false },
+      { where: { Id_Vacante: id } }
+    );
+
+    res.json({ mensaje: 'Vacante desactivada correctamente.' });
   } catch (error) {
-    console.error('❌ Error al eliminar vacante:', error);
-    res.status(500).json({ error: 'Error al eliminar la vacante' });
+    console.error('❌ Error al desactivar vacante:', error);
+    res.status(500).json({ error: 'Error al desactivar la vacante' });
   }
 };
+
 
 
 exports.asignarVacante = async (req, res) => {

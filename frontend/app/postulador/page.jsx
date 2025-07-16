@@ -30,7 +30,7 @@ export default function Entrevistas() {
     const verificarEstadoPostulante = async () => {
       try {
         console.log('📌 Verificando datos del postulante...');
-        const res = await fetchWithCreds(`http://localhost:5000/api/postulante/${usuario.id}`);
+        const res = await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/postulante/${usuario.id}`);
         const data = await res.json();
 
         if (!res.ok || !data?.Nombre || !data?.Apellido || !data?.Itinerario) {
@@ -41,7 +41,7 @@ export default function Entrevistas() {
 
         console.log('✅ Datos obtenidos:', data);
 
-        const estadoRes = await fetchWithCreds(`http://localhost:5000/api/postulante/estado/${usuario.id}`);
+        const estadoRes = await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/postulante/estado/${usuario.id}`);
         const estadoData = await estadoRes.json();
 
         if (!estadoRes.ok || !estadoData?.estado) {

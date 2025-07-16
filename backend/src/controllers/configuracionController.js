@@ -83,7 +83,14 @@ exports.eliminar = async (req, res) => {
 
     const deps = dependencias[entidad] || [];
     for (const { modelo, clave: claveHijo } of deps) {
-      const count = await modelo.count({ where: { [claveHijo]: id, Activo: true } });
+      const where = { [claveHijo]: id };
+
+      // Si el modelo hijo tiene columna Activo, filtra por Activo=true
+      if (modelo.rawAttributes?.Activo) {
+        where.Activo = true;
+      }
+
+      const count = await modelo.count({ where });
       if (count > 0) {
         return res.status(400).json({
           error: `No se puede desactivar porque existen ${count} registros relacionados en ${modelo.name}.`
@@ -91,6 +98,7 @@ exports.eliminar = async (req, res) => {
       }
     }
 
+    // Si no hay dependencias activas o relacionadas
     await Modelo.update({ Activo: false }, { where: { [clave]: id } });
     res.json({ mensaje: 'Registro desactivado correctamente.' });
   } catch (err) {

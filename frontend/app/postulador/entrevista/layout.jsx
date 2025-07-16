@@ -19,7 +19,7 @@ export default function EntrevistaLayout({ children }) {
 
     const validarToken = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/postulante/token/${token}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/postulante/token/${token}`);
         if (!res.ok) throw new Error('Token inválido');
         const data = await res.json();
 

@@ -21,7 +21,7 @@ export default function PreguntasVacante() {
 
   const fetchVacante = async () => {
     try {
-      const res = await fetchWithCreds(`http://localhost:5000/api/vacantes/${idVacante}`);
+      const res = await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/vacantes/${idVacante}`);
       const data = await res.json();
       setVacante(data);
     } catch (err) {
@@ -31,7 +31,7 @@ export default function PreguntasVacante() {
 
   const fetchHabilidades = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/vacantes/${idVacante}/habilidades`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/vacantes/${idVacante}/habilidades`);
       const data = await res.json();
       setHabilidades(data);
     } catch (err) {
@@ -42,7 +42,7 @@ export default function PreguntasVacante() {
   const fetchPreguntas = async () => {
     try {
       setLoading(true);
-      const res = await fetchWithCreds(`http://localhost:5000/api/preguntas/vacante/${idVacante}`);
+      const res = await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/preguntas/vacante/${idVacante}`);
       const data = await res.json();
       setPreguntas(data);
     } catch (err) {
@@ -55,7 +55,7 @@ export default function PreguntasVacante() {
 const handleEliminarPregunta = async (idPregunta) => {
   const result = await Alert({
     icon: 'warning',
-    title: 'Confirmar eliminación',
+    title: 'Confirmar desactivación',
     html: '¿Estás seguro de que deseas eliminar esta pregunta?',
     showCancelButton: true,
     confirmButtonText: 'Sí, eliminar',
@@ -65,13 +65,13 @@ const handleEliminarPregunta = async (idPregunta) => {
   if (!result.isConfirmed) return;
 
   try {
-    await fetchWithCreds(`http://localhost:5000/api/preguntas/${idPregunta}`, { method: 'DELETE' });
+    await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/preguntas/${idPregunta}`, { method: 'DELETE' });
     await fetchPreguntas();
     await fetchVacante();
 
     await Alert({
-      title: 'Eliminada',
-      html: 'La pregunta ha sido eliminada correctamente.',
+      title: 'Desactivada',
+      html: 'La pregunta ha sido desactivada correctamente.',
       icon: 'success'
     });
   } catch (err) {
@@ -148,7 +148,7 @@ const handleEliminarPregunta = async (idPregunta) => {
   });
 
   try {
-    const res = await fetchWithCreds(`http://localhost:5000/api/generar-preguntas/${idVacante}`, {
+    const res = await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/generar-preguntas/${idVacante}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ cantidadTeoricas: teoricas, cantidadTecnicas: tecnicas })

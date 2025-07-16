@@ -18,7 +18,7 @@ export default function InicioEntrevista() {
     if (!token) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/postulante/token/${token}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/postulante/token/${token}`);
       const data = await res.json();
 
       if (data?.Id_Postulante) {

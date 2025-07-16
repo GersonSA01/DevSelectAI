@@ -36,7 +36,7 @@ export default function ValidacionDispositivos() {
     yaGenerado.current = true;
 
     try {
-      const resId = await fetch(`http://localhost:5000/api/postulante/token/${token}`);
+      const resId = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/postulante/token/${token}`);
       const dataId = await resId.json();
 
       if (!resId.ok || !dataId?.Id_Postulante) {
@@ -46,7 +46,7 @@ export default function ValidacionDispositivos() {
 
       const idPostulante = dataId.Id_Postulante;
 
-      const resEval = await fetch(`http://localhost:5000/api/evaluacion/inicial/${idPostulante}`, {
+      const resEval = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/evaluacion/inicial/${idPostulante}`, {
         method: 'POST'
       });
 

@@ -36,9 +36,9 @@ export default function RegistrarVacante() {
     const fetchData = async () => {
       try {
         const [hab, emp, prog] = await Promise.all([
-          fetch('http://localhost:5000/api/habilidades').then(r => r.json()),
-          fetch('http://localhost:5000/api/empresas').then(r => r.json()),
-          fetch('http://localhost:5000/api/programaciones').then(r => r.json())
+          fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/habilidades`).then(r => r.json()),
+          fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/empresas`).then(r => r.json()),
+          fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/programaciones`).then(r => r.json())
         ]);
         setHabilidades(hab);
         setEmpresas(emp);
@@ -53,7 +53,7 @@ export default function RegistrarVacante() {
   useEffect(() => {
     const obtenerReclutador = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/me', {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/me`, {
           credentials: 'include'
         });
         const data = await res.json();
@@ -81,7 +81,7 @@ export default function RegistrarVacante() {
     if (!idVacante) return;
     const cargarVacante = async () => {
       try {
-        const res = await fetchWithCreds(`http://localhost:5000/api/vacantes/${idVacante}`);
+        const res = await fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/vacantes/${idVacante}`);
         if (!res.ok) throw new Error(`Error ${res.status} al obtener vacante`);
         const vacante = await res.json();
 
@@ -119,8 +119,8 @@ export default function RegistrarVacante() {
     try {
       const metodo = esEdicion ? 'PUT' : 'POST';
       const url = esEdicion
-        ? `http://localhost:5000/api/vacantes/${idVacante}`
-        : 'http://localhost:5000/api/vacantes';
+        ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/vacantes/${idVacante}`
+        : `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/vacantes`;
 
       const nuevaVacante = {
         Id_Itinerario: Number(idItinerario),
@@ -272,11 +272,12 @@ export default function RegistrarVacante() {
     Contexto:
     <div className="group relative">
       <AiOutlineInfoCircle className="text-sky-300 cursor-pointer" />
-      <div className="absolute left-6 top-0 z-10 hidden group-hover:block bg-sky-900 text-sky-100 p-2 rounded shadow-lg text-xs w-64">
-        La pasantía será orientada a <strong>SQL</strong> y <strong>React</strong>.<br />
-        SQL: normalización, tipos de datos, consultas JOIN y subconsultas.<br />
-        React: hooks, componentes, manejo de estado y ciclo de vida.
-      </div>
+<div className="absolute left-6 top-0 z-10 hidden group-hover:block bg-sky-900 text-sky-100 p-2 rounded shadow-lg text-xs w-64">
+  La pasantía será orientada a <strong>[Tecnología 1]</strong> y <strong>[Tecnología 2]</strong>.<br />
+  [Tecnología 1]: descripción breve de lo que se evaluará.<br />
+  [Tecnología 2]: descripción breve de lo que se evaluará.
+</div>
+
     </div>
   </label>
 

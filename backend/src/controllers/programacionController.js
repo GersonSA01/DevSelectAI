@@ -2,7 +2,9 @@ const { Programacion } = require('../models');
 
 exports.getAll = async (req, res) => {
   try {
-    const programaciones = await Programacion.findAll();
+    const programaciones = await Programacion.findAll({
+      where: { Activo: true }
+    });
 
     const formatear = (fecha) => {
   const d = new Date(fecha);

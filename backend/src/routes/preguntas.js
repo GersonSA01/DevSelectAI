@@ -4,7 +4,7 @@ const preguntasController = require('../controllers/preguntasController');
 const auth = require('../../middlewares/auth');
 
 
-// 🔷 Rutas para reclutador
+//  Rutas para reclutador
 router.use(auth("reclutador"));
 
 // preguntas teóricas

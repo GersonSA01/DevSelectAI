@@ -30,9 +30,9 @@ useEffect(() => {
     try {
       const [resPostulantes, resItinerarios, resProgramaciones] =
         await Promise.all([
-          fetchWithCreds('http://localhost:5000/api/postulante'),
-          fetchWithCreds('http://localhost:5000/api/itinerarios'),
-          fetchWithCreds('http://localhost:5000/api/programaciones'),
+          fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/postulante`),
+          fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/itinerarios`),
+          fetchWithCreds(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/programaciones`),
         ]);
 
       const dataPostulantes = await resPostulantes.json();
@@ -67,14 +67,12 @@ useEffect(() => {
         programacionActual={programacionActual}
       />
 
-      {/* si no hay postulantes */}
       {(!postulantes || postulantes.length === 0) && (
         <div className="text-center text-gray-400 my-8">
           No se encontraron postulantes.
         </div>
       )}
 
-      {/* si hay postulantes, renderiza el resto */}
       {postulantes.length > 0 && (
         <>
           <PostulacionesStats

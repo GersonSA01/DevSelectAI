@@ -30,7 +30,8 @@ export default function CapturaPantalla({ idEvaluacion }) {
 
       const base64Image = canvas.toDataURL('image/png');
 
-      const response = await fetch('http://localhost:5000/api/captures', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/captures`
+, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
