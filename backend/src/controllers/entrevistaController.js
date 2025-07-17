@@ -186,7 +186,7 @@ Enfócate en evaluar las habilidades técnicas específicas requeridas para la v
     if (step === '0') {
       prompt = `
 Este es el nombre completo del postulante: ${nombreCompleto}.
-Esta es la vacante: ${vacanteDescripcion} en la empresa ${empresaNombre}.
+Esta es la vacante: ${vacanteDescripcion}.
 Estas son las habilidades técnicas específicas requeridas para esta vacante: ${habilidadesVacante}.
 Preséntate como el reclutador virtual, saluda al postulante por su nombre, menciona la vacante y las habilidades requerida de la vacante, y formula la primera pregunta técnica específica sobre una de estas habilidades requeridas en una sola frase.
       `.trim();

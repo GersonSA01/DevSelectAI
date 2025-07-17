@@ -56,14 +56,19 @@ exports.obtenerInformePostulante = async (req, res) => {
       include: [{ model: db.PreguntaOral, as: 'preguntasOrales' }]
     });
 
-   
     const habilidades = postulante.habilidades.map(h => h.habilidad.Descripcion);
 
-    
     const tiemposOrales = entrevista?.preguntasOrales.map(p => p.TiempoRptaPostulante || 0) || [];
     const calificacionOral = entrevista?.preguntasOrales.reduce((acc, p) => acc + (p.CalificacionIA || 0), 0) || 0;
 
-    
+    const preguntasOrales = (entrevista?.preguntasOrales || []).map(p => ({
+      ronda: p.Ronda,
+      pregunta: p.PreguntaIA,
+      respuesta: p.RespuestaPostulante,
+      calificacion: p.CalificacionIA || 0,
+      tiempoRespuesta: p.TiempoRptaPostulante || 0
+    }));
+
     const teoricas = evaluacion?.respuestas?.filter(r => !r.pregunta?.preguntaTecnica) || [];
     const tiempoTeorico = teoricas.reduce((acc, r) => acc + (r.TiempoRptaPostulante || 0), 0);
     const calificacionTeorico = teoricas.reduce((acc, r) => acc + (r.Puntaje || 0), 0);
@@ -71,11 +76,10 @@ exports.obtenerInformePostulante = async (req, res) => {
     const preguntasTeoricas = teoricas.map(r => ({
       pregunta: r.pregunta?.Pregunta || '',
       respuesta: r.RptaPostulante,
-      Puntaje: r.Puntaje || 0,
-      TiempoRpta: r.TiempoRptaPostulante || 0
+      puntaje: r.Puntaje || 0,
+      tiempoRespuesta: r.TiempoRptaPostulante || 0
     }));
 
-    
     const tecnica = evaluacion?.respuestas?.find(r => r.pregunta?.preguntaTecnica);
     const tiempoTecnica = tecnica?.TiempoRptaPostulante || 0;
     const calificacionTecnica = tecnica?.Puntaje || 0;
@@ -84,21 +88,18 @@ exports.obtenerInformePostulante = async (req, res) => {
       ? {
           pregunta: tecnica.pregunta?.Pregunta || '',
           respuesta: tecnica.RptaPostulante,
-          Puntaje: tecnica.Puntaje || 0,
-          TiempoRpta: tecnica.TiempoRptaPostulante || 0,
-          UsoIA: tecnica.UsoIA === 1
+          puntaje: tecnica.Puntaje || 0,
+          tiempoRespuesta: tecnica.TiempoRptaPostulante || 0,
+          usoIA: tecnica.UsoIA === 1
         }
       : null;
 
-const capturas = (evaluacion?.captures || []).filter(c => c.Aprobado === true || c.Aprobado === 1);
-const totalCapturas = capturas.length;
-const capturasPenalizadas = capturas.filter(c => c.Aprobado === true || c.Aprobado === 1).length;
+    const capturas = (evaluacion?.captures || []).filter(c => c.Aprobado === true || c.Aprobado === 1);
+    const capturasPenalizadas = capturas.filter(c => c.Aprobado === true || c.Aprobado === 1).length;
 
+    let puntajeCapturas = 2 - (capturasPenalizadas * 0.5);
+    if (puntajeCapturas < 0) puntajeCapturas = 0;
 
-let puntajeCapturas = 2 - (capturasPenalizadas * 0.5);
-if (puntajeCapturas < 0) puntajeCapturas = 0;
-
-    
     const seleccion = postulante.selecciones?.[0];
     const vacante = seleccion?.vacante;
     const itinerarioDescripcion = vacante?.itinerario?.descripcion || 'No asignado';
@@ -106,11 +107,9 @@ if (puntajeCapturas < 0) puntajeCapturas = 0;
 
     const observacion = evaluacion?.ObservacionGeneral || '';
 
-    
     const puntajeEvaluacion = calificacionOral + calificacionTeorico + calificacionTecnica;
     const puntajeFinal = puntajeEvaluacion + puntajeCapturas;
 
-    
     await evaluacion.update({ PuntajeTotal: puntajeFinal });
 
     res.json({
@@ -131,6 +130,7 @@ if (puntajeCapturas < 0) puntajeCapturas = 0;
       },
       puntajeEvaluacion,
       puntajeFinal,
+      preguntasOrales,
       preguntasTeoricas,
       preguntaTecnica,
       capturas,

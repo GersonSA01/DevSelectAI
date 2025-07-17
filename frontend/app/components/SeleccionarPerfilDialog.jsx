@@ -34,7 +34,7 @@ export default function SeleccionarPerfilDialog({ open, setOpen }) {
           
           <div className="flex flex-col items-center bg-[#1A1A1A] rounded-2xl p-6 w-44">
             <img src="/estudiante.png" alt="Estudiante" className="w-20 h-20 rounded-full object-cover mb-3" />
-            <p className="text-lg font-semibold mb-1">Estudiante</p>
+            <p className="text-lg font-semibold mb-1">Postulante</p>
             <p className="text-xs text-gray-400 mb-4 text-center">Accede como postulante.</p>
             <button
               onClick={() => window.location.href = "/auth/login_estudiante"}
@@ -47,8 +47,8 @@ export default function SeleccionarPerfilDialog({ open, setOpen }) {
           
           <div className="flex flex-col items-center bg-[#1A1A1A] rounded-2xl p-6 w-44">
             <img src="/docente.png" alt="Docente" className="w-20 h-20 rounded-full object-cover mb-3" />
-            <p className="text-lg font-semibold mb-1">Docente</p>
-            <p className="text-xs text-gray-400 mb-4 text-center">Accede como evaluador.</p>
+            <p className="text-lg font-semibold mb-1">Coordinador</p>
+            <p className="text-xs text-gray-400 mb-4 text-center">Accede como Coordinador de Prácticas Preprofesionales.</p>
             <button
               onClick={() => window.location.href = "/auth/login_docente"}
               className="bg-primaryButton hover:bg-primaryButtonHover text-white py-1.5 px-4 rounded-full text-sm transition"

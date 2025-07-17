@@ -27,6 +27,8 @@ export default function Finalizacion() {
     }
   }, [extraScreenDetected, alertShown]);
 
+  
+
   const handleAccept = () => {
     if (extraScreenDetected) {
       Alert({

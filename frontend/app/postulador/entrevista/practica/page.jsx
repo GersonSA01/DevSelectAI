@@ -7,7 +7,7 @@ import { useScreen } from '../../../../context/ScreenContext';
 import Temporizador from '../../../components/ui/Temporizador';
 import ValidadorEntorno from '../../../components/ValidadorEntorno';
 import { Alert } from '../../../components/alerts/Alerts';
-import { FaSpinner } from 'react-icons/fa';
+import { FaSpinner, FaCheckCircle, FaCode, FaLightbulb } from 'react-icons/fa';
 import { HiOutlineLightBulb, HiOutlinePaperAirplane } from 'react-icons/hi';
 import { FiBookOpen, FiAlertCircle } from 'react-icons/fi';
 
@@ -186,6 +186,24 @@ export default function PracticaPage() {
             <p className="text-base leading-relaxed text-gray-200 whitespace-pre-wrap">
               {enunciadoSinPista || 'Cargando pregunta técnica...'}
             </p>
+          </div>
+
+          {/* ASPECTOS A EVALUAR */}
+          <div className="bg-[#0F172A] border-l-4 border-cyan-500 text-cyan-100 p-4 rounded-lg shadow-inner mt-4">
+            <p className="text-sm font-semibold mb-2 flex items-center gap-2">
+              📋 Aspectos que se evaluarán (2 puntos cada uno):
+            </p>
+            <ul className="list-none space-y-1 text-sm text-gray-300">
+              <li className="flex items-center gap-2">
+                <FaCheckCircle className="text-green-400" /> Resolución del problema
+              </li>
+              <li className="flex items-center gap-2">
+                <FaCode className="text-blue-400" /> Calidad del código
+              </li>
+              <li className="flex items-center gap-2">
+                <FaLightbulb className="text-yellow-300" /> Entendimiento del problema
+              </li>
+            </ul>
           </div>
 
           {pista && (

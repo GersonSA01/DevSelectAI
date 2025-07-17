@@ -1,4 +1,3 @@
-// models/Reclutador.js
 module.exports = (sequelize, DataTypes) => {
   return sequelize.define("Reclutador", {
     Id_Reclutador: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },

@@ -116,7 +116,7 @@ export default function ModuloTecnico({
 
           {[
             { label: "Calidad (0–2)", icon: <FaBrain />, key: "calidad", max: 2 },
-            { label: "Compila (0–2)", icon: <FaCode />, key: "compila", max: 2 },
+            { label: "Entendimiento del problema (0–2)", icon: <FaCode />, key: "compila", max: 2 },
             { label: "Resolución (0–2)", icon: <FaTools />, key: "resolucion", max: 2 },
           ].map(({ label, icon, key, max }) => (
             <div key={key} className="flex items-center justify-between">

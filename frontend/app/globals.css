@@ -158,6 +158,28 @@
   padding: 8px 12px;
 }
 
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+.scrollbar-thumb {
+  background-color: #3BDCF6;
+  border-radius: 9999px;
+}
+.scrollbar-track {
+  background-color: #1D1E33;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #1D1E33;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: #3BDCF6;
+  border-radius: 9999px;
+}
+
+
 
 @keyframes progressBar {
   from {

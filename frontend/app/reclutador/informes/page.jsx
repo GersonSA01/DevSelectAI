@@ -43,9 +43,11 @@ export default function InformeEvaluacionTiempo() {
     observacion = '',
     preguntasTeoricas = [],
     preguntaTecnica = null,
+    preguntasOrales = [],  
     puntajeEvaluacion = 0,
     puntajeFinal = 0,
   } = datos;
+  
 
   const totalCapturas = Array.isArray(capturas) ? capturas.length : 0;
 
@@ -70,13 +72,15 @@ export default function InformeEvaluacionTiempo() {
           vacante={vacante}
         />
 
-        <Grafica
-          tiempos={tiempos}
-          itinerario={itinerario}
-          habilidades={habilidades}
-          preguntasTeoricas={preguntasTeoricas}
-          preguntaTecnica={preguntaTecnica}
-        />
+      <Grafica
+        tiempos={tiempos}
+        itinerario={itinerario}
+        habilidades={habilidades}
+        preguntasOrales={preguntasOrales}
+        calificaciones={calificaciones}
+      />
+
+
 
         <PreguntasEvaluacion
           preguntasTeoricas={preguntasTeoricas}

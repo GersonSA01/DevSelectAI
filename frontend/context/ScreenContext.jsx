@@ -8,7 +8,7 @@ export const useScreen = () => useContext(ScreenContext);
 
 
 //const SCREEN_DETECTION_ENABLED = true;
-const SCREEN_DETECTION_ENABLED = false; 
+const SCREEN_DETECTION_ENABLED = true; 
 
 export const ScreenProvider = ({ children }) => {
   const [extraScreenDetected, setExtraScreenDetected] = useState(false);

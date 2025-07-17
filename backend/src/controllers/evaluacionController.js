@@ -386,10 +386,10 @@ exports.pedirAyudaIA = async (req, res) => {
     }
 
     const prompt = `Actúa como un entrevistador técnico. El postulante está resolviendo una pregunta de programación. Tu tarea es **dar solo una pista breve**, como una idea clave, una orientación general o una sugerencia inicial. No expliques la solución completa, no muestres código detallado ni reveles la lógica completa.
-    ❌ No des la solución.
-    ❌ No expliques cómo resolverlo paso a paso.
-    ❌ No incluyas código funcional completo.
-    ✅ Solo ofrece una orientación conceptual que pueda ayudarle a pensar mejor. 
+    No des la solución.
+    No expliques cómo resolverlo paso a paso.
+    No incluyas código funcional completo.
+    Solo ofrece una orientación conceptual que pueda ayudarle a pensar mejor. 
     Aquí está la pregunta:
 
 Pregunta:

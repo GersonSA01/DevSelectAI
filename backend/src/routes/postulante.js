@@ -27,6 +27,8 @@ router.get("/cedula/:cedula", verificarPostulantePorCedula);
 router.get("/entrevista", getEntrevistaOral);
 router.get("/preguntas-teoricas",  getPreguntasTeoricas);
 router.get("/preguntas-orales",  getPreguntasOrales);
+router.put('/:id/cambiar-estado',  cambiarEstado);
+
 // 🔷 Rutas para RECLUTADOR
 router.get("/", auth("reclutador"), getAllPostulantes);
 router.get("/:id", auth(["postulante", "reclutador"]), obtenerPorId);
@@ -36,7 +38,6 @@ router.put('/:id/rechazar', auth("reclutador"), rechazar);
 // 🔷 Rutas para POSTULANTE
 router.post("/habilidades", auth("postulante"), guardarHabilidades);
 router.post('/seleccionar-vacante', auth("postulante"), seleccionarVacante);
-router.put('/:id/cambiar-estado', auth("postulante"), cambiarEstado);
 router.get("/pregunta-tecnica", auth("postulante"), getPreguntaTecnica);
 router.get('/estado/:id', auth("postulante"), verificarEstadoPostulacion);
 

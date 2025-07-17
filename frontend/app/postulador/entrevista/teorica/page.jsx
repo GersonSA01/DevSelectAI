@@ -10,7 +10,7 @@ import { Alert } from '../../../components/alerts/Alerts';
 
 export default function TeoricaPage() {
   const router = useRouter();
-  const { cameraStream } = useContext(StreamContext);
+  const { cameraStream, reiniciarCamara } = useContext(StreamContext);
   const camRef = useRef(null);
 
   const [cameraVisible, setCameraVisible] = useState(true);
@@ -33,6 +33,8 @@ export default function TeoricaPage() {
     }
     return id;
   };
+
+
 
   useEffect(() => {
     const cargarPreguntas = async () => {
@@ -72,11 +74,14 @@ export default function TeoricaPage() {
   }, [preguntas]);
 
   useEffect(() => {
-    if (cameraStream && camRef.current) {
+    if (!cameraStream) {
+      reiniciarCamara();
+    } else if (camRef.current) {
       camRef.current.srcObject = cameraStream;
       camRef.current.play();
     }
   }, [cameraStream]);
+  
 
   useEffect(() => {
     setTodoRespondido(Object.keys(respuestas).length === preguntas.length);
@@ -163,7 +168,7 @@ export default function TeoricaPage() {
         }}
       />
 
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-3xl mx-auto space-y-8">
         {preguntas.length > 0 && idEvaluacion && (
           <ValidadorEntorno idEvaluacion={idEvaluacion} onCamVisibilityChange={setCameraVisible} />
         )}

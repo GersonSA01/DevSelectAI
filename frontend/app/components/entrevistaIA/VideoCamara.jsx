@@ -28,7 +28,7 @@ export default function VideoCamara() {
     <video
       ref={camRef}
       muted
-      className="absolute bottom-4 left-4 w-32 md:w-[320px] aspect-video bg-black rounded-lg object-cover z-50"
+      className="absolute bottom-24 left-4 w-32 md:w-[320px] aspect-video bg-black rounded-lg object-cover z-50"
     />
   );
 }
