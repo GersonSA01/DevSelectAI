@@ -10,31 +10,30 @@ export default function EntrevistaLayout({ children }) {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const [estado, setEstado] = useState('cargando');
+  const [rango, setRango] = useState(null);
 
-  useEffect(() => {
+  const validarToken = async () => {
     if (!token) {
       setEstado('sin-token');
       return;
     }
 
-    const validarToken = async () => {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/postulante/token/${token}`);
-        if (!res.ok) throw new Error('Token inválido');
-        const data = await res.json();
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/postulante/token/${token}`);
+      const data = await res.json();
 
-        if (data.id_EstadoPostulacion === 1) {
-          setEstado('ok'); // Solo permite si está 'Por evaluar'
-        } else {
-          setEstado('ya-evaluado'); // cualquier otro estado ya no permite entrevista
-        }
+      console.log('📋 Respuesta del backend:', data);
 
-      } catch (err) {
-        console.error('Token inválido:', err);
-        setEstado('invalido');
-      }
-    };
+      setEstado(data.estado);
+      if (data.rango) setRango(data.rango);
 
+    } catch (err) {
+      console.error('❌ Error al validar token:', err);
+      setEstado('invalido');
+    }
+  };
+
+  useEffect(() => {
     validarToken();
   }, [token]);
 
@@ -64,17 +63,34 @@ export default function EntrevistaLayout({ children }) {
   }
 
   if (estado === 'invalido') {
-    return <ErrorLayout icon={ShieldX} message="Token inválido o acceso no autorizado." />;
+    return <ErrorLayout icon={ShieldX} message="Token inválido." />;
   }
 
   if (estado === 'ya-evaluado') {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center bg-pageBackground text-white px-6 text-center">
         <CheckCircle className="w-20 h-20 text-green-400 mb-6 drop-shadow-xl" />
-        <h1 className="text-3xl font-bold text-green-400 mb-2 tracking-wide">Entrevista no disponible</h1>
+        <h1 className="text-3xl font-bold text-green-400 mb-2 tracking-wide">Entrevista completada</h1>
         <p className="text-muted text-lg max-w-xl">
-          Ya has completado o no estás autorizado para realizar la entrevista técnica. Revisa tu correo institucional para más información.
+          Ya has completado la entrevista técnica. Revisa tu correo institucional para más información.
         </p>
+      </main>
+    );
+  }
+
+  if (estado === 'fuera-rango') {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center bg-pageBackground text-yellow-400 px-6 text-center">
+        <AlertTriangle className="w-20 h-20 mb-6 drop-shadow-xl" />
+        <h1 className="text-3xl font-bold tracking-wide">Fuera del rango de fechas</h1>
+        <p className="text-muted mt-2 max-w-md text-base">
+          La entrevista no está disponible actualmente porque estás fuera del rango permitido.
+        </p>
+        {rango && (
+          <p className="text-primaryButton text-lg mt-4">
+            Tu rango de postulación es del <strong>{rango.inicio}</strong> al <strong>{rango.fin}</strong>.
+          </p>
+        )}
       </main>
     );
   }

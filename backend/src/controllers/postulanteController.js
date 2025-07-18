@@ -118,6 +118,16 @@ const guardarHabilidades = async (req, res) => {
   }
 };
 
+const formatearFecha = (fecha) => {
+  const d = new Date(fecha);
+  d.setHours(d.getHours() + 5);
+  return new Intl.DateTimeFormat('es-EC', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(d);
+};
+
 const obtenerPorToken = async (req, res) => {
   const { token } = req.params;
 
@@ -127,15 +137,68 @@ const obtenerPorToken = async (req, res) => {
     });
 
     if (!postulante) {
-      return res.status(404).json({ error: "Token inválido o datos no encontrados." });
+      return res.status(404).json({ estado: 'invalido', mensaje: "Token inválido." });
     }
 
-    res.json(postulante);
+    // 🔷 primero validar estado del postulante
+    if (postulante.id_EstadoPostulacion !== 1) {
+      return res.status(200).json({
+        estado: 'ya-evaluado',
+        mensaje: "Ya has completado o no estás autorizado para realizar la entrevista técnica."
+      });
+    }
+
+    const pv = await db.PostulanteVacante.findOne({
+      where: { Id_Postulante: postulante.Id_Postulante },
+    });
+
+    if (!pv) {
+      return res.status(404).json({ estado: 'invalido', mensaje: "No se encontró la relación postulante-vacante." });
+    }
+
+    const programacionPostulacion = await db.ProgramacionPostulacion.findOne({
+      where: { id_ProgramacionPostulacion: pv.id_ProgramacionPostulacion },
+    });
+
+    if (!programacionPostulacion) {
+      return res.status(404).json({ estado: 'invalido', mensaje: "No se encontró la programación asociada." });
+    }
+
+    const programacion = await db.Programacion.findOne({
+      where: { id_Programacion: programacionPostulacion.id_Programacion },
+    });
+
+    if (!programacion) {
+      return res.status(404).json({ estado: 'invalido', mensaje: "No se encontró el rango de fechas de la programación." });
+    }
+
+    const hoy = new Date().toISOString().slice(0, 10);
+
+    if (hoy < programacion.FechIniPostulacion || hoy > programacion.FechFinPostulacion) {
+      return res.status(400).json({
+        estado: 'fuera-rango',
+        mensaje: "Fuera del rango de fechas de la programación.",
+        rango: {
+          inicio: formatearFecha(programacion.FechIniPostulacion),
+          fin: formatearFecha(programacion.FechFinPostulacion)
+        }
+      });
+    }
+
+    return res.status(200).json({
+      estado: 'ok',
+      mensaje: "Acceso válido. Puedes continuar.",
+      postulante
+    });
+
   } catch (error) {
     console.error("Error al obtener postulante por token:", error);
-    res.status(500).json({ error: "Error al buscar el postulante." });
+    res.status(500).json({ estado: 'invalido', mensaje: "Error al buscar el postulante." });
   }
 };
+
+
+
 
 const seleccionarVacante = async (req, res) => {
   const { idPostulante, idVacante } = req.body;
