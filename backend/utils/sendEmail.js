@@ -99,7 +99,7 @@ vacanteAsignada: ({ nombre, apellido, vacante, enlace, habilidades = [] }) => `
         <h2>¡Felicidades ${nombre} ${apellido}!</h2>
         <p>Has sido <strong>APROBADO/A</strong> para la vacante <strong>${vacante}</strong></p>
         ${periodoPostulacion ? `<p>Periodo de postulación: ${periodoPostulacion}</p>` : ''}
-        <p>¡Bienvenido a esta gran experiencia profesional!</p>
+        <p>Para más información, por favor acercarse al Bloque C de UNEMI</p>
       </div>
           <div style="background-color: #0f172a; color: white; text-align: center; padding: 10px; font-size: 12px;">
       ¿Tienes dudas? Visítanos en <a href="https://soporte.com" style="color: #93c5fd; text-decoration: none;">soporte.com</a>
