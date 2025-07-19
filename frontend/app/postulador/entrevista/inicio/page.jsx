@@ -21,11 +21,13 @@ export default function InicioEntrevista() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/postulante/token/${token}`);
       const data = await res.json();
 
-      if (data?.Id_Postulante) {
-        localStorage.setItem('id_postulante', data.Id_Postulante);
-        setNombrePostulante(`${data.Nombre} ${data.Apellido}`);
-        console.log('✅ ID guardado:', data.Id_Postulante);
-      } else {
+      if (data?.postulante?.Id_Postulante) {
+  const postulante = data.postulante;
+
+  localStorage.setItem('id_postulante', postulante.Id_Postulante);
+  setNombrePostulante(`${postulante.Nombre} ${postulante.Apellido}`);
+  console.log('📄 Data completa del postulante:', postulante);
+} else {
         console.warn('❌ Token inválido o sin datos.');
       }
     } catch (err) {
@@ -50,7 +52,6 @@ export default function InicioEntrevista() {
         showCancelButton: false,
         confirmButtonText: 'Entendido',
       }).then(() => {
-        // Cuando cierra el modal, si sigue detectada, vuelve a mostrarlo
         setAlertShown(false);
       });
     }

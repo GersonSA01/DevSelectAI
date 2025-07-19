@@ -30,37 +30,39 @@ export default function ValidacionDispositivos() {
   const [selectedCam, setSelectedCam] = useState('');
   const [selectedMic, setSelectedMic] = useState('');
 
-  const generarEvaluacion = async () => {
-    if (yaGenerado.current || !token) return;
+const generarEvaluacion = async () => {
+  if (yaGenerado.current || !token) return;
 
-    yaGenerado.current = true;
+  yaGenerado.current = true;
 
-    try {
-      const resId = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/postulante/token/${token}`);
-      const dataId = await resId.json();
+  try {
+    const resId = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/postulante/token/${token}`);
+    const dataId = await resId.json();
 
-      if (!resId.ok || !dataId?.Id_Postulante) {
-        console.warn("⛔ Postulante no encontrado correctamente:", dataId?.error || dataId);
-        return;
-      }
+    const idPostulante = dataId?.postulante?.Id_Postulante;
 
-      const idPostulante = dataId.Id_Postulante;
-
-      const resEval = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/evaluacion/inicial/${idPostulante}`, {
-        method: 'POST'
-      });
-
-      const dataEval = await resEval.json();
-
-      if (!resEval.ok) throw new Error(dataEval?.error || 'Error inesperado al crear evaluación');
-
-      localStorage.setItem('id_postulante', idPostulante);
-      localStorage.setItem('id_evaluacion', dataEval.evaluacionId);
-      console.log('✅ Evaluación generada exitosamente.');
-    } catch (error) {
-      console.error('❌ Error completo:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    if (!resId.ok || !idPostulante) {
+      console.warn("⛔ Postulante no encontrado correctamente:", dataId?.error || dataId);
+      return;
     }
-  };
+
+    const resEval = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/evaluacion/inicial/${idPostulante}`, {
+      method: 'POST'
+    });
+
+    const dataEval = await resEval.json();
+
+    if (!resEval.ok) throw new Error(dataEval?.error || 'Error inesperado al crear evaluación');
+
+    localStorage.setItem('id_postulante', idPostulante);
+    localStorage.setItem('id_evaluacion', dataEval.evaluacionId);
+    console.log('✅ Evaluación generada exitosamente:', dataEval);
+
+  } catch (error) {
+    console.error('❌ Error completo:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+  }
+};
+
 
   useEffect(() => {
     generarEvaluacion();
