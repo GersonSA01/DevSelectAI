@@ -213,7 +213,7 @@ Calificación actual: ${totalCalificacion}/6.
     const gptRes = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4',
         messages: [
           { role: 'system', content: systemMessage }, 
           { role: 'user', content: prompt }
@@ -326,7 +326,7 @@ Respuesta del postulante: "${respuestaPostulante}"`;
       const evalRes = await axios.post(
         'https://api.openai.com/v1/chat/completions',
         {
-          model: 'gpt-3.5-turbo',
+          model: 'gpt-4',
           messages: [
             { 
               role: 'system', 
